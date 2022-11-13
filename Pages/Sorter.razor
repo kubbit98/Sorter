@@ -1,0 +1,244 @@
+﻿@page "/sorter"
+@using Sortownik.Data;
+@inject FileService FileService
+@inject IJSRuntime theJavaScriptEngine;
+
+<PageTitle>Sorter</PageTitle>
+<h1>Sorter</h1>
+<br />
+
+@if (folders == null)
+{
+    <p>Click to start</p>
+    <button class="btn btn-primary" @onclick="InitSession">Init session</button>
+    @*<p><em>Loading...</em></p>*@
+    @*<video style="display:none"  id="videoTagId"></video>*@
+}
+else
+{
+    <p>@file?.PhysicalPath?.Replace(file.Name,"") # @file?.Name</p>
+    <button class="btn btn-primary" @onclick="Back">Back</button>
+    <button class="btn btn-primary" @onclick="Reset">Reset</button>
+    <button class="btn btn-primary" @onclick="Next">Next</button>
+    <br />
+    <table>
+        <tbody>
+            @for (int i = 0; i < folders.Length;)
+            {
+                <tr>
+                    @for (int j = 0; j < cols && i < folders.Length; j++, i++)
+                    {
+                        var k = i;
+                        <td>
+                            <button class="btn btn-primary" @onclick="()=>MoveFile(folders[k].Path)">@folders[k].Name</button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+
+    </table>
+    <br />
+    @foreach (var tuple in MyMediaIndexes)
+    {
+        <p>@tuple.Item1 | @tuple.Item2</p>
+    }
+
+    @if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+    {
+        @*<BlazoredVideo class="w-100"
+               style="max-width:800px;max-height:700px;"
+               id="videoTagId"
+               controls="controls"
+               autoplay="autoplay">
+            <source src="@file?.Path" type="video/mp4" />
+        </BlazoredVideo>*@
+        <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
+            <source src="@file?.Path" type="video/@file.Extension">
+            Your browser does not support the video tag.
+        </video>
+    }
+    else if (PhotoExtensions.Contains(file?.Extension?.ToLower()))
+    {
+        <img src="@file?.Path" style="max-width:800px;max-height:700px;" />
+        @*<video style="display:none" id="videoTagId"></video>*@
+    }
+    else if ("pdf".Equals(file?.Extension?.ToLower()))
+    {
+        <embed src = "@file?.Path" style = "width:500px;height:707px;" />
+        @*<video style="display:none" id="videoTagId"></video>*@
+    }
+    else if (TextExtensions.Contains(file?.Extension?.ToLower()))
+    {
+        <pre>
+            @GetTextFileContent()
+        </pre>
+        @*<video style="display:none" id="videoTagId"></video>*@
+    }
+    else
+    {
+        <p>Filetype @file?.Extension is already not supported</p>
+        @*<video style="display:none" id="videoTagId"></video>*@
+    }
+
+
+}
+
+@code {
+    private string[] VideoExtensions = { "avi", "mp4", "webm", "mov", "wmv", "flv" };
+    private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp" };
+    private string[] TextExtensions = { "txt" };
+    private List<Tuple<int,string>> MyMediaIndexes;
+    private int MyMediaCurrentIndex;
+    private File? file;
+    private Folder[]? folders;
+    private double? cols;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //folders = await FileService.GetFoldersAsync();
+        //MyMediaIndexes = new List<int>();
+        //cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
+        //MyMediaCurrentIndex = -1;
+        //Console.WriteLine(folders.Length);
+        //GetFile();
+        //Next();
+        //InitSession();
+    }
+    private async void InitSession()
+    {
+        folders = await FileService.GetFoldersAsync();
+        MyMediaIndexes = new List<Tuple<int, string>>();
+        cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
+        int? index = FileService.GetNextIndex();
+        if (index.HasValue)
+        {
+            file = FileService.GetFileAtIndex(index.Value);
+            //MyMediaIndexes.Add(file.FIndex.Value);
+            MyMediaIndexes.Add(new Tuple<int,string>(file.FIndex.Value, file.Name));
+            MyMediaCurrentIndex = 0;
+        }
+        else
+        {
+            return;
+            throw new NotImplementedException("Brakuje obsługi braku plików");
+        }
+        Console.WriteLine("test");
+    }
+    //private void GetFile()
+    //{
+    //    file = FileService.GetFile();
+    //    MyMediaIndexes.Add(file.FIndex.Value);
+    //    MyMediaCurrentIndex++;
+    //}
+    private async void Next()
+    {
+        if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1)
+        {
+            MyMediaCurrentIndex++;
+            try
+            {
+                file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+            }
+            catch (Exception)
+            {
+                return;
+                throw new NotImplementedException("Brakuje obsługi reloadu sesji");
+            }
+        }
+        else
+        {
+            int? index = FileService.GetNextIndex();
+            if (index.HasValue)
+            {
+                file = FileService.GetFileAtIndex(index.Value);
+                //MyMediaIndexes.Add(file.FIndex.Value);
+                MyMediaIndexes.Add(new Tuple<int, string>(file.FIndex.Value, file.Name));
+                MyMediaCurrentIndex++;
+            }
+            else
+            {
+                return;
+                throw new NotImplementedException("Brakuje obsługi ostatniego pliku");
+            };
+        }
+        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+        {
+            await Task.Delay(100);
+            theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+        }
+    }
+    private async void Reset()
+    {
+        FileService.ResetFiles();
+        folders = await FileService.GetFoldersAsync();
+        MyMediaIndexes = new List<Tuple<int, string>>();
+        cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
+        int? index = FileService.GetNextIndex();
+        if (index.HasValue)
+        {
+            file = FileService.GetFileAtIndex(index.Value);
+            //MyMediaIndexes.Add(file.FIndex.Value);
+            MyMediaIndexes.Add(new Tuple<int, string>(file.FIndex.Value, file.Name));
+            MyMediaCurrentIndex = 0;
+        }
+        else
+        {
+            return;
+            throw new NotImplementedException("Brakuje obsługi braku plików");
+        }
+        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+        {
+            await Task.Delay(100);
+            theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+        }
+    }
+    private async void Back()
+    {
+        //file = FileService.GetPreviousFile();
+        if (MyMediaCurrentIndex > 0)
+        {
+            MyMediaCurrentIndex--;
+            //file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex]);
+            try
+            {
+                file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+            }
+            catch (Exception)
+            {
+                return;
+                throw new NotImplementedException("Brakuje obsługi reloadu sesji");
+            }
+            if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+            {
+                await Task.Delay(100);
+                theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+            }
+        }
+        else
+        {
+            return;
+            throw new NotImplementedException("Brakuje obsługi pierwszego pliku");
+        }
+    }
+    private async void MoveFile(string destiny)
+    {
+        var oldFile = file;
+        Next();
+        await Task.Delay(500);
+        FileService.MoveFile(oldFile, destiny);
+    }
+    private string GetTextFileContent()
+    {
+        //string fileContent = "";
+        //var file = new File(file.Path);
+
+        //var buffer = new byte[file.Size];
+        //await file.OpenReadStream().ReadAsync(buffer);
+        
+        //FileStream filestream = new FileStream(file.Path, FileMode.Open);
+        //filestream.Position = 0;
+        return System.IO.File.ReadAllText(file.PhysicalPath);
+        //fileContent = $"{Convert.ToBase64String(filestream.)}";
+    }
+}
