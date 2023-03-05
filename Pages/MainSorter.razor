@@ -1,7 +1,8 @@
 ﻿@page "/sorter"
-@using Sortownik.Data;
+@using Sorter.Data;
 @inject FileService FileService
-@inject IJSRuntime theJavaScriptEngine;
+@inject IJSRuntime theJavaScriptEngine
+@inject IHostApplicationLifetime AppLifetime
 
 <PageTitle>Sorter</PageTitle>
 <h1>Sorter</h1>
@@ -18,8 +19,9 @@ else
 {
     <p>@file?.PhysicalPath?.Replace(file.Name,"") # @file?.Name</p>
     <button class="btn btn-primary" @onclick="Back">Back</button>
-    <button class="btn btn-primary" @onclick="Reset">Reset</button>
+    <button class="btn btn-primary" @onclick="Reset">Reset server</button>
     <button class="btn btn-primary" @onclick="Next">Next</button>
+    <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
     <br />
     <table>
         <tbody>
@@ -39,10 +41,10 @@ else
 
     </table>
     <br />
-    @foreach (var tuple in MyMediaIndexes)
+    @*@foreach (var tuple in MyMediaIndexes)
     {
         <p>@tuple.Item1 | @tuple.Item2</p>
-    }
+    }*@
 
     @if (VideoExtensions.Contains(file?.Extension?.ToLower()))
     {
@@ -65,14 +67,14 @@ else
     }
     else if ("pdf".Equals(file?.Extension?.ToLower()))
     {
-        <embed src = "@file?.Path" style = "width:500px;height:707px;" />
+        <embed src="@file?.Path" style="width:500px;height:707px;" />
         @*<video style="display:none" id="videoTagId"></video>*@
     }
     else if (TextExtensions.Contains(file?.Extension?.ToLower()))
     {
         <pre>
             @GetTextFileContent()
-        </pre>
+                </pre>
         @*<video style="display:none" id="videoTagId"></video>*@
     }
     else
@@ -88,118 +90,90 @@ else
     private string[] VideoExtensions = { "avi", "mp4", "webm", "mov", "wmv", "flv" };
     private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp" };
     private string[] TextExtensions = { "txt" };
-    private List<Tuple<int,string>> MyMediaIndexes;
+    private List<Tuple<int, string>> MyMediaIndexes;
     private int MyMediaCurrentIndex;
     private File? file;
     private Folder[]? folders;
     private double? cols;
+    private static int LOAD_VIDEO_TIME_DELAY = 100;
+    private static int MOVE_FILE_TIME_DELAY = 500;
+    private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
 
-    protected override async Task OnInitializedAsync()
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    folders = await FileService.GetFoldersAsync();
+    //    MyMediaIndexes = new List<int>();
+    //    cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
+    //    MyMediaCurrentIndex = -1;
+    //    Console.WriteLine(folders.Length);
+    //    GetFile();
+    //    Next();
+    //    InitSession();
+    //}
+    private async void ReloadPlayerIfVideo()
     {
-        //folders = await FileService.GetFoldersAsync();
-        //MyMediaIndexes = new List<int>();
-        //cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
-        //MyMediaCurrentIndex = -1;
-        //Console.WriteLine(folders.Length);
-        //GetFile();
-        //Next();
-        //InitSession();
+        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+        {
+            await Task.Delay(LOAD_VIDEO_TIME_DELAY);
+            theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+        }
     }
     private async void InitSession()
     {
-        folders = await FileService.GetFoldersAsync();
-        MyMediaIndexes = new List<Tuple<int, string>>();
-        cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
         int? index = FileService.GetNextIndex();
         if (index.HasValue)
         {
             file = FileService.GetFileAtIndex(index.Value);
-            //MyMediaIndexes.Add(file.FIndex.Value);
-            MyMediaIndexes.Add(new Tuple<int,string>(file.FIndex.Value, file.Name));
+            folders = await FileService.GetFoldersAsync();
+            cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
+            MyMediaIndexes = new List<Tuple<int, string>>() { new Tuple<int, string>(file.FIndex.Value, file.Name) };
             MyMediaCurrentIndex = 0;
         }
-        else
-        {
-            return;
-            throw new NotImplementedException("Brakuje obsługi braku plików");
-        }
-        Console.WriteLine("test");
-    }
-    //private void GetFile()
-    //{
-    //    file = FileService.GetFile();
-    //    MyMediaIndexes.Add(file.FIndex.Value);
-    //    MyMediaCurrentIndex++;
-    //}
-    private async void Next()
-    {
-        if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1)
-        {
-            MyMediaCurrentIndex++;
-            try
-            {
-                file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-            }
-            catch (Exception)
-            {
-                return;
-                throw new NotImplementedException("Brakuje obsługi reloadu sesji");
-            }
-        }
-        else
-        {
-            int? index = FileService.GetNextIndex();
-            if (index.HasValue)
-            {
-                file = FileService.GetFileAtIndex(index.Value);
-                //MyMediaIndexes.Add(file.FIndex.Value);
-                MyMediaIndexes.Add(new Tuple<int, string>(file.FIndex.Value, file.Name));
-                MyMediaCurrentIndex++;
-            }
-            else
-            {
-                return;
-                throw new NotImplementedException("Brakuje obsługi ostatniego pliku");
-            };
-        }
-        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
-        {
-            await Task.Delay(100);
-            theJavaScriptEngine.InvokeVoidAsync("loadVideo");
-        }
+        // TODO: add empty directory handling
     }
     private async void Reset()
     {
         FileService.ResetFiles();
-        folders = await FileService.GetFoldersAsync();
-        MyMediaIndexes = new List<Tuple<int, string>>();
-        cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
+        InitSession();
+        ReloadPlayerIfVideo();
+    }
+    private void GetNextFileFromOurTab()
+    {
+        MyMediaCurrentIndex++;
+        try
+        {
+            file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+        }
+        catch (Exception)
+        {
+            // TODO: add session reload handling
+            return;
+        }
+    }
+    private void GetNextFileFromFileService()
+    {
         int? index = FileService.GetNextIndex();
         if (index.HasValue)
         {
             file = FileService.GetFileAtIndex(index.Value);
             //MyMediaIndexes.Add(file.FIndex.Value);
             MyMediaIndexes.Add(new Tuple<int, string>(file.FIndex.Value, file.Name));
-            MyMediaCurrentIndex = 0;
+            MyMediaCurrentIndex++;
         }
-        else
-        {
-            return;
-            throw new NotImplementedException("Brakuje obsługi braku plików");
-        }
-        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
-        {
-            await Task.Delay(100);
-            theJavaScriptEngine.InvokeVoidAsync("loadVideo");
-        }
+        // TODO: add empty directory handling
     }
-    private async void Back()
+
+    private void Next()
     {
-        //file = FileService.GetPreviousFile();
+        if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1) GetNextFileFromOurTab();
+        else GetNextFileFromFileService();
+        ReloadPlayerIfVideo();
+    }
+    private void Back()
+    {
         if (MyMediaCurrentIndex > 0)
         {
             MyMediaCurrentIndex--;
-            //file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex]);
             try
             {
                 file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
@@ -207,38 +181,26 @@ else
             catch (Exception)
             {
                 return;
-                throw new NotImplementedException("Brakuje obsługi reloadu sesji");
+                // TODO: add session reload handling
             }
-            if (VideoExtensions.Contains(file?.Extension?.ToLower()))
-            {
-                await Task.Delay(100);
-                theJavaScriptEngine.InvokeVoidAsync("loadVideo");
-            }
+            ReloadPlayerIfVideo();
         }
         else
         {
             return;
-            throw new NotImplementedException("Brakuje obsługi pierwszego pliku");
+            // TODO: add first file handling
         }
     }
     private async void MoveFile(string destiny)
     {
+        if (file == null) return;
         var oldFile = file;
         Next();
-        await Task.Delay(500);
+        await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
     }
     private string GetTextFileContent()
     {
-        //string fileContent = "";
-        //var file = new File(file.Path);
-
-        //var buffer = new byte[file.Size];
-        //await file.OpenReadStream().ReadAsync(buffer);
-        
-        //FileStream filestream = new FileStream(file.Path, FileMode.Open);
-        //filestream.Position = 0;
         return System.IO.File.ReadAllText(file.PhysicalPath);
-        //fileContent = $"{Convert.ToBase64String(filestream.)}";
     }
 }

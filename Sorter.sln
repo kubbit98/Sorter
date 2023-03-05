@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33103.184
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sortownik", "Sortownik.csproj", "{98E09FB2-F9C0-4860-B12A-8ADFE3F1A6D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sorter", "Sorter.csproj", "{F3FAB3B3-BB4B-4FC3-A519-FE56AD5E183D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{98E09FB2-F9C0-4860-B12A-8ADFE3F1A6D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98E09FB2-F9C0-4860-B12A-8ADFE3F1A6D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98E09FB2-F9C0-4860-B12A-8ADFE3F1A6D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98E09FB2-F9C0-4860-B12A-8ADFE3F1A6D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3FAB3B3-BB4B-4FC3-A519-FE56AD5E183D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3FAB3B3-BB4B-4FC3-A519-FE56AD5E183D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3FAB3B3-BB4B-4FC3-A519-FE56AD5E183D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3FAB3B3-BB4B-4FC3-A519-FE56AD5E183D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {E05E6BE2-EA9E-4392-9CBA-6C3D7A1D0760}
+		SolutionGuid = {EA6DDCEB-3263-4551-A333-766CCAC4DBCD}
 	EndGlobalSection
 EndGlobal

@@ -1,26 +1,29 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Sortownik.Data;
-using Microsoft.Extensions.Configuration;
-/*using ElectronNET.API; */
+using Microsoft.Extensions.Options;
+using Sorter;
+using Sorter.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-/*builder.WebHost.UseElectron(args);*/
-
 builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
 {
-    config.AddJsonFile("config.json",
-                       optional: false,
-                       reloadOnChange: true);
-});
+    try { config.AddJsonFile("config.json", optional: true, reloadOnChange: true); }
+    catch (System.IO.InvalidDataException) { }
 
+});
+builder.WebHost.UseStaticWebAssets();
 // Add services to the container.
+builder.Services.AddOptions<ConfigOptions>().BindConfiguration(ConfigOptions.config);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
+
 builder.Services.AddSingleton<FileService>();
+builder.Services.AddSingleton<SourceDFP>(_ => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source")));
+builder.Services.AddSingleton<DestinationDFP>(_ => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination")));
 
 var app = builder.Build();
 
@@ -32,16 +35,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-/*if (HybridSupport.IsElectronActive)
-{
-    var window = await Electron.WindowManager.CreateWindowAsync();
-    window.OnClosed += () => {
-        Electron.App.Quit();
-    };
-}*/
-
-/*Task.Run(async () => await Electron.WindowManager.CreateWindowAsync());*/
-
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
@@ -51,30 +44,16 @@ app.UseRouting();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
+
 app.UseStaticFiles(new StaticFileOptions()
 {
-    FileProvider = new PhysicalFileProvider(builder.Configuration["Source"]),
+    FileProvider = app.Services.GetService<SourceDFP>(),
     RequestPath = new PathString("/src")
 })
 .UseStaticFiles(new StaticFileOptions()
 {
-    FileProvider = new PhysicalFileProvider(builder.Configuration["Destination"]),
+    FileProvider = app.Services.GetService<DestinationDFP>(),
     RequestPath = new PathString("/dest")
 });
-
-/*if (HybridSupport.IsElectronActive)
-{
-    CreateWindow();
-}
-async void CreateWindow()
-{
-    var window = await Electron.WindowManager.CreateWindowAsync();
-    var Webwindow = await Electron.WindowManager.CreateBrowserViewAsync();
-    window.OnClose += Window_OncClosed;
-}
-void Window_OncClosed()
-{
-    Electron.App.Exit();
-}*/
 
 app.Run();

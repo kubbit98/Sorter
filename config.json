@@ -1,10 +1,10 @@
 {
-  "Source": "E:\\z telefonu",
-  "Destination": "E:\\Moje",
-  "ExcludeDirs": [ "E:\\Moje\\Ziemniaczane", "E:\\Moje\\Naukowe\\mybooks" ],
-  //"WhiteList": [ "gif", "jpg", "jpeg", "heic", "png" ],
-  "WhiteList": [ "mp4" ],
-  //"BlackList": [ "pdf", "ini", "exe", "java", "doc", "docx", "xls", "xlsx", "apk" ],
-  "BlackList": [ "mp4","jpg","gif","pdf","png","jpeg","webm","webp","txt","apk","docx","m4a","mov"],
-  "UseWhiteListInsteadOfBlackList": true
+  "config": {
+    "Source": "E:/z telefonu/Pictures",
+    "Destination": "E:/Moje",
+    "ExcludeDirs": [ "E:/Moje/Ziemniaczane", "E:/Moje/Naukowe/mybooks" ],
+    "WhiteList": [ "gif", "jpg", "jpeg", "heic", "png", "webp" ],
+    "BlackList": [ "mp4", "jpg", "gif", "pdf", "png", "jpeg", "webm", "webp", "txt", "apk", "docx", "m4a", "mov" ],
+    "UseWhiteListInsteadOfBlackList": true
+  }
 }

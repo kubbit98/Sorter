@@ -1,0 +1,190 @@
+﻿@page "/config"
+@using Microsoft.Extensions.Options;
+@using Sorter;
+@using System.Text.Json;
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
+@inject NavigationManager NavigationManager;
+@inject IOptionsSnapshot<ConfigOptions> configOptions
+@inject DestinationDFP DESTDFP
+@inject SourceDFP SRCDFP
+
+<button @onclick="Save">Save new configuration</button>
+@if (!@hostingEnv.IsProduction())
+{
+    <button @onclick="LoadDefaultPyra">Load Ziemniak default config</button>
+}
+<br>
+<p id="error">@(ErrorMessage)</p>
+<br>
+<label for="source">Source:</label>
+<input type="text" id="source" name="source" @bind="source">
+<br>
+<br>
+<label for="destination">Destination:</label>
+<input type="text" id="destination" name="destination" @bind="destination">
+<br>
+<br>
+<label for="exclude-dirs">Dirs to exclude:</label>
+<ul id="dynamic-exclude-dirs">
+    @foreach (var item in excludeList)
+    {
+        <li user="@item">@item <button @onclick="() => RemoveExclude(item)">X</button></li>
+    }
+</ul>
+<input placeholder="Add folder to exclude" @bind="newExclude" />
+<button @onclick="AddExclude">Add</button>
+<br>
+<br>
+<label for="use_white">Use white list instead of black list:</label>
+<input type="checkbox" id="use_white" name="use_white" @bind="configOptions.Value.UseWhiteListInsteadOfBlackList">
+<br>
+<br>
+@if (configOptions.Value.UseWhiteListInsteadOfBlackList)
+{
+    <label for="white_list">White list:</label>
+    <ul id="dynamic-white-list">
+        @foreach (var item in whiteList)
+        {
+            <li user="@item">@item <button @onclick="() => RemoveWhite(item)">X</button></li>
+        }
+    </ul>
+    <input placeholder="Insert extension to add" @bind="newWhite" />
+    <button @onclick="AddWhite">Add</button>
+}
+else
+{
+    <label for="black-list">BlackList:</label>
+    <ul id="dynamic-black-list">
+        @foreach (var item in blackList)
+        {
+            <li user="@item">@item <button @onclick="() => RemoveBlack(item)">X</button></li>
+        }
+    </ul>
+    <input placeholder="Insert extension to add" @bind="newBlack" />
+    <button @onclick="AddBlack">Add</button>
+}
+<br>
+
+
+@code {
+    private string source;
+    private string destination;
+    private List<string> excludeList;
+    private string newExclude;
+    private bool useWhite;
+    private List<string> whiteList;
+    private string newWhite;
+    private List<string> blackList;
+    private string newBlack;
+    private string ErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Directory.Exists(Path.GetFullPath(configOptions.Value.Source)))
+        {
+            source = Path.GetFullPath(configOptions.Value.Source);
+        }
+        else source = string.Empty;
+
+        if (Directory.Exists(Path.GetFullPath(configOptions.Value.Destination)))
+        {
+            destination = Path.GetFullPath(configOptions.Value.Destination);
+        }
+        else destination = string.Empty;
+
+        excludeList = Array.ConvertAll(configOptions.Value.ExcludeDirs, dir => dir = Path.GetFullPath(dir)).ToList();
+        newExclude = string.Empty;
+        useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
+        whiteList = configOptions.Value.WhiteList.ToList();
+        newWhite = string.Empty;
+        blackList = configOptions.Value.BlackList.ToList();
+        newBlack = string.Empty;
+    }
+    private void Save()
+    {
+        var config = configOptions.Value;
+        if (!Directory.Exists(Path.GetFullPath(source)))
+        {
+            ErrorMessage = "Source is invalid";
+            return;
+        }
+        if (!Directory.Exists(Path.GetFullPath(destination)))
+        {
+            ErrorMessage = "Destination is invalid";
+            return;
+        }
+        config.Source = source;
+        config.Destination = destination;
+        config.ExcludeDirs = excludeList.ToArray();
+        config.UseWhiteListInsteadOfBlackList = useWhite;
+        config.WhiteList = whiteList.ToArray();
+        config.BlackList = blackList.ToArray();
+
+        try
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, "config.json");
+            string jsonString = JsonSerializer.Serialize(config);
+            jsonString = String.Concat("{\"config\": ", jsonString, "}");
+            File.WriteAllText("config.json", jsonString);
+            SRCDFP.UpdateProvider(config.Source);
+            DESTDFP.UpdateProvider(config.Destination);
+            ErrorMessage = "Setting are saved";
+        }
+        catch
+        {
+            Console.WriteLine("Error writing app settings");
+        }
+    }
+    private void RemoveExclude(string exclude)
+    {
+        excludeList.Remove(exclude);
+    }
+    private void AddExclude()
+    {
+        if (!string.IsNullOrWhiteSpace(newExclude))
+        {
+            try
+            {
+                var path = Path.GetFullPath(newExclude.Replace("\"", ""));
+                if (Directory.Exists(path) && !excludeList.Contains(path))
+                {
+                    excludeList.Add(path);
+                    newExclude = string.Empty;
+                }
+            }
+            catch
+            {
+
+            }
+        }
+    }
+    private void RemoveWhite(string white)
+    {
+        whiteList.Remove(white);
+    }
+    private void AddWhite()
+    {
+        if (!string.IsNullOrWhiteSpace(newWhite) && !whiteList.Contains(newWhite))
+        {
+            whiteList.Add(newWhite);
+            newWhite = string.Empty;
+        }
+    }
+    private void RemoveBlack(string black)
+    {
+        blackList.Remove(black);
+    }
+    private void AddBlack()
+    {
+        if (!string.IsNullOrWhiteSpace(newBlack) && !whiteList.Contains(newBlack))
+        {
+            blackList.Add(newBlack);
+            newBlack = string.Empty;
+        }
+    }
+    private void LoadDefaultPyra()
+    {
+        File.Copy("..\\kubbit_config.json", "config.json", true);
+        NavigationManager.NavigateTo("config", true);
+    }
+}

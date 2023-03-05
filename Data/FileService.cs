@@ -1,217 +1,229 @@
-﻿using System.Security.Cryptography;
-using System.Xml.Linq;
+﻿using Microsoft.Extensions.Options;
+using System.IO;
 
-namespace Sortownik.Data;
-
-public class FileService
+namespace Sorter.Data
 {
-    private readonly IConfiguration _configuration;
-    private List<File> Files;
-    private List<Folder> Folders;
-    private int findex;
+    public class FileService
+    {
+        private readonly IConfiguration _configuration;
+        private readonly IOptionsMonitor<ConfigOptions> _options;
+        private List<File> Files;
+        private List<Folder> Folders;
+        private int indexOfActualProcessingFile;
 
-    private string source;
-    private string destination;
-    private string[] excludeDirs;
-    private string[] whiteList;
-    private string[] blackList;
-    private bool UseWhiteListInsteadOfBlackList;
-    //private int findex2 = 0;
-    //MD5 md5;
-    public FileService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-        try
+        private string source;
+        private string destination;
+        private string[] excludeDirs;
+        private string[] whiteList;
+        private string[] blackList;
+        private bool UseWhiteListInsteadOfBlackList;
+        //private int findex2 = 0;
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options)
         {
-            source = _configuration["Source"];
-            destination = _configuration["Destination"];
-            excludeDirs = _configuration.GetSection("ExcludeDirs").Get<string[]>();
-            whiteList = _configuration.GetSection("WhiteList").Get<string[]>();
-            blackList = _configuration.GetSection("BlackList").Get<string[]>();
-            UseWhiteListInsteadOfBlackList = Convert.ToBoolean(_configuration["UseWhiteListInsteadOfBlackList"]);
-            /*string test = _configuration["Destination2"];
-            test.Split();*/
+            _configuration = configuration;
+            _options = options;
+            try
+            {
+                source = Path.GetFullPath(_options.CurrentValue.Source);
+                destination = Path.GetFullPath(_options.CurrentValue.Destination);
+                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir =>dir=Path.GetFullPath(dir));
+                whiteList = _options.CurrentValue.WhiteList;
+                blackList = _options.CurrentValue.BlackList;
+                UseWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
+                
+            }
+            catch (NullReferenceException)
+            {
+                throw new NullReferenceException("Probably there is error in config.json");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            LoadFilesAndFolders();
+            indexOfActualProcessingFile = -1;
         }
-        catch (NullReferenceException)
-        {
-            throw new NullReferenceException("Probably there is error in configuration.json");
-        }
-        catch (Exception)
-        {
-            throw;
-        }
-        //md5 = MD5.Create();
-        LoadFilesAndFolders();
-        findex = -1;
-    }
-    //public Dictionary<string, string> Destinations = new Dictionary<string, string>();
-    //public int FileNumber = 0;
+        //public Dictionary<string, string> Destinations = new Dictionary<string, string>();
+        //public int FileNumber = 0;
 
-    /*public Task<File[]> GetFilesAsync()
-    {
-        return Task.FromResult(Files.ToArray());
-    }*/
-    public Task<Folder[]> GetFoldersAsync()
-    {
-        return Task.FromResult(Folders.ToArray());
-    }
-    /*public File GetFile()
-    {
-        File f = Files[findex];
-        f.Path = f.PhysicalPath;
-        if (f.Path.Contains(source)) f.Path = f.Path.Replace(source, "/src");
-        else if (f.Path.Contains(destination)) f.Path = f.Path.Replace(destination, "/dest");
-        f.Path = f.Path.Replace("\\", "/");
-        f.FIndex= findex;
-        return f;
-    }*/
-    /*public File GetNextFile()
-    {
-        if (findex < Files.Count - 1) ++findex;
-        return GetFile();
-    }*/
-    public int? GetNextIndex()
-    {
-        if (findex < Files.Count - 1)
+        /*public Task<File[]> GetFilesAsync()
         {
-            ++findex;
-            return findex;
-
+            return Task.FromResult(Files.ToArray());
+        }*/
+        public Task<Folder[]> GetFoldersAsync()
+        {
+            return Task.FromResult(Folders.ToArray());
         }
-        return null;
-    }
-    public File? GetFileAtIndex(int index)
-    {
-        if (index < Files.Count && index>=0)
+        /*public File GetFile()
         {
-            File f = Files[index];
+            File f = Files[findex];
             f.Path = f.PhysicalPath;
             if (f.Path.Contains(source)) f.Path = f.Path.Replace(source, "/src");
             else if (f.Path.Contains(destination)) f.Path = f.Path.Replace(destination, "/dest");
             f.Path = f.Path.Replace("\\", "/");
-            f.FIndex = index;
+            f.FIndex= findex;
             return f;
-        }
-        return null;
-    }
-    public File? GetFileAtIndex(int index,string name)
-    {
-        if (index < Files.Count - 1 && index >= 0)
+        }*/
+        /*public File GetNextFile()
         {
-            File f = Files[index];
-            if (!f.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
-            f.Path = f.PhysicalPath;
-            if (f.Path.Contains(source)) f.Path = f.Path.Replace(source, "/src");
-            else if (f.Path.Contains(destination)) f.Path = f.Path.Replace(destination, "/dest");
-            f.Path = f.Path.Replace("\\", "/");
-            f.FIndex = index;
-            return f;
+            if (findex < Files.Count - 1) ++findex;
+            return GetFile();
+        }*/
+        public int? GetNextIndex()
+        {
+            /*if (findex < Files.Count - 1)
+            {
+                //++findex;
+                return ++findex;
+
+            }
+            return null;*/
+            return (indexOfActualProcessingFile < Files.Count - 1) ? ++indexOfActualProcessingFile : null;
         }
-        return null;
-    }
-    public void ResetFiles()
-    {
-        LoadFilesAndFolders();
-        findex = -1;
-    }
-    /*public File GetPreviousFile()
-    {
-        if (findex > 0) --findex;
-        return GetFile();
-    }*/
-    public void LoadFilesAndFolders()
-    {
-        Files = new List<File>();
-        Folders = new List<Folder>();
-        ProcessFilesInDirectory(source);
-        ProcessDirectory(destination);
-    }
-    public void ProcessDirectory(string targetDirectory)
-    {
-        string[] folderEntries = Directory.GetDirectories(targetDirectory);
-        foreach (var fullPath in folderEntries)
+        public File? GetFileAtIndex(int index)
+        {
+            if (index < Files.Count && index >= 0)
+            {
+                File file = Files[index];
+                file.Path = file.PhysicalPath;
+                if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
+                else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
+                file.FIndex = index;
+                return file;
+            }
+            return null;
+        }
+        public File? GetFileAtIndex(int index, string name)
+        {
+            File? file = GetFileAtIndex(index);
+            if (file == null) return null;
+            if (!file.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
+            return file;
+            /*if (index < Files.Count && index >= 0)//-1?
+            {
+                File f = Files[index];
+                if (!f.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
+                return PrepareFileToGet(f,index);
+            }*/
+            //return null;
+        }
+        public void ResetFiles()
         {
             try
             {
-                var tab = fullPath.Split('\\');
-                var name = tab[tab.Length - 1];
-                //Console.WriteLine(fullPath + " " + name );
-                if (!excludeDirs.Contains(fullPath))
-                {
-                    Folders.Add(new Folder() { Path = fullPath, Name = name });
-                    ProcessDirectory(fullPath);
-                }
+                source = Path.GetFullPath(_options.CurrentValue.Source);
+                destination = Path.GetFullPath(_options.CurrentValue.Destination);
+                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir => dir = Path.GetFullPath(dir));
+                whiteList = _options.CurrentValue.WhiteList;
+                blackList = _options.CurrentValue.BlackList;
+                UseWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
+
+            }
+            catch (NullReferenceException)
+            {
+                throw new NullReferenceException("Probably there is error in config.json");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            LoadFilesAndFolders();
+            indexOfActualProcessingFile = -1;
+        }
+        /*public File GetPreviousFile()
+        {
+            if (findex > 0) --findex;
+            return GetFile();
+        }*/
+        private void LoadFilesAndFolders()
+        {
+            try
+            {
+                Files = ProcessFilesInDirectoryRecursively(source);
+                Folders = ProcessDirectoryRecursively(destination);
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error with folder " + fullPath);
                 Console.WriteLine(e.Message);
             }
+
         }
-    }
-    public void ProcessFilesInDirectory(string sourceDirectory)
-    {
-        string[] fileEntries = Directory.GetFiles(sourceDirectory);
-        string[] folderEntries = Directory.GetDirectories(sourceDirectory);
-        foreach (var fullPath in fileEntries)
+        private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
+        {
+            List<Folder> folders = new List<Folder>();
+            foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath))
+            {
+                try
+                {
+                    var folderName = Path.GetFileName(fullPathToDirectory);
+                    if (!excludeDirs.Contains(fullPathToDirectory))
+                    {
+                        folders.Add(new Folder(fullPathToDirectory, folderName));
+                        folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error with folder " + fullPathToDirectory + "\n" + e.Message);
+                }
+            }
+            return folders;
+        }
+        private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
+        {
+            List<File> files = new List<File>();
+            foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath))
+            {
+                /*try
+                {*/
+                var fileName = Path.GetFileName(fullPathToFile);
+                var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
+                //var pathToFileSplitTab = fullPathToFile.Split(Path.DirectorySeparatorChar);
+                //var fileName = pathToFileSplitTab[pathToFileSplitTab.Length - 1];
+                //var fileExtension = fileName.Split('.').Last().ToLower();
+                if ((UseWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
+                    || (!UseWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
+                files.Add(new File(fullPathToFile, fileName, fileExtension));
+                //Console.WriteLine(findex2++);
+                //}
+                /*catch (Exception e)
+                {
+                    Console.WriteLine("Error with file " + fullPathToFile + "\n" + e.Message);
+                }*/
+            }
+            foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath))
+            {
+                try
+                {
+                    files.AddRange(ProcessFilesInDirectoryRecursively(fullPath));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error with folder " + fullPath + "\n" + e.Message);
+                }
+            }
+            return files;
+        }
+        public void MoveFile(File file, string destiny)
         {
             try
             {
-                var tab = fullPath.Split('\\');
-                var name = tab[tab.Length - 1];
-                var extension = name.Split('.').Last().ToLower();
-                if (UseWhiteListInsteadOfBlackList)
+                //Console.WriteLine(file.OriginalPath + " " + destiny+"\\"+file.Name);
+                if (Files[file.FIndex.Value].Name == file.Name)
                 {
-                    if (!whiteList.Contains(extension)) continue;
+                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny,file.Name));
+                    file.PhysicalPath = Path.Combine(destiny, file.Name);
+                    Files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
                 }
                 else
                 {
-                    if(blackList.Contains(extension)) continue;
+                    Console.WriteLine("The file index has changed, you need to reload session");
                 }
-                //FileStream filestream = new FileStream(fullPath, FileMode.Open);
-                //filestream.Position = 0;
-                //MD5=md5.ComputeHash(filestream)
-                Files.Add(new File() { Path = fullPath, Extension = extension, Name = name, PhysicalPath = fullPath });
-                //Console.WriteLine(findex2++);
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error with file " + fullPath);
-                Console.WriteLine(e.Message);
+                Console.WriteLine("Cannot move file\n" + e.Message);
             }
-        }
-        foreach (var fullPath in folderEntries)
-        {
-            try
-            {
-                ProcessFilesInDirectory(fullPath);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error with folder " + fullPath);
-                Console.WriteLine(e.Message);
-            }
-        }
-    }
-    public void MoveFile(File file, string destiny)
-    {
-        try
-        {
-            //Console.WriteLine(file.OriginalPath + " " + destiny+"\\"+file.Name);
-            if (Files[file.FIndex.Value].Name == file.Name)
-            {
-                System.IO.File.Move(file.PhysicalPath, destiny+"\\"+file.Name);
-                file.PhysicalPath = destiny + "\\" + file.Name;
-                Files[file.FIndex.Value] = file;
-            }
-            else
-            {
-                Console.WriteLine("The file index has changed, you need to reload browser");
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Cannot move file\n" + e.Message);
         }
     }
 }
