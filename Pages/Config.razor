@@ -36,10 +36,10 @@
 <br>
 <br>
 <label for="use_white">Use white list instead of black list:</label>
-<input type="checkbox" id="use_white" name="use_white" @bind="configOptions.Value.UseWhiteListInsteadOfBlackList">
+<input type="checkbox" id="use_white" name="use_white" @bind="useWhite">
 <br>
 <br>
-@if (configOptions.Value.UseWhiteListInsteadOfBlackList)
+@if (useWhite)
 {
     <label for="white_list">White list:</label>
     <ul id="dynamic-white-list">
