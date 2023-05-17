@@ -22,6 +22,8 @@ else
     <button class="btn btn-primary" @onclick="Reset">Reset server</button>
     <button class="btn btn-primary" @onclick="Next">Next</button>
     <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+    <button class="btn btn-primary" @onclick='()=>CreateFolder(newFolderName)'>Add new folder</button>
+    <input type="text" id="newFolderName" name="newFolderName" @bind="newFolderName">
     <br />
     <table>
         <tbody>
@@ -98,6 +100,7 @@ else
     private static int LOAD_VIDEO_TIME_DELAY = 100;
     private static int MOVE_FILE_TIME_DELAY = 500;
     private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
+    private string newFolderName;
 
     //protected override async Task OnInitializedAsync()
     //{
@@ -162,7 +165,6 @@ else
         }
         // TODO: add empty directory handling
     }
-
     private void Next()
     {
         if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1) GetNextFileFromOurTab();
@@ -202,5 +204,12 @@ else
     private string GetTextFileContent()
     {
         return System.IO.File.ReadAllText(file.PhysicalPath);
+    }
+    private async void CreateFolder(string folderName)
+    {
+        if (FileService.CreateFolder(folderName))
+        {
+            folders = await FileService.GetFoldersAsync();
+        }
     }
 }
