@@ -26,11 +26,11 @@ namespace Sorter.Data
             {
                 source = Path.GetFullPath(_options.CurrentValue.Source);
                 destination = Path.GetFullPath(_options.CurrentValue.Destination);
-                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir =>dir=Path.GetFullPath(dir));
+                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir => dir = Path.GetFullPath(dir));
                 whiteList = _options.CurrentValue.WhiteList;
                 blackList = _options.CurrentValue.BlackList;
                 UseWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
-                
+
             }
             catch (NullReferenceException)
             {
@@ -158,7 +158,7 @@ namespace Sorter.Data
                 //Console.WriteLine(file.OriginalPath + " " + destiny+"\\"+file.Name);
                 if (Files[file.FIndex.Value].Name == file.Name)
                 {
-                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny,file.Name));
+                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.Name));
                     file.PhysicalPath = Path.Combine(destiny, file.Name);
                     Files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
                 }
@@ -175,12 +175,29 @@ namespace Sorter.Data
             string fullPath = Path.Combine(destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
-            if(folderName != null)
+            if (folderName != null)
             {
                 Folders.Add(new Folder(fullPath, folderName));
                 return true;
             }
             return false;
+        }
+        public void ChangeFileName(File file, string newFileName)
+        {
+            //Console.WriteLine(file.PhysicalPath + "|" + newFileName + "|" + file.Path + "|" + file.Name + "|" + file.FIndex + "|" + file.Extension);
+            string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath).FullName, newFileName);
+            if (!newFullPath.EndsWith("." + file.Extension))
+            {
+                newFullPath = newFullPath + "." + file.Extension;
+            }
+            //Console.WriteLine(newFullPath);
+            System.IO.File.Move(file.PhysicalPath, newFullPath);
+            Files[file.FIndex.Value].PhysicalPath = newFullPath;
+            Files[file.FIndex.Value].Name = newFileName;
+            Files[file.FIndex.Value].Path = newFullPath;
+            if (Files[file.FIndex.Value].Path.Contains(source)) Files[file.FIndex.Value].Path = string.Concat("/src/", Path.GetRelativePath(source, Files[file.FIndex.Value].PhysicalPath));
+            else if (Files[file.FIndex.Value].Path.Contains(destination)) Files[file.FIndex.Value].Path = string.Concat("/dest/", Path.GetRelativePath(destination, Files[file.FIndex.Value].PhysicalPath));
+            //Console.WriteLine(Files[file.FIndex.Value].PhysicalPath + "|" + newFileName + "|" + Files[file.FIndex.Value].Path + "|" + Files[file.FIndex.Value].Name + "|" + Files[file.FIndex.Value].FIndex + "|" + Files[file.FIndex.Value].Extension);
         }
     }
 }

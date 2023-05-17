@@ -22,8 +22,8 @@ else
     <button class="btn btn-primary" @onclick="Reset">Reset server</button>
     <button class="btn btn-primary" @onclick="Next">Next</button>
     <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+    <input type="text" id="newFolderName" name="newFolderName" @bind="newFolderName" placeholder="New folder name">
     <button class="btn btn-primary" @onclick='()=>CreateFolder(newFolderName)'>Add new folder</button>
-    <input type="text" id="newFolderName" name="newFolderName" @bind="newFolderName">
     <br />
     <table>
         <tbody>
@@ -42,6 +42,10 @@ else
         </tbody>
 
     </table>
+    <br />
+    <input type="text" id="fileName" name="fileName" @bind="FileName">
+    <button class="btn btn-primary" @onclick="SaveFileName">Save file name</button>
+    @*<button class="btn btn-primary" @onclick="RestoreFileName">Restore original file name</button>*@
     <br />
     @*@foreach (var tuple in MyMediaIndexes)
     {
@@ -101,6 +105,7 @@ else
     private static int MOVE_FILE_TIME_DELAY = 500;
     private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
     private string newFolderName;
+    private string FileName;
 
     //protected override async Task OnInitializedAsync()
     //{
@@ -127,6 +132,7 @@ else
         if (index.HasValue)
         {
             file = FileService.GetFileAtIndex(index.Value);
+            FileName = file.Name;
             folders = await FileService.GetFoldersAsync();
             cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
             MyMediaIndexes = new List<Tuple<int, string>>() { new Tuple<int, string>(file.FIndex.Value, file.Name) };
@@ -169,6 +175,7 @@ else
     {
         if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1) GetNextFileFromOurTab();
         else GetNextFileFromFileService();
+        FileName = file.Name;
         ReloadPlayerIfVideo();
     }
     private void Back()
@@ -179,6 +186,7 @@ else
             try
             {
                 file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+                FileName = file.Name;
             }
             catch (Exception)
             {
@@ -211,5 +219,19 @@ else
         {
             folders = await FileService.GetFoldersAsync();
         }
+    }
+    //private async void RestoreFileName()
+    //{
+    //    FileName = file.Name;
+    //}
+    private async void SaveFileName()
+    {
+        FileService.ChangeFileName(file, FileName);
+        file = FileService.GetFileAtIndex(file.FIndex.Value);
+        FileName = file.Name;
+        //MyMediaIndexes[MyMediaCurrentIndex].Item2 = file.Name;
+        MyMediaIndexes[MyMediaCurrentIndex] = new Tuple<int, string>(file.FIndex.Value, file.Name);
+        //var fileIndex = MyMediaIndexes[MyMediaCurrentIndex].Item1;
+
     }
 }
