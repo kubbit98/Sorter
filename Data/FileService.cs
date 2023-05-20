@@ -16,12 +16,20 @@ namespace Sorter.Data
         private string[] excludeDirs;
         private string[] whiteList;
         private string[] blackList;
-        private bool UseWhiteListInsteadOfBlackList;
+        private bool useWhiteListInsteadOfBlackList;
+        private string truePassword;
+        private bool allowRename;
         //private int findex2 = 0;
         public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options)
         {
             _configuration = configuration;
             _options = options;
+            LoadConfig();
+            LoadFilesAndFolders();
+            indexOfActualProcessingFile = -1;
+        }
+        public void LoadConfig()
+        {
             try
             {
                 source = Path.GetFullPath(_options.CurrentValue.Source);
@@ -29,7 +37,9 @@ namespace Sorter.Data
                 excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir => dir = Path.GetFullPath(dir));
                 whiteList = _options.CurrentValue.WhiteList;
                 blackList = _options.CurrentValue.BlackList;
-                UseWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
+                useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
+                truePassword = _options.CurrentValue.Password;
+                allowRename = _options.CurrentValue.AllowRename;
 
             }
             catch (NullReferenceException)
@@ -40,8 +50,16 @@ namespace Sorter.Data
             {
                 throw;
             }
-            LoadFilesAndFolders();
-            indexOfActualProcessingFile = -1;
+        }
+        public Task<string> GetTruePassword()
+        {
+            truePassword = _options.CurrentValue.Password;
+            return Task.FromResult(truePassword);
+        }
+        public Task<bool> GetAllowRename()
+        {
+            allowRename = _options.CurrentValue.AllowRename;
+            return Task.FromResult(allowRename);
         }
         public Task<Folder[]> GetFoldersAsync()
         {
@@ -73,24 +91,7 @@ namespace Sorter.Data
         }
         public void ResetFiles()
         {
-            try
-            {
-                source = Path.GetFullPath(_options.CurrentValue.Source);
-                destination = Path.GetFullPath(_options.CurrentValue.Destination);
-                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir => dir = Path.GetFullPath(dir));
-                whiteList = _options.CurrentValue.WhiteList;
-                blackList = _options.CurrentValue.BlackList;
-                UseWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
-
-            }
-            catch (NullReferenceException)
-            {
-                throw new NullReferenceException("Probably there is error in config.json");
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            LoadConfig();
             LoadFilesAndFolders();
             indexOfActualProcessingFile = -1;
         }
@@ -134,8 +135,8 @@ namespace Sorter.Data
             {
                 var fileName = Path.GetFileName(fullPathToFile);
                 var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
-                if ((UseWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
-                    || (!UseWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
+                if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
+                    || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
                 files.Add(new File(fullPathToFile, fileName, fileExtension));
             }
             foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath))
