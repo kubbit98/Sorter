@@ -98,8 +98,6 @@ else
         <p>Filetype @file?.Extension is already not supported</p>
         @*<video style="display:none" id="videoTagId"></video>*@
     }
-
-
 }
 
 @code {
@@ -231,6 +229,11 @@ else
     }
     private async void CreateFolder(string folderName)
     {
+        if(String.IsNullOrEmpty(folderName) || folders.Any(f=>f.Name == folderName))
+        {
+            // TODO: add wrong name directory handling
+            return;
+        }
         if (FileService.CreateFolder(folderName))
         {
             folders = await FileService.GetFoldersAsync();
