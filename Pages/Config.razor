@@ -7,64 +7,83 @@
 @inject IOptionsSnapshot<ConfigOptions> configOptions
 @inject DestinationDFP DESTDFP
 @inject SourceDFP SRCDFP
-
-<button @onclick="Save">Save new configuration</button>
-@if (!@hostingEnv.IsProduction())
-{
-    <button @onclick="LoadDefaultPyra">Load Ziemniak default config</button>
-}
-<br>
+<label for="password">Password:</label>
+<input type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput">
+<br />
+<br />
 <p id="error">@(ErrorMessage)</p>
-<br>
-<label for="source">Source:</label>
-<input type="text" id="source" name="source" @bind="source">
-<br>
-<br>
-<label for="destination">Destination:</label>
-<input type="text" id="destination" name="destination" @bind="destination">
-<br>
-<br>
-<label for="exclude-dirs">Dirs to exclude:</label>
-<ul id="dynamic-exclude-dirs">
-    @foreach (var item in excludeList)
-    {
-        <li user="@item">@item <button @onclick="() => RemoveExclude(item)">X</button></li>
-    }
-</ul>
-<input placeholder="Add folder to exclude" @bind="newExclude" />
-<button @onclick="AddExclude">Add</button>
-<br>
-<br>
-<label for="use_white">Use white list instead of black list:</label>
-<input type="checkbox" id="use_white" name="use_white" @bind="useWhite">
-<br>
-<br>
-@if (useWhite)
+<br />
+@if (truePassword.Equals(unlockBoxPassword))
 {
-    <label for="white_list">White list:</label>
-    <ul id="dynamic-white-list">
-        @foreach (var item in whiteList)
+    <button @onclick="Save">Save new configuration</button>
+    @if (!@hostingEnv.IsProduction())
+    {
+        <button @onclick="LoadDefaultPyra">Load Ziemniak default config</button>
+    }
+    <br />
+    <br />
+    <label for="newPass">New password:</label>
+    <input type="password" id="newPass" name="newPass" @bind="newPassword">
+    <p>Remember: this password is neither secure nor serious. It's just a quick way to hide your configuration from your friends</p>
+    <br />
+    <br />
+    <label for="allowRename">Allow all users to rename the files:</label>
+    <input type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
+    <br />
+    <br />
+    <label for="source">Source:</label>
+    <input type="text" id="source" name="source" @bind="source">
+    <br />
+    <br />
+    <label for="destination">Destination:</label>
+    <input type="text" id="destination" name="destination" @bind="destination">
+    <br />
+    <br />
+    <label for="exclude-dirs">Dirs to exclude:</label>
+    <ul id="dynamic-exclude-dirs">
+        @foreach (var item in excludeList)
         {
-            <li user="@item">@item <button @onclick="() => RemoveWhite(item)">X</button></li>
+            <li user="@item">@item <button @onclick="() => RemoveExclude(item)">X</button></li>
         }
     </ul>
-    <input placeholder="Insert extension to add" @bind="newWhite" />
-    <button @onclick="AddWhite">Add</button>
+    <input placeholder="Add folder to exclude" @bind="newExclude" />
+    <button @onclick="AddExclude">Add</button>
+    <br />
+    <br />
+    <label for="use_white">Use white list instead of black list:</label>
+    <input type="checkbox" id="use_white" name="use_white" @bind="useWhite">
+    <br />
+    <br />
+    @if (useWhite)
+    {
+        <label for="white_list">White list:</label>
+        <ul id="dynamic-white-list">
+            @foreach (var item in whiteList)
+            {
+                <li user="@item">@item <button @onclick="() => RemoveWhite(item)">X</button></li>
+            }
+        </ul>
+        <input placeholder="Insert extension to add" @bind="newWhite" />
+        <button @onclick="AddWhite">Add</button>
+    }
+    else
+    {
+        <label for="black-list">BlackList:</label>
+        <ul id="dynamic-black-list">
+            @foreach (var item in blackList)
+            {
+                <li user="@item">@item <button @onclick="() => RemoveBlack(item)">X</button></li>
+            }
+        </ul>
+        <input placeholder="Insert extension to add" @bind="newBlack" />
+        <button @onclick="AddBlack">Add</button>
+    }
+    <br />
 }
 else
 {
-    <label for="black-list">BlackList:</label>
-    <ul id="dynamic-black-list">
-        @foreach (var item in blackList)
-        {
-            <li user="@item">@item <button @onclick="() => RemoveBlack(item)">X</button></li>
-        }
-    </ul>
-    <input placeholder="Insert extension to add" @bind="newBlack" />
-    <button @onclick="AddBlack">Add</button>
+    <p>You need to provide password, to change the app settings. Password can be find in config.json file</p>
 }
-<br>
-
 
 @code {
     private string source;
@@ -77,6 +96,10 @@ else
     private List<string> blackList;
     private string newBlack;
     private string ErrorMessage = string.Empty;
+    private string unlockBoxPassword;
+    private string truePassword;
+    private string newPassword;
+    private bool allowRename;
 
     protected override async Task OnInitializedAsync()
     {
@@ -99,6 +122,10 @@ else
         newWhite = string.Empty;
         blackList = configOptions.Value.BlackList.ToList();
         newBlack = string.Empty;
+        truePassword = configOptions.Value.Password;
+        unlockBoxPassword = String.Empty;
+        newPassword = truePassword;
+        allowRename = configOptions.Value.AllowRename;
     }
     private void Save()
     {
@@ -119,6 +146,8 @@ else
         config.UseWhiteListInsteadOfBlackList = useWhite;
         config.WhiteList = whiteList.ToArray();
         config.BlackList = blackList.ToArray();
+        config.Password = newPassword;
+        config.AllowRename = allowRename;
 
         try
         {
@@ -129,6 +158,7 @@ else
             SRCDFP.UpdateProvider(config.Source);
             DESTDFP.UpdateProvider(config.Destination);
             ErrorMessage = "Setting are saved";
+            NavigationManager.NavigateTo("config", true);
         }
         catch
         {

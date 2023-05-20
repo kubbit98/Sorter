@@ -12,5 +12,7 @@ namespace Sorter
         public bool UseWhiteListInsteadOfBlackList { get; set; } = false;
         public string[] WhiteList { get; set; } = Array.Empty<string>();
         public string[] BlackList { get; set; } = Array.Empty<string>();
+        public string Password { get; set; } = String.Empty;
+        public bool AllowRename { get; set; } = true;
     }
 }

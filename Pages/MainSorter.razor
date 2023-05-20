@@ -7,21 +7,29 @@
 <PageTitle>Sorter</PageTitle>
 <h1>Sorter</h1>
 <br />
-
+@*<p>allow @allowRename</p>*@
 @if (folders == null)
 {
     <p>Click to start</p>
     <button class="btn btn-primary" @onclick="InitSession">Init session</button>
-    @*<p><em>Loading...</em></p>*@
-    @*<video style="display:none"  id="videoTagId"></video>*@
 }
 else
 {
+    <label for="password">Password for unlock more function:</label>
+    <input type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput">
+    <br />
     <p>@file?.PhysicalPath?.Replace(file.Name,"") # @file?.Name</p>
     <button class="btn btn-primary" @onclick="Back">Back</button>
-    <button class="btn btn-primary" @onclick="Reset">Reset server</button>
+    @if (truePassword.Equals(unlockBoxPassword))
+    {
+        <button class="btn btn-primary" @onclick="Reset">Reset server</button>
+    }
     <button class="btn btn-primary" @onclick="Next">Next</button>
-    <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+    @if (truePassword.Equals(unlockBoxPassword))
+    {
+        <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+    }
+    <br />
     <input type="text" id="newFolderName" name="newFolderName" @bind="newFolderName" placeholder="New folder name">
     <button class="btn btn-primary" @onclick='()=>CreateFolder(newFolderName)'>Add new folder</button>
     <br />
@@ -43,10 +51,13 @@ else
 
     </table>
     <br />
-    <input type="text" id="fileName" name="fileName" @bind="FileName">
-    <button class="btn btn-primary" @onclick="SaveFileName">Save file name</button>
-    @*<button class="btn btn-primary" @onclick="RestoreFileName">Restore original file name</button>*@
-    <br />
+    @if (truePassword.Equals(unlockBoxPassword) || allowRename)
+    {
+        <input type="text" id="fileName" name="fileName" @bind="FileName">
+        <button class="btn btn-primary" @onclick="SaveFileName">Save file name</button>
+        <br />
+    }
+    @*<button class="btn btn-primary" @onclick="RestoreFileName">Restore original file name</button><br />*@
     @*@foreach (var tuple in MyMediaIndexes)
     {
         <p>@tuple.Item1 | @tuple.Item2</p>
@@ -80,7 +91,7 @@ else
     {
         <pre>
             @GetTextFileContent()
-                </pre>
+                        </pre>
         @*<video style="display:none" id="videoTagId"></video>*@
     }
     else
@@ -106,6 +117,9 @@ else
     private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
     private string newFolderName;
     private string FileName;
+    private string unlockBoxPassword;
+    private string truePassword;
+    private bool allowRename;
 
     //protected override async Task OnInitializedAsync()
     //{
@@ -137,6 +151,9 @@ else
             cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
             MyMediaIndexes = new List<Tuple<int, string>>() { new Tuple<int, string>(file.FIndex.Value, file.Name) };
             MyMediaCurrentIndex = 0;
+            unlockBoxPassword = String.Empty;
+            truePassword = await FileService.GetTruePassword();
+            allowRename = await FileService.GetAllowRename();
         }
         // TODO: add empty directory handling
     }
@@ -229,9 +246,7 @@ else
         FileService.ChangeFileName(file, FileName);
         file = FileService.GetFileAtIndex(file.FIndex.Value);
         FileName = file.Name;
-        //MyMediaIndexes[MyMediaCurrentIndex].Item2 = file.Name;
         MyMediaIndexes[MyMediaCurrentIndex] = new Tuple<int, string>(file.FIndex.Value, file.Name);
-        //var fileIndex = MyMediaIndexes[MyMediaCurrentIndex].Item1;
 
     }
 }
