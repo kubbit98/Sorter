@@ -1,5 +1,4 @@
-﻿using Blazored.Toast.Services;
-using Microsoft.Extensions.FileProviders;
+﻿using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
 namespace Sorter.Data
@@ -21,7 +20,7 @@ namespace Sorter.Data
         PhysicalFileProvider PhysicalFileProvider { get; set; }
         public DynamicFileProvider(string root)
         {
-            if (!Directory.Exists(Path.GetFullPath(root)))
+            if (!string.IsNullOrWhiteSpace(root) && !Directory.Exists(Path.GetFullPath(root)))
             {
                 Console.WriteLine(root + " path is invalid, load temporary path");
                 root = Path.GetTempPath();

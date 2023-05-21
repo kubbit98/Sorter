@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
 {
     try { config.AddJsonFile("config.json", optional: true, reloadOnChange: true); }
-    catch (System.IO.InvalidDataException) { }
+    catch (InvalidDataException) { }
 
 });
 builder.WebHost.UseStaticWebAssets();
@@ -23,8 +23,8 @@ builder.Services.AddBlazoredToast();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<FileService>();
-builder.Services.AddSingleton<SourceDFP>(_ => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source")));
-builder.Services.AddSingleton<DestinationDFP>(_ => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination")));
+builder.Services.AddSingleton(_ => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source")));
+builder.Services.AddSingleton(_ => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination")));
 
 var app = builder.Build();
 
