@@ -14,19 +14,21 @@
     <link href="Sorter.styles.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+    @*<link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />*@
+    @*<link href="_content/Blazored.Toast/blazored-toast.min.css" rel="stylesheet" /> Minified version*@
 </head>
 <body>
     <component type="typeof(App)" render-mode="ServerPrerendered" />
     @*<div>
-        <environment include="Development">
-            <div>Environment is Development</div>
-        </environment>
-        <environment exclude="Development">
-            <div>Environment is NOT Development</div>
-        </environment>
-        <environment include="Staging,Development,Staging_2">
-            <div>Environment is: Staging, Development or Staging_2</div>
-        </environment>
+    <environment include="Development">
+    <div>Environment is Development</div>
+    </environment>
+    <environment exclude="Development">
+    <div>Environment is NOT Development</div>
+    </environment>
+    <environment include="Staging,Development,Staging_2">
+    <div>Environment is: Staging, Development or Staging_2</div>
+    </environment>
     </div>*@
     <div id="blazor-error-ui">
         <environment include="Staging,Production">

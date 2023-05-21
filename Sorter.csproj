@@ -4,8 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<VersionPrefix>0.1.0</VersionPrefix>
-	<VersionSuffix>alpha</VersionSuffix>
+	<VersionPrefix>0.2.0</VersionPrefix>
+	<VersionSuffix>beta</VersionSuffix>
     <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>git</RepositoryType>
@@ -15,6 +15,10 @@
     <NeutralLanguage>en-001</NeutralLanguage>
     <PackageLicenseFile>COPYING</PackageLicenseFile> 
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.Toast" Version="4.1.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Update="config.json">

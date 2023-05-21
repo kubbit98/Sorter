@@ -97,58 +97,73 @@ namespace Sorter.Data
         }
         private void LoadFilesAndFolders()
         {
-            try
-            {
-                Files = ProcessFilesInDirectoryRecursively(source);
-                Folders = ProcessDirectoryRecursively(destination);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            Files = ProcessFilesInDirectoryRecursively(source);
+            Folders = ProcessDirectoryRecursively(destination);
         }
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
             List<Folder> folders = new List<Folder>();
-            foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath))
+            try
             {
-                try
+                if (!Directory.Exists(Path.GetFullPath(targetDirectoryPath)))
                 {
-                    var folderName = Path.GetFileName(fullPathToDirectory);
-                    if (!excludeDirs.Contains(fullPathToDirectory))
+                    return folders;
+                }
+                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath))
+                {
+                    try
                     {
-                        folders.Add(new Folder(fullPathToDirectory, folderName));
-                        folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
+                        var folderName = Path.GetFileName(fullPathToDirectory);
+                        if (!excludeDirs.Contains(fullPathToDirectory))
+                        {
+                            folders.Add(new Folder(fullPathToDirectory, folderName));
+                            folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error with folder " + fullPathToDirectory + "\n" + e.Message);
                     }
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error with folder " + fullPathToDirectory + "\n" + e.Message);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error with whole destination folder " + e.Message);
             }
             return folders;
         }
         private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
         {
             List<File> files = new List<File>();
-            foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath))
+            try
             {
-                var fileName = Path.GetFileName(fullPathToFile);
-                var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
-                if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
-                    || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
-                files.Add(new File(fullPathToFile, fileName, fileExtension));
+                if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)))
+                {
+                    return files;
+                }
+                foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath))
+                {
+                    var fileName = Path.GetFileName(fullPathToFile);
+                    var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
+                    if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
+                        || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
+                    files.Add(new File(fullPathToFile, fileName, fileExtension));
+                }
+                foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath))
+                {
+                    try
+                    {
+                        files.AddRange(ProcessFilesInDirectoryRecursively(fullPath));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error with folder " + fullPath + "\n" + e.Message);
+                    }
+                }
             }
-            foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath))
+            catch (Exception e)
             {
-                try
-                {
-                    files.AddRange(ProcessFilesInDirectoryRecursively(fullPath));
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error with folder " + fullPath + "\n" + e.Message);
-                }
+                Console.WriteLine("Error with whole source folder " + e.Message);
             }
             return files;
         }
@@ -156,12 +171,12 @@ namespace Sorter.Data
         {
             try
             {
-                //Console.WriteLine(file.OriginalPath + " " + destiny+"\\"+file.Name);
-                if (Files[file.FIndex.Value].Name == file.Name)
+                if (Files[file!.FIndex!.Value].Name == file.Name)
                 {
                     System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.Name));
                     file.PhysicalPath = Path.Combine(destiny, file.Name);
                     Files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
+                    Console.WriteLine("File " + file.Name + " moved to " + destiny);
                 }
                 else Console.WriteLine("The file index has changed, you need to reload session");
             }
@@ -185,20 +200,15 @@ namespace Sorter.Data
         }
         public void ChangeFileName(File file, string newFileName)
         {
-            //Console.WriteLine(file.PhysicalPath + "|" + newFileName + "|" + file.Path + "|" + file.Name + "|" + file.FIndex + "|" + file.Extension);
-            string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath).FullName, newFileName);
-            if (!newFullPath.EndsWith("." + file.Extension))
-            {
-                newFullPath = newFullPath + "." + file.Extension;
-            }
-            //Console.WriteLine(newFullPath);
+            Console.WriteLine("File renamed from " + file.Name + " to " + newFileName);
+            string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, newFileName);
+            if (!newFullPath.EndsWith("." + file.Extension)) newFullPath = newFullPath + "." + file.Extension;
             System.IO.File.Move(file.PhysicalPath, newFullPath);
-            Files[file.FIndex.Value].PhysicalPath = newFullPath;
+            Files[file!.FIndex!.Value].PhysicalPath = newFullPath;
             Files[file.FIndex.Value].Name = newFileName;
             Files[file.FIndex.Value].Path = newFullPath;
             if (Files[file.FIndex.Value].Path.Contains(source)) Files[file.FIndex.Value].Path = string.Concat("/src/", Path.GetRelativePath(source, Files[file.FIndex.Value].PhysicalPath));
             else if (Files[file.FIndex.Value].Path.Contains(destination)) Files[file.FIndex.Value].Path = string.Concat("/dest/", Path.GetRelativePath(destination, Files[file.FIndex.Value].PhysicalPath));
-            //Console.WriteLine(Files[file.FIndex.Value].PhysicalPath + "|" + newFileName + "|" + Files[file.FIndex.Value].Path + "|" + Files[file.FIndex.Value].Name + "|" + Files[file.FIndex.Value].FIndex + "|" + Files[file.FIndex.Value].Extension);
         }
     }
 }

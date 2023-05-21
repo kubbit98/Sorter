@@ -3,108 +3,145 @@
 @inject FileService FileService
 @inject IJSRuntime theJavaScriptEngine
 @inject IHostApplicationLifetime AppLifetime
+@inject IToastService toastService
 
 <PageTitle>Sorter</PageTitle>
 <h1>Sorter</h1>
-<br />
-@if (folders == null)
+
+@switch (status)
 {
-    <p>Click to start</p>
-    <button class="btn btn-primary" @onclick="InitSession">Init session</button>
-}
-else
-{
-    <label for="password">Password for unlock more function:</label>
-    <input type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput">
-    <br />
-    <p>@file?.PhysicalPath?.Replace(file.Name,"") # @file?.Name</p>
-    <button class="btn btn-primary" @onclick="Back">Back</button>
-    @if (truePassword.Equals(unlockBoxPassword))
-    {
-        <button class="btn btn-primary" @onclick="Reset">Reset server</button>
-    }
-    <button class="btn btn-primary" @onclick="Next">Next</button>
-    @if (truePassword.Equals(unlockBoxPassword))
-    {
-        <button class="btn btn-primary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
-    }
-    <br />
-    <input type="text" id="newFolderName" name="newFolderName" @bind="newFolderName" placeholder="New folder name">
-    <button class="btn btn-primary" @onclick='()=>CreateFolder(newFolderName)'>Add new folder</button>
-    <br />
-    <table>
-        <tbody>
-            @for (int i = 0; i < folders.Length;)
+    case Status.BeforeInit:
+        <div class="row mb-3">
+            <div class="col">
+                <p>Click to start</p>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col">
+                <button class="btn btn-primary" @onclick="InitSession">Init session</button>
+            </div>
+        </div>
+        break;
+    case Status.Empty:
+        <div class="row mb-3">
+            <div class="col">
+                <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app on <a href="/config">Configuration page</a>.</p>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col d-grid">
+                <button class="btn btn-outline-secondary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+            </div>
+            <div class="col d-grid">
+                <button class="btn btn-secondary" @onclick="Back">Back</button>
+            </div>
+            <div class="col d-grid">
+                <button class="btn btn-outline-secondary" @onclick="Reset">Reset server</button>
+            </div>
+        </div>
+        break;
+    case Status.Initialized:
+        //name and password
+        <div class="row mb-3">
+            <div class="col-sm-8">
+                <p>@file?.PhysicalPath?.Replace(file.Name,"")<strong>@file?.Name</strong></p>
+            </div>
+            <label class="col-sm-2" for="password">Password to unlock more function:</label>
+            <div class="col-sm-2">
+                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput">
+            </div>
+        </div>
+        //main buttons
+        <div class="row mb-3">
+            <div class="col d-grid">
+                <button class="btn btn-secondary" @onclick="Back">Back</button>
+            </div>
+            <div class="col d-grid">
+                <button class="btn btn-secondary" @onclick="Next">Next</button>
+            </div>
+            @if (truePassword!.Equals(unlockBoxPassword))
             {
-                <tr>
-                    @for (int j = 0; j < cols && i < folders.Length; j++, i++)
-                    {
-                        var k = i;
-                        <td>
-                            <button class="btn btn-primary" @onclick="()=>MoveFile(folders[k].Path)">@folders[k].Name</button>
-                        </td>
-                    }
-                </tr>
+                <div class="col d-grid">
+                    <button class="btn btn-outline-secondary" @onclick="Reset">Reset server</button>
+                </div>
+                <div class="col d-grid">
+                    <button class="btn btn-outline-secondary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
+                </div>
             }
-        </tbody>
+            <div class="col d-grid">
+                <a class="btn btn-secondary" @onclick="() =>ModalFolderCreate()">Add new folder modal</a>
+            </div>
+        </div>
+        //folders and media
+        <div class="container">
+            @*folders*@
+            <div class="row row-cols-@cols mb-3">
+                @for (int i = 0; i < folders!.Length; i++)
+                {
+                    var k = i;
+                    <div class="col d-grid mb-1">
+                        <button class="btn btn-primary" @onclick="()=>MoveFile(folders[k].Path)">@folders[k].Name</button>
+                    </div>
+                }
+            </div>
+            @*rename*@
+            @if (truePassword.Equals(unlockBoxPassword) || allowRename)
+            {
+                <div class="row mb-3">
+                    <div class="col-sm-6">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="FileName">
+                    </div>
+                    <div class="col-sm-6">
+                        <button class="btn btn-secondary" @onclick="SaveFileName">Save file name</button>
+                    </div>
+                </div>
+            }
+            @*media*@
+            <div class="col">
+                @if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+                {
+                    <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
+                        <source src="@file?.Path" type="video/@file?.Extension">
+                        Your browser does not support the video tag.
+                    </video>
+                }
+                else if (PhotoExtensions.Contains(file?.Extension?.ToLower()))
+                {
+                    <img src="@file?.Path" style="max-width:800px;max-height:700px;" />
+                }
+                else if ("pdf".Equals(file?.Extension?.ToLower()))
+                {
+                    <embed src="@file?.Path" style="width:500px;height:707px;" />
+                }
+                else if (TextExtensions.Contains(file?.Extension?.ToLower()))
+                {
+                    <pre>GetTextFileContent()</pre>
+                }
+                else
+                {
+                    <p>Filetype @file?.Extension is already not supported</p>
+                }
+            </div>
+        </div>
+        break;
+}
 
-    </table>
-    <br />
-    @if (truePassword.Equals(unlockBoxPassword) || allowRename)
-    {
-        <input type="text" id="fileName" name="fileName" @bind="FileName">
-        <button class="btn btn-primary" @onclick="SaveFileName">Save file name</button>
-        <br />
-    }
-    @*<button class="btn btn-primary" @onclick="RestoreFileName">Restore original file name</button><br />*@
-    @*@foreach (var tuple in MyMediaIndexes)
-    {
-        <p>@tuple.Item1 | @tuple.Item2</p>
-    }*@
-
-    @if (VideoExtensions.Contains(file?.Extension?.ToLower()))
-    {
-        @*<BlazoredVideo class="w-100"
-               style="max-width:800px;max-height:700px;"
-               id="videoTagId"
-               controls="controls"
-               autoplay="autoplay">
-            <source src="@file?.Path" type="video/mp4" />
-        </BlazoredVideo>*@
-        <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
-            <source src="@file?.Path" type="video/@file.Extension">
-            Your browser does not support the video tag.
-        </video>
-    }
-    else if (PhotoExtensions.Contains(file?.Extension?.ToLower()))
-    {
-        <img src="@file?.Path" style="max-width:800px;max-height:700px;" />
-        @*<video style="display:none" id="videoTagId"></video>*@
-    }
-    else if ("pdf".Equals(file?.Extension?.ToLower()))
-    {
-        <embed src="@file?.Path" style="width:500px;height:707px;" />
-        @*<video style="display:none" id="videoTagId"></video>*@
-    }
-    else if (TextExtensions.Contains(file?.Extension?.ToLower()))
-    {
-        <pre>
-            @GetTextFileContent()
-                        </pre>
-        @*<video style="display:none" id="videoTagId"></video>*@
-    }
-    else
-    {
-        <p>Filetype @file?.Extension is already not supported</p>
-        @*<video style="display:none" id="videoTagId"></video>*@
-    }
+@if (ModalFolderIsOpen)
+{
+    <Dialog Caption="Add new folder"
+        Message="@message"
+        AdditionalValuesToNotRepeat="@folders?.Select(f=>f.Name).ToArray()"
+        OnCloseWithValue="@ModalFolderClose"
+        OnClose="@ModalCancel"
+        Type="Dialog.Category.FolderAdd">
+    </Dialog>
 }
 
 @code {
     private string[] VideoExtensions = { "avi", "mp4", "webm", "mov", "wmv", "flv" };
     private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp" };
     private string[] TextExtensions = { "txt" };
-    private List<Tuple<int, string>> MyMediaIndexes;
+    private List<Tuple<int, string>>? MyMediaIndexes;
     private int MyMediaCurrentIndex;
     private File? file;
     private Folder[]? folders;
@@ -112,23 +149,24 @@ else
     private static int LOAD_VIDEO_TIME_DELAY = 100;
     private static int MOVE_FILE_TIME_DELAY = 500;
     private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
-    private string newFolderName;
-    private string FileName;
-    private string unlockBoxPassword;
-    private string truePassword;
+    private string? FileName;
+    private string? unlockBoxPassword;
+    private string? truePassword;
     private bool allowRename;
+    private bool ModalFolderIsOpen = false;
+    private string? message;
+    private Status status = Status.BeforeInit;
 
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    folders = await FileService.GetFoldersAsync();
-    //    MyMediaIndexes = new List<int>();
-    //    cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), 4);
-    //    MyMediaCurrentIndex = -1;
-    //    Console.WriteLine(folders.Length);
-    //    GetFile();
-    //    Next();
-    //    InitSession();
-    //}
+
+    public enum Status
+    {
+        BeforeInit,
+        Initialized,
+        Empty,
+    }
+    protected override async Task OnInitializedAsync()
+    {
+    }
     private async void ReloadPlayerIfVideo()
     {
         if (VideoExtensions.Contains(file?.Extension?.ToLower()))
@@ -143,16 +181,21 @@ else
         if (index.HasValue)
         {
             file = FileService.GetFileAtIndex(index.Value);
-            FileName = file.Name;
+            FileName = file!.Name;
             folders = await FileService.GetFoldersAsync();
             cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
-            MyMediaIndexes = new List<Tuple<int, string>>() { new Tuple<int, string>(file.FIndex.Value, file.Name) };
+            MyMediaIndexes = new List<Tuple<int, string>>() { new Tuple<int, string>(file.FIndex!.Value, file.Name) };
             MyMediaCurrentIndex = 0;
             unlockBoxPassword = String.Empty;
             truePassword = await FileService.GetTruePassword();
             allowRename = await FileService.GetAllowRename();
+            status = Status.Initialized;
         }
-        // TODO: add empty directory handling
+        else
+        {
+            status = Status.Empty;
+            toastService.ShowError("There is no files to show - are paths are valid? Check it on the configuration page");
+        }
     }
     private async void Reset()
     {
@@ -165,11 +208,11 @@ else
         MyMediaCurrentIndex++;
         try
         {
-            file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+            file = FileService.GetFileAtIndex(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
         }
         catch (Exception)
         {
-            // TODO: add session reload handling
+            toastService.ShowWarning("Indexes do not match - you need to refresh the page");
             return;
         }
     }
@@ -179,17 +222,20 @@ else
         if (index.HasValue)
         {
             file = FileService.GetFileAtIndex(index.Value);
-            //MyMediaIndexes.Add(file.FIndex.Value);
-            MyMediaIndexes.Add(new Tuple<int, string>(file.FIndex.Value, file.Name));
+            MyMediaIndexes!.Add(new Tuple<int, string>(file!.FIndex!.Value, file.Name));
             MyMediaCurrentIndex++;
         }
-        // TODO: add empty directory handling
+        else
+        {
+            MyMediaCurrentIndex++;
+            status = Status.Empty;
+        }
     }
     private void Next()
     {
-        if (MyMediaCurrentIndex < MyMediaIndexes.Count - 1) GetNextFileFromOurTab();
+        if (MyMediaCurrentIndex < MyMediaIndexes!.Count - 1) GetNextFileFromOurTab();
         else GetNextFileFromFileService();
-        FileName = file.Name;
+        FileName = file!.Name;
         ReloadPlayerIfVideo();
     }
     private void Back()
@@ -199,20 +245,21 @@ else
             MyMediaCurrentIndex--;
             try
             {
-                file = FileService.GetFileAtIndex(MyMediaIndexes[MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-                FileName = file.Name;
+                file = FileService.GetFileAtIndex(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
+                FileName = file!.Name;
+                status = Status.Initialized;
             }
             catch (Exception)
             {
+                toastService.ShowWarning("Indexes do not match - you need to refresh the page");
                 return;
-                // TODO: add session reload handling
             }
             ReloadPlayerIfVideo();
         }
         else
         {
+            toastService.ShowWarning("No more files");
             return;
-            // TODO: add first file handling
         }
     }
     private async void MoveFile(string destiny)
@@ -227,28 +274,32 @@ else
     {
         return System.IO.File.ReadAllText(file.PhysicalPath);
     }
-    private async void CreateFolder(string folderName)
-    {
-        if(String.IsNullOrEmpty(folderName) || folders.Any(f=>f.Name == folderName))
-        {
-            // TODO: add wrong name directory handling
-            return;
-        }
-        if (FileService.CreateFolder(folderName))
-        {
-            folders = await FileService.GetFoldersAsync();
-        }
-    }
-    //private async void RestoreFileName()
-    //{
-    //    FileName = file.Name;
-    //}
     private async void SaveFileName()
     {
-        FileService.ChangeFileName(file, FileName);
-        file = FileService.GetFileAtIndex(file.FIndex.Value);
-        FileName = file.Name;
-        MyMediaIndexes[MyMediaCurrentIndex] = new Tuple<int, string>(file.FIndex.Value, file.Name);
+        FileService.ChangeFileName(file!, FileName!);
+        file = FileService.GetFileAtIndex(file!.FIndex!.Value);
+        FileName = file!.Name;
+        MyMediaIndexes![MyMediaCurrentIndex] = new Tuple<int, string>(file!.FIndex!.Value, file.Name);
 
+    }
+    private void ModalFolderCreate()
+    {
+        ModalFolderIsOpen = true;
+        message = "Insert name for new folder";
+    }
+    private async Task ModalFolderClose(string folderName)
+    {
+        if (!String.IsNullOrWhiteSpace(folderName))
+        {
+            if (FileService.CreateFolder(folderName))
+            {
+                folders = await FileService.GetFoldersAsync();
+            }
+        }
+        ModalFolderIsOpen = false;
+    }
+    private async Task ModalCancel(bool isOk)
+    {
+        ModalFolderIsOpen = false;
     }
 }
