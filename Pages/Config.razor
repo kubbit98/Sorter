@@ -2,83 +2,176 @@
 @using Microsoft.Extensions.Options;
 @using Sorter;
 @using System.Text.Json;
+@using Sorter.Data;
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
 @inject NavigationManager NavigationManager;
 @inject IOptionsSnapshot<ConfigOptions> configOptions
 @inject DestinationDFP DESTDFP
 @inject SourceDFP SRCDFP
-<label for="password">Password:</label>
-<input type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput">
-<br />
-<br />
+@inject IToastService toastService
+@inject FileService FileService
+
+<PageTitle>Sorter configuration</PageTitle>
+<h1>Configuration</h1>
+@*password*@
+<form class="form">
+    <div class="form-group row">
+        <label for="password" class="col-sm-2 col-form-label">Password</label>
+        <div class="col-sm-10">
+            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
+        </div>
+    </div>
+</form>
 <p id="error">@(ErrorMessage)</p>
 <br />
 @if (truePassword.Equals(unlockBoxPassword))
 {
-    <button @onclick="Save">Save new configuration</button>
-    @if (!@hostingEnv.IsProduction())
-    {
-        <button @onclick="LoadDefaultPyra">Load Ziemniak default config</button>
-    }
-    <br />
-    <br />
-    <label for="newPass">New password:</label>
-    <input type="password" id="newPass" name="newPass" @bind="newPassword">
-    <p>Remember: this password is neither secure nor serious. It's just a quick way to hide your configuration from your friends</p>
-    <br />
-    <br />
-    <label for="allowRename">Allow all users to rename the files:</label>
-    <input type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
-    <br />
-    <br />
-    <label for="source">Source:</label>
-    <input type="text" id="source" name="source" @bind="source">
-    <br />
-    <br />
-    <label for="destination">Destination:</label>
-    <input type="text" id="destination" name="destination" @bind="destination">
-    <br />
-    <br />
-    <label for="exclude-dirs">Dirs to exclude:</label>
-    <ul id="dynamic-exclude-dirs">
-        @foreach (var item in excludeList)
+    //save buttin
+    <div class="row mb-3">
+        <div class="col">
+            <div class="d-grid">
+                <button class="btn btn-primary" @onclick="Save">Save new configuration</button>
+            </div>
+        </div>
+        @if (!@hostingEnv.IsProduction())
         {
-            <li user="@item">@item <button @onclick="() => RemoveExclude(item)">X</button></li>
+            <div class="col">
+                <div class="d-grid">
+                    <button class="btn btn-info" @onclick="LoadDefaultTestConfig">Load default config for testing</button>
+                </div>
+            </div>
         }
-    </ul>
-    <input placeholder="Add folder to exclude" @bind="newExclude" />
-    <button @onclick="AddExclude">Add</button>
-    <br />
-    <br />
-    <label for="use_white">Use white list instead of black list:</label>
-    <input type="checkbox" id="use_white" name="use_white" @bind="useWhite">
-    <br />
-    <br />
-    @if (useWhite)
-    {
-        <label for="white_list">White list:</label>
-        <ul id="dynamic-white-list">
-            @foreach (var item in whiteList)
+    </div>
+    //new password
+    <div class="row mb-3">
+        <label for="newPass" class="col-sm-2 col-form-label">New password:</label>
+        <div class="col-sm-10">
+            <input class="form-control" type="password" id="newPass" name="newPass" @bind="newPassword" placeholder="New password">
+        </div>
+    </div>
+    //password hint
+    <div class="row mb-3">
+        <div class="col-sm-10 offset-2">
+            <p>Remember: this password is neither secure nor serious. It's just a quick way to hide your configuration from your friends</p>
+        </div>
+    </div>
+    //source
+    <div class="row mb-3">
+        <label for="source" class="col-sm-2 col-form-label">Source:</label>
+        <div class="col-sm-6">
+            <input class="form-control" type="text" id="source" name="source" @bind="source" @bind:event="oninput" placeholder="Source directory path">
+        </div>
+        <div class="col-sm-4">
+            @if (!String.IsNullOrWhiteSpace(source) && Directory.Exists(Path.GetFullPath(source)))
             {
-                <li user="@item">@item <button @onclick="() => RemoveWhite(item)">X</button></li>
+                <p>Path is valid</p>
             }
-        </ul>
-        <input placeholder="Insert extension to add" @bind="newWhite" />
-        <button @onclick="AddWhite">Add</button>
-    }
-    else
-    {
-        <label for="black-list">BlackList:</label>
-        <ul id="dynamic-black-list">
-            @foreach (var item in blackList)
+            else
             {
-                <li user="@item">@item <button @onclick="() => RemoveBlack(item)">X</button></li>
+                <p>Path is invalid</p>
             }
-        </ul>
-        <input placeholder="Insert extension to add" @bind="newBlack" />
-        <button @onclick="AddBlack">Add</button>
-    }
-    <br />
+        </div>
+    </div>
+    //destination
+    <div class="row mb-3">
+        <label for="destination" class="col-sm-2 col-form-label">Destination:</label>
+        <div class="col-sm-6">
+            <input class="form-control" type="text" id="destination" name="destination" @bind="destination" @bind:event="oninput" placeholder="Destination directory path">
+        </div>
+        <div class="col-sm-4">
+            @if (!String.IsNullOrWhiteSpace(destination) && Directory.Exists(Path.GetFullPath(destination)))
+            {
+                <p>Path is valid</p>
+            }
+            else
+            {
+                <p>Path is invalid</p>
+            }
+        </div>
+    </div>
+    //renaming
+    <div class="row mb-3">
+        <div class="col-sm-10 offset-sm-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
+                <label class="form-check-label" for="allowRename">
+                    Allow all users to rename the files
+                </label>
+            </div>
+        </div>
+    </div>
+    //white or black
+    <div class="row mb-3">
+        <div class="col-sm-10 offset-sm-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="useWhite">
+                <label class="form-check-label" for="gridCheck1">
+                    Use white list of extensions instead of black list
+                </label>
+            </div>
+            @if (useWhite)
+            {
+                <div class="container">
+                    <div class="row row-cols-auto">
+                        @foreach (var item in whiteList)
+                        {
+                            <div class="col">
+                                @item
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveWhite(item)">X</button>
+                            </div>
+                        }
+                        <div class="col">
+                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-dark btn-sm" @onclick="AddWhite">Add</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="container">
+                    <div class="row row-cols-auto">
+                        @foreach (var item in blackList)
+                        {
+                            <div class="col">
+                                @item
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveBlack(item)">X</button>
+                            </div>
+                        }
+                        <div class="col">
+                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                        </div>
+                        <div class="col">
+                            <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    //exclude dirs
+    <div class="row mb-3">
+        <label for="exclude-dirs" class="col-sm-2 col-form-label">Directories to exclude:</label>
+        <div class="col-sm-10">
+            <div class="row row-cols-auto">
+                @foreach (var item in excludeList)
+                {
+                    <div class="col">
+                        @item
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExclude(item)">X</button>
+                    </div>
+                }
+                <div class="col">
+                    <input class="form-control" placeholder="Folder to exclude" @bind="newExclude" />
+                </div>
+                <div class="col">
+                    <button class="btn btn-dark btn-sm" @onclick="AddExclude">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 else
 {
@@ -86,20 +179,20 @@ else
 }
 
 @code {
-    private string source;
-    private string destination;
-    private List<string> excludeList;
-    private string newExclude;
-    private bool useWhite;
-    private List<string> whiteList;
-    private string newWhite;
-    private List<string> blackList;
-    private string newBlack;
+    private string source=String.Empty;
+    private string destination = String.Empty;
+    private List<string> excludeList=new List<string>();
+    private string newExclude = String.Empty;
+    private bool useWhite=true;
+    private List<string> whiteList = new List<string>();
+    private string newWhite = String.Empty;
+    private List<string> blackList = new List<string>();
+    private string newBlack = String.Empty;
     private string ErrorMessage = string.Empty;
-    private string unlockBoxPassword;
-    private string truePassword;
-    private string newPassword;
-    private bool allowRename;
+    private string unlockBoxPassword = String.Empty;
+    private string truePassword = String.Empty;
+    private string newPassword = String.Empty;
+    private bool allowRename=true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,23 +200,15 @@ else
         {
             source = Path.GetFullPath(configOptions.Value.Source);
         }
-        else source = string.Empty;
-
         if (Directory.Exists(Path.GetFullPath(configOptions.Value.Destination)))
         {
             destination = Path.GetFullPath(configOptions.Value.Destination);
         }
-        else destination = string.Empty;
-
         excludeList = Array.ConvertAll(configOptions.Value.ExcludeDirs, dir => dir = Path.GetFullPath(dir)).ToList();
-        newExclude = string.Empty;
         useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
         whiteList = configOptions.Value.WhiteList.ToList();
-        newWhite = string.Empty;
         blackList = configOptions.Value.BlackList.ToList();
-        newBlack = string.Empty;
         truePassword = configOptions.Value.Password;
-        unlockBoxPassword = String.Empty;
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
     }
@@ -132,12 +217,14 @@ else
         var config = configOptions.Value;
         if (!Directory.Exists(Path.GetFullPath(source)))
         {
-            ErrorMessage = "Source is invalid";
+            toastService.ShowError("Source path is invalid");
+            //ErrorMessage = "Source is invalid";
             return;
         }
         if (!Directory.Exists(Path.GetFullPath(destination)))
         {
-            ErrorMessage = "Destination is invalid";
+            toastService.ShowError("Destination path is invalid");
+            //ErrorMessage = "Destination is invalid";
             return;
         }
         config.Source = source;
@@ -154,15 +241,17 @@ else
             var filePath = Path.Combine(AppContext.BaseDirectory, "config.json");
             string jsonString = JsonSerializer.Serialize(config);
             jsonString = String.Concat("{\"config\": ", jsonString, "}");
-            File.WriteAllText("config.json", jsonString);
+            System.IO.File.WriteAllText("config.json", jsonString);
             SRCDFP.UpdateProvider(config.Source);
             DESTDFP.UpdateProvider(config.Destination);
-            ErrorMessage = "Setting are saved";
-            NavigationManager.NavigateTo("config", true);
+            toastService.ShowSuccess("Settings are saved");
+            Thread.Sleep(500);
+            FileService.ResetFiles();
+            OnInitializedAsync();
         }
         catch
         {
-            Console.WriteLine("Error writing app settings");
+            toastService.ShowError("Error writing app settings");
         }
     }
     private void RemoveExclude(string exclude)
@@ -181,10 +270,14 @@ else
                     excludeList.Add(path);
                     newExclude = string.Empty;
                 }
+                else
+                {
+                    toastService.ShowWarning("Invalid path");
+                }
             }
-            catch
+            catch (Exception e)
             {
-
+                Console.WriteLine(e);
             }
         }
     }
@@ -212,9 +305,10 @@ else
             newBlack = string.Empty;
         }
     }
-    private void LoadDefaultPyra()
+    private void LoadDefaultTestConfig()
     {
-        File.Copy("..\\kubbit_config.json", "config.json", true);
+        System.IO.File.Copy("..\\default_config.json", "config.json", true);
         NavigationManager.NavigateTo("config", true);
     }
 }
+

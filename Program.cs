@@ -1,9 +1,9 @@
+using Blazored.Toast;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
-using Sorter;
 using Sorter.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +19,7 @@ builder.WebHost.UseStaticWebAssets();
 builder.Services.AddOptions<ConfigOptions>().BindConfiguration(ConfigOptions.config);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddBlazoredToast();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<FileService>();
