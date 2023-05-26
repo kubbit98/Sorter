@@ -107,7 +107,7 @@
                 }
                 else if (PhotoExtensions.Contains(file?.Extension?.ToLower()))
                 {
-                    <img src="@file?.Path" style="max-width:800px;max-height:700px;" />
+                    <img src="@(string.IsNullOrEmpty(file?.ThumbnailPath)?file?.Path:file?.ThumbnailPath)" style="max-width:800px;max-height:700px;" />
                 }
                 else if ("pdf".Equals(file?.Extension?.ToLower()))
                 {
@@ -138,8 +138,8 @@
 }
 
 @code {
-    private string[] VideoExtensions = { "avi", "mp4", "webm", "mov", "wmv", "flv" };
-    private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp" };
+    private string[] VideoExtensions = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
+    private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
     private string[] TextExtensions = { "txt" };
     private List<Tuple<int, string>>? MyMediaIndexes;
     private int MyMediaCurrentIndex;

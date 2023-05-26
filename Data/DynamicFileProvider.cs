@@ -15,17 +15,43 @@ namespace Sorter.Data
         {
         }
     }
+    public class TempDFP : DynamicFileProvider
+    {
+        public TempDFP(string root) : base(root)
+        {
+            string path = Path.GetFullPath(root);
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+                Console.WriteLine("Creating folder for thumbnails in " + path);
+            }
+            else
+            {
+                DirectoryInfo di = new DirectoryInfo(path);
+                foreach (FileInfo file in di.EnumerateFiles())
+                {
+                    file.Delete();
+                }
+                foreach (DirectoryInfo dir in di.EnumerateDirectories())
+                {
+                    dir.Delete(true);
+                }
+                Console.WriteLine("Clearing temporary directory at " + path);
+            }
+            UpdateProvider(path);
+        }
+    }
     public class DynamicFileProvider : IFileProvider
     {
         PhysicalFileProvider PhysicalFileProvider { get; set; }
         public DynamicFileProvider(string root)
         {
-            if (!string.IsNullOrWhiteSpace(root) && !Directory.Exists(Path.GetFullPath(root)))
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(Path.GetFullPath(root)))
             {
-                Console.WriteLine(root + " path is invalid, load temporary path");
+                Console.WriteLine(Path.GetFullPath(root) + " path is invalid, load temporary path");
                 root = Path.GetTempPath();
             }
-            PhysicalFileProvider = new PhysicalFileProvider(string.IsNullOrWhiteSpace(root) ? Path.GetTempPath() : root);
+            PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)

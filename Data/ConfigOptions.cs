@@ -14,5 +14,6 @@ namespace Sorter.Data
         public string[] BlackList { get; set; } = Array.Empty<string>();
         public string Password { get; set; } = string.Empty;
         public bool AllowRename { get; set; } = true;
+        public bool UseThumbnails { get; set; } = true;
     }
 }
