@@ -1,9 +1,4 @@
 using Blazored.Toast;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 using Sorter.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,8 +18,10 @@ builder.Services.AddBlazoredToast();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<FileService>();
+builder.Services.AddSingleton<ConfigOptionsService>();
 builder.Services.AddSingleton(_ => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source")));
 builder.Services.AddSingleton(_ => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination")));
+builder.Services.AddSingleton(_ => new TempDFP(builder.Configuration.GetValue<string>("TempPath")));
 
 var app = builder.Build();
 
@@ -55,6 +52,11 @@ app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<DestinationDFP>(),
     RequestPath = new PathString("/dest")
+})
+.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = app.Services.GetService<TempDFP>(),
+    RequestPath = new PathString("/tmp")
 });
 
 app.Run();

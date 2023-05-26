@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using System.IO;
 
 namespace Sorter.Data
 {
@@ -11,6 +10,9 @@ namespace Sorter.Data
         private List<Folder> Folders;
         private int indexOfActualProcessingFile;
 
+        private static int MAX_WIDTH_OF_PHOTO = 850;
+        private static string[] THUMBNAIL_EXTENSIONS = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
+
         private string source;
         private string destination;
         private string[] excludeDirs;
@@ -19,6 +21,7 @@ namespace Sorter.Data
         private bool useWhiteListInsteadOfBlackList;
         private string truePassword;
         private bool allowRename;
+        private bool useThumbnails;
         //private int findex2 = 0;
         public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options)
         {
@@ -27,6 +30,13 @@ namespace Sorter.Data
             LoadConfig();
             LoadFilesAndFolders();
             indexOfActualProcessingFile = -1;
+            if (useThumbnails && Files.Count > 0)
+            {
+                foreach (var f in Files.GetRange(0,5))
+                {
+                    Task.Run(() => CreateThumbnail(f));
+                }
+            }
         }
         public void LoadConfig()
         {
@@ -40,6 +50,7 @@ namespace Sorter.Data
                 useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
                 truePassword = _options.CurrentValue.Password;
                 allowRename = _options.CurrentValue.AllowRename;
+                useThumbnails = _options.CurrentValue.UseThumbnails;
 
             }
             catch (NullReferenceException)
@@ -67,7 +78,17 @@ namespace Sorter.Data
         }
         public int? GetNextIndex()
         {
-            return (indexOfActualProcessingFile < Files.Count - 1) ? ++indexOfActualProcessingFile : null;
+            if (indexOfActualProcessingFile < Files.Count - 1)
+            {
+                indexOfActualProcessingFile++;
+                if (useThumbnails)
+                {
+                    Task.Run(() => CreateThumbnail(Files[indexOfActualProcessingFile+5]));
+                }
+                return indexOfActualProcessingFile;
+            }
+
+            return null;//(indexOfActualProcessingFile < Files.Count - 1) ? ++indexOfActualProcessingFile : null;
         }
         public File? GetFileAtIndex(int index)
         {
@@ -94,6 +115,13 @@ namespace Sorter.Data
             LoadConfig();
             LoadFilesAndFolders();
             indexOfActualProcessingFile = -1;
+            if (useThumbnails && Files.Count > 0)
+            {
+                foreach (var f in Files.GetRange(0, 5))
+                {
+                    Task.Run(() => CreateThumbnail(f));
+                }
+            }
         }
         private void LoadFilesAndFolders()
         {
@@ -209,6 +237,25 @@ namespace Sorter.Data
             Files[file.FIndex.Value].Path = newFullPath;
             if (Files[file.FIndex.Value].Path.Contains(source)) Files[file.FIndex.Value].Path = string.Concat("/src/", Path.GetRelativePath(source, Files[file.FIndex.Value].PhysicalPath));
             else if (Files[file.FIndex.Value].Path.Contains(destination)) Files[file.FIndex.Value].Path = string.Concat("/dest/", Path.GetRelativePath(destination, Files[file.FIndex.Value].PhysicalPath));
+        }
+        public void CreateThumbnail(File file)
+        {
+            if (!THUMBNAIL_EXTENSIONS.Contains(file.Extension) || !string.IsNullOrWhiteSpace(file.ThumbnailPath))
+                return;
+
+            //Stopwatch stopWatch = Stopwatch.StartNew();
+            using (Image image = Image.Load(file.PhysicalPath))
+            {
+                do
+                {
+                    file.ThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                } while (System.IO.File.Exists(file.ThumbnailPath));
+                int ratio = image.Width / MAX_WIDTH_OF_PHOTO;
+                image.Mutate(x => x.Resize(image.Width / ratio, image.Height / ratio));
+                image.Save(file.ThumbnailPath);
+                file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), file.ThumbnailPath));
+            }
+            //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);
         }
     }
 }

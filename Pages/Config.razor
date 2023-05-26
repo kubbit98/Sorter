@@ -4,12 +4,11 @@
 @using System.Text.Json;
 @using Sorter.Data;
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
-@inject NavigationManager NavigationManager;
+@*@inject NavigationManager NavigationManager*@
 @inject IOptionsSnapshot<ConfigOptions> configOptions
-@inject DestinationDFP DESTDFP
-@inject SourceDFP SRCDFP
 @inject IToastService toastService
 @inject FileService FileService
+@inject ConfigOptionsService ConfigOptionsService
 
 <PageTitle>Sorter configuration</PageTitle>
 <h1>Configuration</h1>
@@ -22,7 +21,6 @@
         </div>
     </div>
 </form>
-<p id="error">@(ErrorMessage)</p>
 <br />
 @if (truePassword.Equals(unlockBoxPassword))
 {
@@ -89,6 +87,27 @@
             }
         </div>
     </div>
+    //exclude dirs
+    <div class="row mb-3">
+        <label for="exclude-dirs" class="col-sm-2 col-form-label">Directories to exclude:</label>
+        <div class="col-sm-10">
+            <div class="row row-cols-auto">
+                @foreach (var item in excludeList)
+                {
+                    <div class="col">
+                        @item
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExclude(item)">X</button>
+                    </div>
+                }
+                <div class="col">
+                    <input class="form-control" placeholder="Folder to exclude" @bind="newExclude" />
+                </div>
+                <div class="col">
+                    <button class="btn btn-dark btn-sm" @onclick="AddExclude">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
     //renaming
     <div class="row mb-3">
         <div class="col-sm-10 offset-sm-2">
@@ -96,6 +115,17 @@
                 <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
                 <label class="form-check-label" for="allowRename">
                     Allow all users to rename the files
+                </label>
+            </div>
+        </div>
+    </div>
+    //thumbnails
+    <div class="row mb-3">
+        <div class="col-sm-10 offset-sm-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="useThumbnails" name="useThumbnails" @bind="useThumbnails">
+                <label class="form-check-label" for="useThumbnails">
+                    Use thumbnails for photos. It may cause an increase in CPU consumption, a visible deterioration of the quality of photos (only in the preview), however, it significantly increases the convenience of using the application among remote clients.
                 </label>
             </div>
         </div>
@@ -151,27 +181,6 @@
             }
         </div>
     </div>
-    //exclude dirs
-    <div class="row mb-3">
-        <label for="exclude-dirs" class="col-sm-2 col-form-label">Directories to exclude:</label>
-        <div class="col-sm-10">
-            <div class="row row-cols-auto">
-                @foreach (var item in excludeList)
-                {
-                    <div class="col">
-                        @item
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExclude(item)">X</button>
-                    </div>
-                }
-                <div class="col">
-                    <input class="form-control" placeholder="Folder to exclude" @bind="newExclude" />
-                </div>
-                <div class="col">
-                    <button class="btn btn-dark btn-sm" @onclick="AddExclude">Add</button>
-                </div>
-            </div>
-        </div>
-    </div>
 }
 else
 {
@@ -179,31 +188,25 @@ else
 }
 
 @code {
-    private string source=String.Empty;
+    private string source = String.Empty;
     private string destination = String.Empty;
-    private List<string> excludeList=new List<string>();
+    private List<string> excludeList = new List<string>();
     private string newExclude = String.Empty;
-    private bool useWhite=true;
+    private bool useWhite = true;
     private List<string> whiteList = new List<string>();
     private string newWhite = String.Empty;
     private List<string> blackList = new List<string>();
     private string newBlack = String.Empty;
-    private string ErrorMessage = string.Empty;
     private string unlockBoxPassword = String.Empty;
     private string truePassword = String.Empty;
     private string newPassword = String.Empty;
-    private bool allowRename=true;
+    private bool allowRename = true;
+    private bool useThumbnails = true;
 
     protected override async Task OnInitializedAsync()
     {
-        if (Directory.Exists(Path.GetFullPath(configOptions.Value.Source)))
-        {
-            source = Path.GetFullPath(configOptions.Value.Source);
-        }
-        if (Directory.Exists(Path.GetFullPath(configOptions.Value.Destination)))
-        {
-            destination = Path.GetFullPath(configOptions.Value.Destination);
-        }
+        source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
+        destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
         excludeList = Array.ConvertAll(configOptions.Value.ExcludeDirs, dir => dir = Path.GetFullPath(dir)).ToList();
         useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
         whiteList = configOptions.Value.WhiteList.ToList();
@@ -211,20 +214,19 @@ else
         truePassword = configOptions.Value.Password;
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
+        useThumbnails = configOptions.Value.UseThumbnails;
     }
     private void Save()
     {
         var config = configOptions.Value;
-        if (!Directory.Exists(Path.GetFullPath(source)))
+        if (!ConfigOptionsService.CheckPath(source))
         {
             toastService.ShowError("Source path is invalid");
-            //ErrorMessage = "Source is invalid";
             return;
         }
-        if (!Directory.Exists(Path.GetFullPath(destination)))
+        if (!ConfigOptionsService.CheckPath(destination))
         {
             toastService.ShowError("Destination path is invalid");
-            //ErrorMessage = "Destination is invalid";
             return;
         }
         config.Source = source;
@@ -235,23 +237,18 @@ else
         config.BlackList = blackList.ToArray();
         config.Password = newPassword;
         config.AllowRename = allowRename;
-
+        config.UseThumbnails = useThumbnails;
         try
         {
-            var filePath = Path.Combine(AppContext.BaseDirectory, "config.json");
-            string jsonString = JsonSerializer.Serialize(config);
-            jsonString = String.Concat("{\"config\": ", jsonString, "}");
-            System.IO.File.WriteAllText("config.json", jsonString);
-            SRCDFP.UpdateProvider(config.Source);
-            DESTDFP.UpdateProvider(config.Destination);
+            ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
             Thread.Sleep(500);
             FileService.ResetFiles();
             OnInitializedAsync();
         }
-        catch
+        catch (Exception e)
         {
-            toastService.ShowError("Error writing app settings");
+            toastService.ShowError(e.Message);
         }
     }
     private void RemoveExclude(string exclude)
@@ -307,8 +304,11 @@ else
     }
     private void LoadDefaultTestConfig()
     {
-        System.IO.File.Copy("..\\default_config.json", "config.json", true);
-        NavigationManager.NavigateTo("config", true);
+        ConfigOptionsService.LoadDefaultTestConfig();
+        toastService.ShowInfo("Default configuration loaded");
+        //NavigationManager.NavigateTo("config", true);
+        Thread.Sleep(500);
+        OnInitializedAsync();
     }
 }
 
