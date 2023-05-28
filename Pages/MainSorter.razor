@@ -17,9 +17,7 @@
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col">
-                <button class="btn btn-primary" @onclick="InitSession">Init session</button>
-            </div>
+            <ButtonInDiv divCssClass="col" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
         </div>
         break;
     case Status.Empty:
@@ -29,15 +27,9 @@
             </div>
         </div>
         <div class="row mb-3">
-            <div class="col d-grid">
-                <button class="btn btn-outline-secondary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
-            </div>
-            <div class="col d-grid">
-                <button class="btn btn-secondary" @onclick="Back">Back</button>
-            </div>
-            <div class="col d-grid">
-                <button class="btn btn-outline-secondary" @onclick="Reset">Reset server</button>
-            </div>
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
         </div>
         break;
     case Status.Initialized:
@@ -53,24 +45,14 @@
         </div>
         //main buttons
         <div class="row mb-3">
-            <div class="col d-grid">
-                <button class="btn btn-secondary" @onclick="Back">Back</button>
-            </div>
-            <div class="col d-grid">
-                <button class="btn btn-secondary" @onclick="Next">Next</button>
-            </div>
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Next" buttonOnClick="Next" />
             @if (truePassword!.Equals(unlockBoxPassword))
             {
-                <div class="col d-grid">
-                    <button class="btn btn-outline-secondary" @onclick="Reset">Reset server</button>
-                </div>
-                <div class="col d-grid">
-                    <button class="btn btn-outline-secondary" @onclick="() => AppLifetime.StopApplication()">Shut down</button>
-                </div>
+                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
+                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
-            <div class="col d-grid">
-                <a class="btn btn-secondary" @onclick="() =>ModalFolderCreate()">Add new folder modal</a>
-            </div>
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClick="ModalFolderCreate" />
         </div>
         //folders and media
         <div class="container">
@@ -79,9 +61,7 @@
                 @for (int i = 0; i < folders!.Length; i++)
                 {
                     var k = i;
-                    <div class="col d-grid mb-1">
-                        <button class="btn btn-primary" @onclick="()=>MoveFile(folders[k].Path)">@folders[k].Name</button>
-                    </div>
+                    <ButtonInDiv divCssClass="col d-grid mb-1" buttonCssClass="btn btn-primary" buttonName="@folders[k].Name" buttonOnClick="()=>MoveFile(folders[k].Path)" />
                 }
             </div>
             @*rename*@
@@ -91,21 +71,19 @@
                     <div class="col-sm-6">
                         <input class="form-control" type="text" id="fileName" name="fileName" @bind="FileName">
                     </div>
-                    <div class="col-sm-6">
-                        <button class="btn btn-secondary" @onclick="SaveFileName">Save file name</button>
-                    </div>
+                    <ButtonInDiv divCssClass="col-sm-6" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClick="SaveFileName" />
                 </div>
             }
             @*media*@
             <div class="col">
-                @if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+                @if (VIDEO_EXTENSIONS.Contains(file?.Extension?.ToLower()))
                 {
                     <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
                         <source src="@file?.Path" type="video/@file?.Extension">
                         Your browser does not support the video tag.
                     </video>
                 }
-                else if (PhotoExtensions.Contains(file?.Extension?.ToLower()))
+                else if (PHOTO_EXTENSIONS.Contains(file?.Extension?.ToLower()))
                 {
                     <img src="@(string.IsNullOrEmpty(file?.ThumbnailPath)?file?.Path:file?.ThumbnailPath)" style="max-width:800px;max-height:700px;" />
                 }
@@ -113,7 +91,7 @@
                 {
                     <embed src="@file?.Path" style="width:500px;height:707px;" />
                 }
-                else if (TextExtensions.Contains(file?.Extension?.ToLower()))
+                else if (TEXT_EXTENSIONS.Contains(file?.Extension?.ToLower()))
                 {
                     <pre>GetTextFileContent()</pre>
                 }
@@ -129,26 +107,25 @@
 @if (ModalFolderIsOpen)
 {
     <Dialog Caption="Add new folder"
-        Message="@message"
+        Message="Insert name for new folder"
         AdditionalValuesToNotRepeat="@folders?.Select(f=>f.Name).ToArray()"
         OnCloseWithValue="@ModalFolderClose"
         OnClose="@ModalCancel"
-        Type="Dialog.Category.FolderAdd">
-    </Dialog>
+        Type="Dialog.Category.FolderAdd" />
 }
 
 @code {
-    private string[] VideoExtensions = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
-    private string[] PhotoExtensions = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
-    private string[] TextExtensions = { "txt" };
+    private static string[] VIDEO_EXTENSIONS = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
+    private static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
+    private static string[] TEXT_EXTENSIONS = { "txt" };
+    private static int LOAD_VIDEO_TIME_DELAY = 100;
+    private static int MOVE_FILE_TIME_DELAY = 500;
+    private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
     private List<Tuple<int, string>>? MyMediaIndexes;
     private int MyMediaCurrentIndex;
     private File? file;
     private Folder[]? folders;
     private double? cols;
-    private static int LOAD_VIDEO_TIME_DELAY = 100;
-    private static int MOVE_FILE_TIME_DELAY = 500;
-    private static int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
     private string? FileName;
     private string? unlockBoxPassword;
     private string? truePassword;
@@ -169,7 +146,7 @@
     }
     private async void ReloadPlayerIfVideo()
     {
-        if (VideoExtensions.Contains(file?.Extension?.ToLower()))
+        if (VIDEO_EXTENSIONS.Contains(file?.Extension?.ToLower()))
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
             theJavaScriptEngine.InvokeVoidAsync("loadVideo");
@@ -190,6 +167,7 @@
             truePassword = await FileService.GetTruePassword();
             allowRename = await FileService.GetAllowRename();
             status = Status.Initialized;
+            StateHasChanged();
         }
         else
         {
@@ -202,6 +180,7 @@
         FileService.ResetFiles();
         InitSession();
         ReloadPlayerIfVideo();
+        StateHasChanged();
     }
     private void GetNextFileFromOurTab()
     {
@@ -237,6 +216,7 @@
         else GetNextFileFromFileService();
         FileName = file!.Name;
         ReloadPlayerIfVideo();
+        StateHasChanged();
     }
     private void Back()
     {
@@ -247,7 +227,7 @@
             {
                 file = FileService.GetFileAtIndex(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
                 FileName = file!.Name;
-                status = Status.Initialized;
+                if (!status.Equals(Status.Initialized)) status = Status.Initialized;
             }
             catch (Exception)
             {
@@ -255,6 +235,7 @@
                 return;
             }
             ReloadPlayerIfVideo();
+            StateHasChanged();
         }
         else
         {
@@ -285,7 +266,7 @@
     private void ModalFolderCreate()
     {
         ModalFolderIsOpen = true;
-        message = "Insert name for new folder";
+        StateHasChanged();
     }
     private async Task ModalFolderClose(string folderName)
     {
