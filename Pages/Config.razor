@@ -24,20 +24,12 @@
 <br />
 @if (truePassword.Equals(unlockBoxPassword))
 {
-    //save buttin
+    //save button
     <div class="row mb-3">
-        <div class="col">
-            <div class="d-grid">
-                <button class="btn btn-primary" @onclick="Save">Save new configuration</button>
-            </div>
-        </div>
+        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Save new configuration" buttonOnClick="Save" />
         @if (!@hostingEnv.IsProduction())
         {
-            <div class="col">
-                <div class="d-grid">
-                    <button class="btn btn-info" @onclick="LoadDefaultTestConfig">Load default config for testing</button>
-                </div>
-            </div>
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Load default config for testing" buttonOnClick="LoadDefaultTestConfig" />
         }
     </div>
     //new password
@@ -70,6 +62,27 @@
             }
         </div>
     </div>
+    //exclude dirs source
+    <div class="row mb-3">
+        <label for="exclude-dirs-sour" class="col-sm-2 col-form-label">Directories in source to exclude:</label>
+        <div class="col-sm-10">
+            <div class="row row-cols-auto">
+                @foreach (var item in excludeListSource)
+                {
+                    <div class="col">
+                        @item
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeSource(item)">X</button>
+                    </div>
+                }
+                <div class="col">
+                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeSource" />
+                </div>
+                <div class="col">
+                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeSource">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
     //destination
     <div class="row mb-3">
         <label for="destination" class="col-sm-2 col-form-label">Destination:</label>
@@ -87,23 +100,23 @@
             }
         </div>
     </div>
-    //exclude dirs
+    //exclude dirs destination
     <div class="row mb-3">
-        <label for="exclude-dirs" class="col-sm-2 col-form-label">Directories to exclude:</label>
+        <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">Directories in destination to exclude:</label>
         <div class="col-sm-10">
             <div class="row row-cols-auto">
-                @foreach (var item in excludeList)
+                @foreach (var item in excludeListDestination)
                 {
                     <div class="col">
                         @item
-                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExclude(item)">X</button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeDestination(item)">X</button>
                     </div>
                 }
                 <div class="col">
-                    <input class="form-control" placeholder="Folder to exclude" @bind="newExclude" />
+                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeDestination" />
                 </div>
                 <div class="col">
-                    <button class="btn btn-dark btn-sm" @onclick="AddExclude">Add</button>
+                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination">Add</button>
                 </div>
             </div>
         </div>
@@ -189,9 +202,11 @@ else
 
 @code {
     private string source = String.Empty;
+    private List<string> excludeListSource = new List<string>();
+    private string newExcludeSource = String.Empty;
     private string destination = String.Empty;
-    private List<string> excludeList = new List<string>();
-    private string newExclude = String.Empty;
+    private List<string> excludeListDestination = new List<string>();
+    private string newExcludeDestination = String.Empty;
     private bool useWhite = true;
     private List<string> whiteList = new List<string>();
     private string newWhite = String.Empty;
@@ -206,8 +221,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
+        excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
         destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
-        excludeList = Array.ConvertAll(configOptions.Value.ExcludeDirs, dir => dir = Path.GetFullPath(dir)).ToList();
+        excludeListDestination = Array.ConvertAll(configOptions.Value.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
         useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
         whiteList = configOptions.Value.WhiteList.ToList();
         blackList = configOptions.Value.BlackList.ToList();
@@ -230,8 +246,9 @@ else
             return;
         }
         config.Source = source;
+        config.ExcludeDirsSource = excludeListSource.ToArray();
         config.Destination = destination;
-        config.ExcludeDirs = excludeList.ToArray();
+        config.ExcludeDirsDestination = excludeListDestination.ToArray();
         config.UseWhiteListInsteadOfBlackList = useWhite;
         config.WhiteList = whiteList.ToArray();
         config.BlackList = blackList.ToArray();
@@ -251,21 +268,48 @@ else
             toastService.ShowError(e.Message);
         }
     }
-    private void RemoveExclude(string exclude)
+    private void RemoveExcludeSource(string exclude)
     {
-        excludeList.Remove(exclude);
+        excludeListSource.Remove(exclude);
     }
-    private void AddExclude()
+    private void AddExcludeSource()
     {
-        if (!string.IsNullOrWhiteSpace(newExclude))
+        if (!string.IsNullOrWhiteSpace(newExcludeSource))
         {
             try
             {
-                var path = Path.GetFullPath(newExclude.Replace("\"", ""));
-                if (Directory.Exists(path) && !excludeList.Contains(path))
+                var path = Path.GetFullPath(newExcludeSource.Replace("\"", ""));
+                if (Directory.Exists(path) && !excludeListSource.Contains(path))
                 {
-                    excludeList.Add(path);
-                    newExclude = string.Empty;
+                    excludeListSource.Add(path);
+                    newExcludeSource = string.Empty;
+                }
+                else
+                {
+                    toastService.ShowWarning("Invalid path");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+    }
+    private void RemoveExcludeDestination(string exclude)
+    {
+        excludeListDestination.Remove(exclude);
+    }
+    private void AddExcludeDestination()
+    {
+        if (!string.IsNullOrWhiteSpace(newExcludeDestination))
+        {
+            try
+            {
+                var path = Path.GetFullPath(newExcludeDestination.Replace("\"", ""));
+                if (Directory.Exists(path) && !excludeListDestination.Contains(path))
+                {
+                    excludeListDestination.Add(path);
+                    newExcludeDestination = string.Empty;
                 }
                 else
                 {

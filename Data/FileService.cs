@@ -15,7 +15,8 @@ namespace Sorter.Data
 
         private string source;
         private string destination;
-        private string[] excludeDirs;
+        private string[] excludeDirsInSource;
+        private string[] excludeDirsInDestination;
         private string[] whiteList;
         private string[] blackList;
         private bool useWhiteListInsteadOfBlackList;
@@ -32,7 +33,7 @@ namespace Sorter.Data
             indexOfActualProcessingFile = -1;
             if (useThumbnails && Files.Count > 0)
             {
-                foreach (var f in Files.GetRange(0,5))
+                foreach (var f in Files.GetRange(0, 5))
                 {
                     Task.Run(() => CreateThumbnail(f));
                 }
@@ -43,8 +44,9 @@ namespace Sorter.Data
             try
             {
                 source = Path.GetFullPath(_options.CurrentValue.Source);
+                excludeDirsInSource = Array.ConvertAll(_options.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir));
                 destination = Path.GetFullPath(_options.CurrentValue.Destination);
-                excludeDirs = Array.ConvertAll(_options.CurrentValue.ExcludeDirs, dir => dir = Path.GetFullPath(dir));
+                excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir));
                 whiteList = _options.CurrentValue.WhiteList;
                 blackList = _options.CurrentValue.BlackList;
                 useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
@@ -83,7 +85,7 @@ namespace Sorter.Data
                 indexOfActualProcessingFile++;
                 if (useThumbnails)
                 {
-                    Task.Run(() => CreateThumbnail(Files[indexOfActualProcessingFile+5]));
+                    Task.Run(() => CreateThumbnail(Files[indexOfActualProcessingFile + 5]));
                 }
                 return indexOfActualProcessingFile;
             }
@@ -142,7 +144,7 @@ namespace Sorter.Data
                     try
                     {
                         var folderName = Path.GetFileName(fullPathToDirectory);
-                        if (!excludeDirs.Contains(fullPathToDirectory))
+                        if (!excludeDirsInDestination.Contains(fullPathToDirectory))
                         {
                             folders.Add(new Folder(fullPathToDirectory, folderName));
                             folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
@@ -165,7 +167,7 @@ namespace Sorter.Data
             List<File> files = new List<File>();
             try
             {
-                if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)))
+                if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)) || excludeDirsInSource.Contains(Path.GetFullPath(sourceDirectoryPath)))
                 {
                     return files;
                 }

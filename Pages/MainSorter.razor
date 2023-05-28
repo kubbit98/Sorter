@@ -172,6 +172,7 @@
         else
         {
             status = Status.Empty;
+            StateHasChanged();
             toastService.ShowError("There is no files to show - are paths are valid? Check it on the configuration page");
         }
     }
