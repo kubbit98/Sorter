@@ -1,0 +1,372 @@
+﻿@using Sorter.Data;
+@using Microsoft.Extensions.Options;
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
+@inject ConfigOptionsService ConfigOptionsService
+@inject FileService FileService
+@inject IOptionsSnapshot<ConfigOptions> configOptions
+@inject IToastService toastService
+
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Configuration</h4>
+                <button type="button" class="close" @onclick="@Cancel">&times;</button>
+            </div>
+            <div class="modal-body">
+                @*password*@
+                <form class="form">
+                    <div class="form-group row">
+                        <label for="password" class="col-sm-2 col-form-label">Password</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
+                        </div>
+                    </div>
+                </form>
+                <br />
+                @if (truePassword.Equals(unlockBoxPassword))
+                {
+                    //new password
+                    <div class="row mb-3">
+                        <label for="newPass" class="col-sm-2 col-form-label">New password:</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" type="password" id="newPass" name="newPass" @bind="newPassword" placeholder="New password">
+                        </div>
+                    </div>
+                    //password hint
+                    <div class="row mb-3">
+                        <div class="col-sm-10 offset-2">
+                            <p>Remember: this password is neither secure nor serious. It's just a quick way to hide your configuration from your friends</p>
+                        </div>
+                    </div>
+                    //source
+                    <div class="row mb-3">
+                        <label for="source" class="col-sm-2 col-form-label">Source:</label>
+                        <div class="col-sm-6">
+                            <input class="form-control" type="text" id="source" name="source" @bind="source" @bind:event="oninput" placeholder="Source directory path">
+                        </div>
+                        <div class="col-sm-4">
+                            @if (!String.IsNullOrWhiteSpace(source) && Directory.Exists(Path.GetFullPath(source)))
+                            {
+                                <p>Path is valid</p>
+                            }
+                            else
+                            {
+                                <p>Path is invalid</p>
+                            }
+                        </div>
+                    </div>
+                    //exclude dirs source
+                    <div class="row mb-3">
+                        <label for="exclude-dirs-sour" class="col-sm-2 col-form-label">Directories in source to exclude:</label>
+                        <div class="col-sm-10">
+                            <div class="row row-cols-auto">
+                                @foreach (var item in excludeListSource)
+                                {
+                                    <div class="col">
+                                        @item
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeSource(item)">X</button>
+                                    </div>
+                                }
+                                <div class="col">
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeSource" />
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeSource">Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    //destination
+                    <div class="row mb-3">
+                        <label for="destination" class="col-sm-2 col-form-label">Destination:</label>
+                        <div class="col-sm-6">
+                            <input class="form-control" type="text" id="destination" name="destination" @bind="destination" @bind:event="oninput" placeholder="Destination directory path">
+                        </div>
+                        <div class="col-sm-4">
+                            @if (!String.IsNullOrWhiteSpace(destination) && Directory.Exists(Path.GetFullPath(destination)))
+                            {
+                                <p>Path is valid</p>
+                            }
+                            else
+                            {
+                                <p>Path is invalid</p>
+                            }
+                        </div>
+                    </div>
+                    //exclude dirs destination
+                    <div class="row mb-3">
+                        <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">Directories in destination to exclude:</label>
+                        <div class="col-sm-10">
+                            <div class="row row-cols-auto">
+                                @foreach (var item in excludeListDestination)
+                                {
+                                    <div class="col">
+                                        @item
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeDestination(item)">X</button>
+                                    </div>
+                                }
+                                <div class="col">
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeDestination" />
+                                </div>
+                                <div class="col">
+                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination">Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    //renaming
+                    <div class="row mb-3">
+                        <div class="col-sm-10 offset-sm-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
+                                <label class="form-check-label" for="allowRename">
+                                    Allow all users to rename the files
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    //thumbnails
+                    <div class="row mb-3">
+                        <div class="col-sm-10 offset-sm-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="useThumbnails" name="useThumbnails" @bind="useThumbnails">
+                                <label class="form-check-label" for="useThumbnails">
+                                    Use thumbnails for photos. It may cause an increase in CPU consumption, a visible deterioration of the quality of photos (only in the preview), however, it significantly increases the convenience of using the application among remote clients.
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    //white or black
+                    <div class="row mb-3">
+                        <div class="col-sm-10 offset-sm-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="useWhite">
+                                <label class="form-check-label" for="gridCheck1">
+                                    Use white list of extensions instead of black list
+                                </label>
+                            </div>
+                            @if (useWhite)
+                            {
+                                <div class="container">
+                                    <div class="row row-cols-auto">
+                                        @foreach (var item in whiteList)
+                                        {
+                                            <div class="col">
+                                                @item
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveWhite(item)">X</button>
+                                            </div>
+                                        }
+                                        <div class="col">
+                                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                                        </div>
+                                        <div class="col">
+                                            <button class="btn btn-dark btn-sm" @onclick="AddWhite">Add</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="container">
+                                    <div class="row row-cols-auto">
+                                        @foreach (var item in blackList)
+                                        {
+                                            <div class="col">
+                                                @item
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveBlack(item)">X</button>
+                                            </div>
+                                        }
+                                        <div class="col">
+                                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                                        </div>
+                                        <div class="col">
+                                            <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p>You need to provide password, to change the app settings. Password can be find in config.json file</p>
+                }
+            </div>
+            <div class="modal-footer">
+                @if (truePassword.Equals(unlockBoxPassword))
+                {
+                    <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Save new configuration" buttonOnClick="Save" />
+                    @if (!@hostingEnv.IsProduction())
+                    {
+                        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Load default config for testing" buttonOnClick="LoadDefaultTestConfig" />
+                    }
+                }
+                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClickTask="Cancel" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> OnClose { get; set; }
+    private string source = String.Empty;
+    private List<string> excludeListSource = new List<string>();
+    private string newExcludeSource = String.Empty;
+    private string destination = String.Empty;
+    private List<string> excludeListDestination = new List<string>();
+    private string newExcludeDestination = String.Empty;
+    private bool useWhite = true;
+    private List<string> whiteList = new List<string>();
+    private string newWhite = String.Empty;
+    private List<string> blackList = new List<string>();
+    private string newBlack = String.Empty;
+    private string unlockBoxPassword = String.Empty;
+    private string truePassword = String.Empty;
+    private string newPassword = String.Empty;
+    private bool allowRename = true;
+    private bool useThumbnails = true;
+
+    private async Task Cancel()
+    {
+        await InvokeAsync(() => OnClose.InvokeAsync(false));
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
+        excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+        destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
+        excludeListDestination = Array.ConvertAll(configOptions.Value.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+        useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
+        whiteList = configOptions.Value.WhiteList.ToList();
+        blackList = configOptions.Value.BlackList.ToList();
+        truePassword = configOptions.Value.Password;
+        newPassword = truePassword;
+        allowRename = configOptions.Value.AllowRename;
+        useThumbnails = configOptions.Value.UseThumbnails;
+    }
+    private async void Save()
+    {
+        var config = configOptions.Value;
+        if (!ConfigOptionsService.CheckPath(source))
+        {
+            toastService.ShowError("Source path is invalid");
+            return;
+        }
+        if (!ConfigOptionsService.CheckPath(destination))
+        {
+            toastService.ShowError("Destination path is invalid");
+            return;
+        }
+        config.Source = source;
+        config.ExcludeDirsSource = excludeListSource.ToArray();
+        config.Destination = destination;
+        config.ExcludeDirsDestination = excludeListDestination.ToArray();
+        config.UseWhiteListInsteadOfBlackList = useWhite;
+        config.WhiteList = whiteList.ToArray();
+        config.BlackList = blackList.ToArray();
+        config.Password = newPassword;
+        config.AllowRename = allowRename;
+        config.UseThumbnails = useThumbnails;
+        try
+        {
+            ConfigOptionsService.SaveOptions(config);
+            toastService.ShowSuccess("Settings are saved");
+            Thread.Sleep(500);
+            FileService.ResetFiles();
+            //OnInitializedAsync();
+            await InvokeAsync(() => OnClose.InvokeAsync(true));
+        }
+        catch (Exception e)
+        {
+            toastService.ShowError(e.Message);
+        }
+    }
+    private void RemoveExcludeSource(string exclude)
+    {
+        excludeListSource.Remove(exclude);
+    }
+    private void AddExcludeSource()
+    {
+        if (!string.IsNullOrWhiteSpace(newExcludeSource))
+        {
+            try
+            {
+                var path = Path.GetFullPath(newExcludeSource.Replace("\"", ""));
+                if (Directory.Exists(path) && !excludeListSource.Contains(path))
+                {
+                    excludeListSource.Add(path);
+                    newExcludeSource = string.Empty;
+                }
+                else
+                {
+                    toastService.ShowWarning("Invalid path");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+    }
+    private void RemoveExcludeDestination(string exclude)
+    {
+        excludeListDestination.Remove(exclude);
+    }
+    private void AddExcludeDestination()
+    {
+        if (!string.IsNullOrWhiteSpace(newExcludeDestination))
+        {
+            try
+            {
+                var path = Path.GetFullPath(newExcludeDestination.Replace("\"", ""));
+                if (Directory.Exists(path) && !excludeListDestination.Contains(path))
+                {
+                    excludeListDestination.Add(path);
+                    newExcludeDestination = string.Empty;
+                }
+                else
+                {
+                    toastService.ShowWarning("Invalid path");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+    }
+    private void RemoveWhite(string white)
+    {
+        whiteList.Remove(white);
+    }
+    private void AddWhite()
+    {
+        if (!string.IsNullOrWhiteSpace(newWhite) && !whiteList.Contains(newWhite))
+        {
+            whiteList.Add(newWhite);
+            newWhite = string.Empty;
+        }
+    }
+    private void RemoveBlack(string black)
+    {
+        blackList.Remove(black);
+    }
+    private void AddBlack()
+    {
+        if (!string.IsNullOrWhiteSpace(newBlack) && !whiteList.Contains(newBlack))
+        {
+            blackList.Add(newBlack);
+            newBlack = string.Empty;
+        }
+    }
+    private void LoadDefaultTestConfig()
+    {
+        ConfigOptionsService.LoadDefaultTestConfig();
+        toastService.ShowInfo("Default configuration loaded");
+        //NavigationManager.NavigateTo("config", true);
+        Thread.Sleep(500);
+        OnInitializedAsync();
+    }
+}

@@ -1,0 +1,23 @@
+﻿<div class="@divCssClass">
+    <button class="@buttonCssClass" @onclick="InvokeParentMethod">@buttonName</button>
+</div>
+
+@code {
+    [Parameter] public string? divCssClass { get; set; }
+    [Parameter] public string? buttonCssClass { get; set; }
+    [Parameter] public string? buttonName { get; set; }
+    [Parameter] public Action? buttonOnClick { get; set; }
+    [Parameter] public EventCallback buttonOnClickTask { get; set; }
+    private void InvokeParentMethod()
+    {
+        if (buttonOnClick != null)
+        {
+            buttonOnClick?.Invoke();
+        }
+        else
+        {
+            buttonOnClickTask.InvokeAsync();
+        }
+    }
+
+}
