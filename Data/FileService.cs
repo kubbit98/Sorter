@@ -10,7 +10,7 @@ namespace Sorter.Data
         private List<Folder> Folders;
         private int indexOfActualProcessingFile;
 
-        private static int MAX_WIDTH_OF_PHOTO = 850;
+        private static int MAX_SIZE_OF_PHOTO = 850;
         private static string[] THUMBNAIL_EXTENSIONS = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
 
         private string source;
@@ -244,18 +244,26 @@ namespace Sorter.Data
         {
             if (!THUMBNAIL_EXTENSIONS.Contains(file.Extension) || !string.IsNullOrWhiteSpace(file.ThumbnailPath))
                 return;
-
-            //Stopwatch stopWatch = Stopwatch.StartNew();
+            //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
             using (Image image = Image.Load(file.PhysicalPath))
             {
                 do
                 {
                     file.ThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
                 } while (System.IO.File.Exists(file.ThumbnailPath));
-                int ratio = image.Width / MAX_WIDTH_OF_PHOTO;
-                image.Mutate(x => x.Resize(image.Width / ratio, image.Height / ratio));
-                image.Save(file.ThumbnailPath);
-                file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), file.ThumbnailPath));
+                double ratioWidth = MAX_SIZE_OF_PHOTO / (double)image.Width;
+                double ratioHeight = MAX_SIZE_OF_PHOTO / (double)image.Height;
+                double ratio = Math.Min(ratioWidth, ratioHeight);
+                if (ratio < 1)
+                {
+                    image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
+                    image.Save(file.ThumbnailPath);
+                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), file.ThumbnailPath));
+                }
+                else
+                {
+                    file.ThumbnailPath = string.Empty;
+                }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);
         }

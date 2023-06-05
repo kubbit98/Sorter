@@ -1,4 +1,4 @@
-﻿@page "/sorter"
+﻿@page "/"
 @using Sorter.Data;
 @inject FileService FileService
 @inject IJSRuntime theJavaScriptEngine
@@ -17,19 +17,21 @@
             </div>
         </div>
         <div class="row mb-3">
-            <ButtonInDiv divCssClass="col" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
         break;
     case Status.Empty:
         <div class="row mb-3">
             <div class="col">
-                <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app on <a href="/config">Configuration page</a>.</p>
+                <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
             </div>
         </div>
         <div class="row mb-3">
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
         break;
     case Status.Initialized:
@@ -53,6 +55,7 @@
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClick="ModalFolderCreate" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
         //folders and media
         <div class="container">
@@ -110,8 +113,12 @@
         Message="Insert name for new folder"
         AdditionalValuesToNotRepeat="@folders?.Select(f=>f.Name).ToArray()"
         OnCloseWithValue="@ModalFolderClose"
-        OnClose="@ModalCancel"
+        OnClose="@ModalFolderCancel"
         Type="Dialog.Category.FolderAdd" />
+}
+@if (ModalConfigurationIsOpen)
+{
+    <ConfigDialog OnClose="@ModalConfigurationClose" />
 }
 
 @code {
@@ -131,6 +138,7 @@
     private string? truePassword;
     private bool allowRename;
     private bool ModalFolderIsOpen = false;
+    private bool ModalConfigurationIsOpen = false;
     private string? message;
     private Status status = Status.BeforeInit;
 
@@ -280,8 +288,21 @@
         }
         ModalFolderIsOpen = false;
     }
-    private async Task ModalCancel(bool isOk)
+    private async Task ModalFolderCancel(bool isOk)
     {
         ModalFolderIsOpen = false;
+    }
+    private void ModalConfigurationOpen()
+    {
+        ModalConfigurationIsOpen = true;
+        StateHasChanged();
+    }
+    private async Task ModalConfigurationClose(bool isOk)
+    {
+        ModalConfigurationIsOpen = false;
+        if (isOk)
+        {
+            StateHasChanged();
+        }
     }
 }
