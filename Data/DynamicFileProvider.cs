@@ -46,9 +46,15 @@ namespace Sorter.Data
         PhysicalFileProvider PhysicalFileProvider { get; set; }
         public DynamicFileProvider(string root)
         {
-            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(Path.GetFullPath(root)))
+            if (string.IsNullOrWhiteSpace(root))
             {
-                Console.WriteLine(Path.GetFullPath(root) + " path is invalid, load temporary path");
+                Console.WriteLine(string.Format("No path for {0} provided, load temporary path", this.GetType().Name));
+                root = Path.GetTempPath();
+            }
+            else if (!Directory.Exists(Path.GetFullPath(root)))
+            {
+                if (root.Equals("temp")) return;
+                Console.WriteLine(string.Format("{0} path is invalid, load temporary path for class {1}",root, this.GetType().Name));
                 root = Path.GetTempPath();
             }
             PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
