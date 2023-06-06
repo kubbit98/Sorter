@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using Sorter.Data;
+@using Blazored.Toast.Configuration;
 @inject FileService FileService
 @inject IJSRuntime theJavaScriptEngine
 @inject IHostApplicationLifetime AppLifetime
@@ -121,6 +122,14 @@
     <ConfigDialog OnClose="@ModalConfigurationClose" />
 }
 
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                IconType="IconType.Material"
+                ShowProgressBar="true"
+                RemoveToastsOnNavigation="true"
+                PauseProgressOnHover="true"
+                MaxToastCount="3"
+                Timeout="10" />
+
 @code {
     private static string[] VIDEO_EXTENSIONS = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
     private static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
@@ -139,7 +148,6 @@
     private bool allowRename;
     private bool ModalFolderIsOpen = false;
     private bool ModalConfigurationIsOpen = false;
-    private string? message;
     private Status status = Status.BeforeInit;
 
 
@@ -262,7 +270,7 @@
     }
     private string GetTextFileContent()
     {
-        return System.IO.File.ReadAllText(file.PhysicalPath);
+        return System.IO.File.ReadAllText(file!.PhysicalPath);
     }
     private async void SaveFileName()
     {
@@ -302,7 +310,8 @@
         ModalConfigurationIsOpen = false;
         if (isOk)
         {
-            StateHasChanged();
+            //StateHasChanged();
+            status = Status.BeforeInit;
         }
     }
 }

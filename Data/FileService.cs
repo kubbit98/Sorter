@@ -31,7 +31,7 @@ namespace Sorter.Data
             LoadConfig();
             LoadFilesAndFolders();
             indexOfActualProcessingFile = -1;
-            if (useThumbnails && Files.Count > 0)
+            if (useThumbnails && Files!.Count > 0)
             {
                 foreach (var f in Files.GetRange(0, 5))
                 {
