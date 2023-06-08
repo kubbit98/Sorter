@@ -15,7 +15,6 @@ builder.Services.AddOptions<ConfigOptions>().BindConfiguration(ConfigOptions.con
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddBlazoredToast();
-builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddSingleton<FileService>();
 builder.Services.AddSingleton<ConfigOptionsService>();
@@ -33,7 +32,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
