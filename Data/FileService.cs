@@ -215,6 +215,11 @@ namespace Sorter.Data
                 Console.WriteLine("Cannot move file\n" + e.Message);
             }
         }
+        public Task<string> GetTextFileContent(File file)
+        {
+            if (file == null) throw new Exception("No file"); ;
+            return Task.FromResult(System.IO.File.ReadAllText(file!.PhysicalPath));
+        }
         public bool CreateFolder(string folderName)
         {
             if (Folders.Any(f => f.Name == folderName)) return false;
