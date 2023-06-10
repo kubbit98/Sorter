@@ -19,6 +19,10 @@ namespace Sorter.Data
     {
         public TempDFP(string root) : base(root)
         {
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                root = "Temp";
+            }
             string path = Path.GetFullPath(root);
             if (!Directory.Exists(path))
             {
