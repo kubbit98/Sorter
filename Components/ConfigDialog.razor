@@ -178,7 +178,7 @@
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                                            <input class="form-control" placeholder="New extension" @bind="newBlack" />
                                         </div>
                                         <div class="col">
                                             <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
@@ -355,7 +355,7 @@
     }
     private void AddBlack()
     {
-        if (!string.IsNullOrWhiteSpace(newBlack) && !whiteList.Contains(newBlack))
+        if (!string.IsNullOrWhiteSpace(newBlack) && !blackList.Contains(newBlack))
         {
             blackList.Add(newBlack);
             newBlack = string.Empty;
