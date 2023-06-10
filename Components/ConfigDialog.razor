@@ -201,6 +201,7 @@
                     @if (!@hostingEnv.IsProduction())
                     {
                         <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Load default config for testing" buttonOnClick="LoadDefaultTestConfig" />
+                        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Rearrange test files to their original state" buttonOnClick="RearrangeTestFiles" />
                     }
                 }
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClickTask="Cancel" />
@@ -273,7 +274,6 @@
         {
             ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
-            Thread.Sleep(500);
             FileService.ResetFiles();
             //OnInitializedAsync();
             await InvokeAsync(() => OnClose.InvokeAsync(true));
@@ -361,12 +361,19 @@
             newBlack = string.Empty;
         }
     }
-    private void LoadDefaultTestConfig()
+    private async void LoadDefaultTestConfig()
     {
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
-        //NavigationManager.NavigateTo("config", true);
-        Thread.Sleep(500);
-        OnInitializedAsync();
+        FileService.ResetFiles();
+        //OnInitializedAsync();
+        await InvokeAsync(() => OnClose.InvokeAsync(true));
+    }
+    private async void RearrangeTestFiles()
+    {
+        ConfigOptionsService.RearrangeTestFiles();
+        toastService.ShowInfo("Test files rearranged");
+        FileService.ResetFiles();
+        await InvokeAsync(() => OnClose.InvokeAsync(true));
     }
 }

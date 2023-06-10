@@ -1,7 +1,9 @@
 ## my own
 config.json
 Sorter-Backup.csproj
-temp/
+Temp/
+TestFolder/src
+TestFolder/dst
 
 
 ## Ignore Visual Studio temporary files, build results, and

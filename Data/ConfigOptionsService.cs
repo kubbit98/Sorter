@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.IO;
+using System.Text.Json;
 
 namespace Sorter.Data
 {
@@ -34,10 +35,10 @@ namespace Sorter.Data
             try
             {
                 string jsonString = JsonSerializer.Serialize(config);
-                jsonString = String.Concat("{\"config\": ", jsonString, "}");
+                jsonString = string.Concat("{\"config\": ", jsonString, "}");
                 System.IO.File.WriteAllText("config.json", jsonString);
-                _sourceDFP.UpdateProvider(config.Source);
-                _destinationDFP.UpdateProvider(config.Destination);
+                _sourceDFP.UpdateProvider(Path.GetFullPath(config.Source));
+                _destinationDFP.UpdateProvider(Path.GetFullPath(config.Destination));
             }
             catch
             {
@@ -46,7 +47,47 @@ namespace Sorter.Data
         }
         public void LoadDefaultTestConfig()
         {
-            System.IO.File.Copy("..\\default_config.json", "config.json", true);
+            System.IO.File.Copy(Path.Combine("TestFolder", "test_config.json"), "config.json", true);
+        }
+        public void RearrangeTestFiles()
+        {
+            string dst = Path.Combine("TestFolder", "dst");
+            if (!Directory.Exists(dst))
+            {
+                Directory.CreateDirectory(dst);
+            }
+            string src = Path.Combine("TestFolder", "src");
+            if (!Directory.Exists(src))
+            {
+                Directory.CreateDirectory(src);
+            }
+
+            DirectoryInfo di = new DirectoryInfo(dst);
+            foreach (FileInfo file in di.GetFiles())
+            {
+                file.Delete();
+            }
+            foreach (DirectoryInfo dir in di.GetDirectories())
+            {
+                dir.Delete(true);
+            }
+            for (char c = 'A'; c <= 'E'; c++)
+            {
+                Directory.CreateDirectory(Path.Combine(dst, c.ToString()));
+            }
+            for (int i = 0; i <= 9; i++)
+            {
+                string path = Path.Combine(src, i + ".txt");
+                if (!System.IO.File.Exists(path))
+                {
+                    using (StreamWriter sw = System.IO.File.CreateText(path))
+                    {
+                        sw.WriteLine("File number");
+                        sw.WriteLine(i);
+                        sw.WriteLine(":P");
+                    }
+                }
+            }
         }
     }
 }
