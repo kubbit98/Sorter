@@ -76,7 +76,7 @@
         //name and password
         <div class="row mb-3">
             <div class="col-sm-8">
-                <p>@file?.PhysicalPath?.Replace(file.Name,"")<strong>@file?.Name</strong></p>
+                <p>@file?.PhysicalPath?.Replace(file.Name,"").Replace(file.Extension,"")<strong>@file?.Name.@file.Extension</strong></p>
             </div>
             <label class="col-sm-2" for="password">Password to unlock more function:</label>
             <div class="col-sm-2">
@@ -110,7 +110,7 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="FileName">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="file.Name">
                     </div>
                     <ButtonInDiv divCssClass="col-sm-6" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClick="SaveFileName" />
                 </div>
@@ -142,9 +142,30 @@
                         <p>Filetype @file?.Extension is already not supported</p>
                     }
                 </div>
-                @if (ShowDebugInfo)
-                {
                 <div class="col col-sm-3">
+                    <div class="row mb-3">
+                        <p>Next photo</p>
+                        @if(PHOTO_EXTENSIONS.Contains(file?.Extension?.ToLower())){
+                            <img src="@(string.IsNullOrEmpty(file?.ThumbnailPath)?file?.Path:file?.ThumbnailPath)" style="max-width:400px" />
+                        }
+                        else
+                        {
+                            <p>Next file is not photo</p>
+                        }
+                    </div>
+                    <div class="row mb-3">
+                        <p>Previous photo</p>
+                        @if(PHOTO_EXTENSIONS.Contains(file?.Extension?.ToLower())){
+                            <img src="@(string.IsNullOrEmpty(file?.ThumbnailPath)?file?.Path:file?.ThumbnailPath)" style="max-width:400px" />
+                        }
+                        else
+                        {
+                            <p>Next file is not photo</p>
+                        }
+                    </div>
+                    @if (ShowDebugInfo)
+                {
+                <div class="row mb-3">
                     <p>
                         INDEX @MyMediaCurrentIndex
                     </p>
@@ -160,6 +181,7 @@
                     </p>
                 </div>
                 }
+                </Div>
             </div>
         </div>
         break;
@@ -185,8 +207,8 @@
     private const string StorageMyMediaList = "_MyMediaIndexes";
     private const string StorageMyMediaCurrentIndex = "_MyMediaCurrentIndex";
     private const string StorageStatus = "_Status";
-    private string StoragePrefix; //TODO check if we can use this
-    private const bool ShowDebugInfo = false;
+    private string StoragePrefix; //TODO check if we need use this
+    private const bool ShowDebugInfo = true;
 
     private static string[] VIDEO_EXTENSIONS = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
     private static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
@@ -197,11 +219,9 @@
 
     private List<Tuple<int, string>>? MyMediaIndexes;
     private int MyMediaCurrentIndex;
-    //private int LastIndex;
     private File? file;
     private Folder[]? folders;
     private double? cols;
-    private string? FileName;
     private string unlockBoxPassword = string.Empty;
     private string? truePassword;
     private bool allowRename;
@@ -247,7 +267,6 @@
         folders = await FileService.GetFoldersAsync();
         cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
         file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
-        FileName = file!.Name;
         truePassword = await FileService.GetTruePassword();
         allowRename = await FileService.GetAllowRename();
     }
@@ -340,7 +359,6 @@
     {
         if (MyMediaCurrentIndex < MyMediaIndexes!.Count - 1) GetNextFileFromOurTab();
         else GetNextFileFromFileService();
-        FileName = file!.Name;
 
         ReloadPlayerIfVideo();
         StateHasChanged();
@@ -364,7 +382,6 @@
             else
             {
                 file = FileService.GetFileAtIndex(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-                FileName = file!.Name;
             }
             ReloadPlayerIfVideo();
             StateHasChanged();
@@ -387,16 +404,17 @@
         await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
     }
-    private async Task<string> GetTextFileContent() // TODO change this
+    private async Task<string> GetTextFileContent()
     {
         return await FileService.GetTextFileContent(file);
     }
     private async void SaveFileName()
     {
-        FileService.ChangeFileName(file!, FileName!);
+        FileService.ChangeFileName(file.FIndex.Value, file.Name);
         file = FileService.GetFileAtIndex(file!.FIndex!.Value);
-        FileName = file!.Name;
         MyMediaIndexes![MyMediaCurrentIndex] = new Tuple<int, string>(file!.FIndex!.Value, file.Name);
+        await _PSSWriteMyMediaIndexes();
+        StateHasChanged();
 
     }
     private void ModalFolderCreate()
