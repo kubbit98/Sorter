@@ -76,7 +76,7 @@
         //name and password
         <div class="row mb-3">
             <div class="col-sm-8">
-                <p>@file?.PhysicalPath?.Replace(file.Name,"").Replace(file.Extension,"")<strong>@file?.Name.@file.Extension</strong></p>
+                <p>@file?.PhysicalPath?.Replace(file.Name,"").Replace(file.Extension,"")<strong>@file?.Name.@file?.Extension</strong></p>
             </div>
             <label class="col-sm-2" for="password">Password to unlock more function:</label>
             <div class="col-sm-2">
@@ -264,11 +264,18 @@
     }
     private async void LoadSession(int index, string fileName = "")
     {
-        folders = await FileService.GetFoldersAsync();
-        cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
-        file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
-        truePassword = await FileService.GetTruePassword();
-        allowRename = await FileService.GetAllowRename();
+        try{
+            file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
+            folders = await FileService.GetFoldersAsync();
+            cols = Math.Min(Math.Ceiling(Math.Sqrt(folders.Length)), BRAJANEK);
+            truePassword = await FileService.GetTruePassword();
+            allowRename = await FileService.GetAllowRename();
+        }
+        catch
+        {
+            status = Status.BeforeInit;
+            await _ResetProtectedSessionStore();
+        }
     }
     private async void InitSession()
     {
