@@ -22,21 +22,24 @@
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
-        <div class="col col-sm-3">
-            <p>
-                INDEX @MyMediaCurrentIndex
-            </p>
-            @if (null != MyMediaIndexes)
-            {
-                foreach (var tuple in MyMediaIndexes)
+        if (ShowDebugInfo)
+        {
+            <div class="col col-sm-3">
+                <p>
+                    INDEX @MyMediaCurrentIndex
+                </p>
+                @if (null != MyMediaIndexes)
                 {
-                    <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                    foreach (var tuple in MyMediaIndexes)
+                    {
+                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                    }
                 }
-            }
-            <p>
-                status: @status
-            </p>
-        </div>
+                <p>
+                    status: @status
+                </p>
+            </div>
+        }
         break;
     case Status.Empty:
         <div class="row mb-3">
@@ -50,21 +53,24 @@
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
-        <div class="col col-sm-3">
-            <p>
-                INDEX @MyMediaCurrentIndex
-            </p>
-            @if (null != MyMediaIndexes)
-            {
-                foreach (var tuple in MyMediaIndexes)
+        if (ShowDebugInfo)
+        {
+            <div class="col col-sm-3">
+                <p>
+                    INDEX @MyMediaCurrentIndex
+                </p>
+                @if (null != MyMediaIndexes)
                 {
-                    <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                    foreach (var tuple in MyMediaIndexes)
+                    {
+                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                    }
                 }
-            }
-            <p>
-                status: @status
-            </p>
-        </div>
+                <p>
+                    status: @status
+                </p>
+            </div>
+        }
         break;
     case Status.Initialized:
         //name and password
@@ -136,6 +142,8 @@
                         <p>Filetype @file?.Extension is already not supported</p>
                     }
                 </div>
+                @if (ShowDebugInfo)
+                {
                 <div class="col col-sm-3">
                     <p>
                         INDEX @MyMediaCurrentIndex
@@ -151,6 +159,7 @@
                         status: @status
                     </p>
                 </div>
+                }
             </div>
         </div>
         break;
@@ -176,7 +185,8 @@
     private const string StorageMyMediaList = "_MyMediaIndexes";
     private const string StorageMyMediaCurrentIndex = "_MyMediaCurrentIndex";
     private const string StorageStatus = "_Status";
-    private string StoragePrefix;
+    private string StoragePrefix; //TODO check if we can use this
+    private const bool ShowDebugInfo = false;
 
     private static string[] VIDEO_EXTENSIONS = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
     private static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
