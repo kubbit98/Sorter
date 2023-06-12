@@ -228,7 +228,7 @@
     private string newPassword = String.Empty;
     private bool allowRename = true;
     private bool useThumbnails = true;
-
+    
     private async Task Cancel()
     {
         await InvokeAsync(() => OnClose.InvokeAsync(false));

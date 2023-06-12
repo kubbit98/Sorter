@@ -12,6 +12,7 @@ namespace Sorter.Data
         private List<File> Files;
         private List<Folder> Folders;
         private int indexOfActualProcessingFile;
+        private string StoragePrefix;
 
         private string source;
         private string destination;
@@ -53,6 +54,7 @@ namespace Sorter.Data
                 truePassword = _options.CurrentValue.Password;
                 allowRename = _options.CurrentValue.AllowRename;
                 useThumbnails = _options.CurrentValue.UseThumbnails;
+                StoragePrefix = Path.GetRandomFileName();
 
             }
             catch (NullReferenceException)
@@ -63,6 +65,10 @@ namespace Sorter.Data
             {
                 throw;
             }
+        }
+        public Task<string> GetStoragePrefix()
+        {
+            return Task.FromResult(StoragePrefix);
         }
         public Task<string> GetTruePassword()
         {
@@ -101,6 +107,7 @@ namespace Sorter.Data
             if (index < Files.Count && index >= 0)
             {
                 File file = GetCopyOfFile(Files[index]);
+                //Console.WriteLine("Load file " + file.Name);
                 file.Path = file.PhysicalPath;
                 if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
                 else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
