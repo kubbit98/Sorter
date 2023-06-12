@@ -16,5 +16,15 @@ public class File
     public string Name { get; set; }
     public string Extension { get; set; }
     public int? FIndex { get; set; }
+    public string OnlyPath
+    {
+        get
+        {
+            string path = PhysicalPath;
+            if (!string.IsNullOrEmpty(Name)) path = path.Replace(Name, "");
+            if (!string.IsNullOrEmpty(Extension)) path = path.Replace(Extension, "");
+            return path;
+        }
+    }
     
 }

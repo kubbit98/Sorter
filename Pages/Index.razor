@@ -76,7 +76,9 @@
         @*name and password*@
         <div class="row mb-3">
             <div class="col-sm-8">
-                <p>@CurrentFile?.PhysicalPath?.Replace(CurrentFile.Name,"").Replace(CurrentFile.Extension,"")<strong>@CurrentFile?.Name.@CurrentFile?.Extension</strong></p>
+                <p>
+                    @CurrentFile!.OnlyPath <strong>@CurrentFile.Name.@CurrentFile.Extension</strong>
+                </p>
             </div>
             <label class="col-sm-2" for="password">Password to unlock more function:</label>
             <div class="col-sm-2">
