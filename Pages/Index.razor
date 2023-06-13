@@ -127,9 +127,7 @@
                         <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(PreviousFile.Extension.ToLower()))
                         {
-                            <button @onclick="@Back">
-                                <img src="@(string.IsNullOrEmpty(PreviousFile.ThumbnailPath)?PreviousFile.Path:PreviousFile.ThumbnailPath)" style="max-width:400px" />
-                            </button>
+                            <img src="@(string.IsNullOrEmpty(PreviousFile.ThumbnailPath)?PreviousFile.Path:PreviousFile.ThumbnailPath)" class="img-fluid" @onclick="@Back" />
                         }
                         else
                         {
@@ -148,7 +146,10 @@
                 }
                 else if (PHOTO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
                 {
-                    <img src="@(string.IsNullOrEmpty(CurrentFile?.ThumbnailPath)?CurrentFile?.Path:CurrentFile?.ThumbnailPath)" style="max-width:800px;max-height:700px;" />
+                    <img data-bs-toggle="modal" data-bs-target="#photoModal" src="@(string.IsNullOrEmpty(CurrentFile?.ThumbnailPath)?CurrentFile?.Path:CurrentFile?.ThumbnailPath)" class="img-fluid mx-auto d-block" />
+                    <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back" 
+                        IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())" 
+                        IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
                 }
                 else if ("pdf".Equals(CurrentFile?.Extension?.ToLower()))
                 {
@@ -170,9 +171,7 @@
                         <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(NextFile.Extension.ToLower()))
                         {
-                            <button @onclick="@Next">
-                                <img src="@(string.IsNullOrEmpty(NextFile.ThumbnailPath)?NextFile.Path:NextFile.ThumbnailPath)" style="max-width:400px" />
-                            </button>
+                            <img src="@(string.IsNullOrEmpty(NextFile.ThumbnailPath)?NextFile.Path:NextFile.ThumbnailPath)" class="img-fluid" @onclick="@Next" />
                         }
                         else
                         {
@@ -414,6 +413,7 @@
         FileService.ResetFiles();
         await _ResetProtectedSessionStore();
         StoragePrefix = await FileService.GetStoragePrefix();
+        PreviousFile = CurrentFile = NextFile = null;
         InitSession();
         ReloadPlayerIfVideo();
         StateHasChanged();
@@ -450,6 +450,7 @@
             await _ResetProtectedSessionStore();
             StoragePrefix = await FileService.GetStoragePrefix();
             Status = EStatus.BeforeInit;
+            PreviousFile = CurrentFile = NextFile = null;
             await _PSSWriteStatus();
         }
     }
