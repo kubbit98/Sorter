@@ -178,7 +178,7 @@
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                                            <input class="form-control" placeholder="New extension" @bind="newBlack" />
                                         </div>
                                         <div class="col">
                                             <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
@@ -201,6 +201,7 @@
                     @if (!@hostingEnv.IsProduction())
                     {
                         <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Load default config for testing" buttonOnClick="LoadDefaultTestConfig" />
+                        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Rearrange test files to their original state" buttonOnClick="RearrangeTestFiles" />
                     }
                 }
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClickTask="Cancel" />
@@ -227,7 +228,7 @@
     private string newPassword = String.Empty;
     private bool allowRename = true;
     private bool useThumbnails = true;
-
+    
     private async Task Cancel()
     {
         await InvokeAsync(() => OnClose.InvokeAsync(false));
@@ -273,7 +274,6 @@
         {
             ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
-            Thread.Sleep(500);
             FileService.ResetFiles();
             //OnInitializedAsync();
             await InvokeAsync(() => OnClose.InvokeAsync(true));
@@ -355,18 +355,25 @@
     }
     private void AddBlack()
     {
-        if (!string.IsNullOrWhiteSpace(newBlack) && !whiteList.Contains(newBlack))
+        if (!string.IsNullOrWhiteSpace(newBlack) && !blackList.Contains(newBlack))
         {
             blackList.Add(newBlack);
             newBlack = string.Empty;
         }
     }
-    private void LoadDefaultTestConfig()
+    private async void LoadDefaultTestConfig()
     {
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
-        //NavigationManager.NavigateTo("config", true);
-        Thread.Sleep(500);
-        OnInitializedAsync();
+        FileService.ResetFiles();
+        //OnInitializedAsync();
+        await InvokeAsync(() => OnClose.InvokeAsync(true));
+    }
+    private async void RearrangeTestFiles()
+    {
+        ConfigOptionsService.RearrangeTestFiles();
+        toastService.ShowInfo("Test files rearranged");
+        FileService.ResetFiles();
+        await InvokeAsync(() => OnClose.InvokeAsync(true));
     }
 }

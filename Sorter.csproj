@@ -1,41 +1,44 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-	<VersionPrefix>0.4.0</VersionPrefix>
-	<VersionSuffix>beta</VersionSuffix>
-    <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/kubbit98/Sorter</PackageProjectUrl>
-    <AssemblyVersion></AssemblyVersion>
-    <Title>Sorter</Title>
-    <NeutralLanguage>en-001</NeutralLanguage>
-    <PackageLicenseFile>COPYING</PackageLicenseFile> 
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<VersionPrefix>0.6.1</VersionPrefix>
+		<VersionSuffix>beta</VersionSuffix>
+		<Version>$(VersionPrefix)-$(VersionSuffix)</Version>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/kubbit98/Sorter</PackageProjectUrl>
+		<AssemblyVersion></AssemblyVersion>
+		<Title>Sorter</Title>
+		<NeutralLanguage>en-001</NeutralLanguage>
+		<PackageLicenseFile>COPYING</PackageLicenseFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Blazored.Toast" Version="4.1.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Update="TestFolder\**" CopyToPublishDirectory="Never" />
+		<Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+		<Content Update="config.json" CopyToPublishDirectory="Never" />
+		<!--<EmbeddedResource Remove="TestFolder\**" />
+		<EmbeddedResource Remove="appsettings*.json" />
+		<EmbeddedResource Remove="config.json" />-->
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Update="config.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Blazored.Toast" Version="4.1.0" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="COPYING">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Update="README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="COPYING">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>

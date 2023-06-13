@@ -1,0 +1,19 @@
+{
+  "config": {
+    "Source": "TestFolder\\src",
+    "ExcludeDirsSource": [
+    ],
+    "Destination": "TestFolder\\dst",
+    "ExcludeDirsDestination": [
+    ],
+    "UseWhiteListInsteadOfBlackList": true,
+    "WhiteList": [
+      "txt"
+    ],
+    "BlackList": [
+    ],
+    "Password": "a",
+    "AllowRename": false,
+    "UseThumbnails": true
+  }
+}

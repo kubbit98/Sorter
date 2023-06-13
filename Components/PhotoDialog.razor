@@ -1,0 +1,40 @@
+﻿@using Sorter.Data;
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-body carousel-dark carousel slide">
+                <img src="@Photo.Path" class="img-fluid mx-auto d-block" data-bs-dismiss="modal" style="max-height: 90vh;" />
+                @if (IsPrevPhoto)
+                {
+                    <button class="carousel-control-prev" type="button" @onclick="Back">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                }
+                @if (IsNextPhoto)
+                {
+                    <button class="carousel-control-next" type="button" @onclick="Next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public File Photo { get; set; }
+    [Parameter] public bool IsPrevPhoto { get; set; }
+    [Parameter] public bool IsNextPhoto { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    private async Task Next()
+    {
+        await InvokeAsync(() => OnNext.InvokeAsync());
+    }
+    private async Task Back()
+    {
+        await InvokeAsync(() => OnBack.InvokeAsync());
+    }
+}
