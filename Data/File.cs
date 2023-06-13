@@ -26,5 +26,13 @@ public class File
             return path;
         }
     }
-    
+    public string DisplayPath
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(ThumbnailPath)) return Path;
+            else return ThumbnailPath;
+        }
+    }
+
 }

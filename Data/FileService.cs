@@ -93,21 +93,23 @@ namespace Sorter.Data
             if (indexOfActualProcessingFile < Files.Count - 1)
             {
                 indexOfActualProcessingFile++;
-                if (useThumbnails && indexOfActualProcessingFile + 5 < Files.Count)
+                if (useThumbnails)
                 {
-                    Task.Run(() => CreateThumbnail(Files[indexOfActualProcessingFile + 5]));
+                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, 5))
+                    {
+                        if (string.IsNullOrEmpty(f.ThumbnailPath)) Task.Run(() => CreateThumbnail(f));
+                    }
                 }
                 return indexOfActualProcessingFile;
             }
 
-            return null;//(indexOfActualProcessingFile < Files.Count - 1) ? ++indexOfActualProcessingFile : null;
+            return null;
         }
         public File? GetFileAtIndex(int index)
         {
             if (index < Files.Count && index >= 0)
             {
                 File file = GetCopyOfFile(Files[index]);
-                //Console.WriteLine("Load file " + file.Name);
                 file.Path = file.PhysicalPath;
                 if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
                 else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
@@ -132,7 +134,7 @@ namespace Sorter.Data
             {
                 foreach (var f in Files.GetRange(0, 5))
                 {
-                    Task.Run(() => CreateThumbnail(f));
+                    CreateThumbnail(f);
                 }
             }
         }
@@ -263,22 +265,22 @@ namespace Sorter.Data
             //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
             using (Image image = Image.Load(file.PhysicalPath))
             {
-                do
-                {
-                    file.ThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
-                } while (System.IO.File.Exists(file.ThumbnailPath));
                 double ratioWidth = MAX_SIZE_OF_PHOTO / (double)image.Width;
                 double ratioHeight = MAX_SIZE_OF_PHOTO / (double)image.Height;
                 double ratio = Math.Min(ratioWidth, ratioHeight);
                 if (ratio < 1)
                 {
+                    do
+                    {
+                        file.ThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                    } while (System.IO.File.Exists(file.ThumbnailPath));
                     image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
-                    image.Save(file.ThumbnailPath);
+                    do
+                    {
+                        image.Save(file.ThumbnailPath);
+
+                    } while (!System.IO.File.Exists(file.ThumbnailPath));
                     file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), file.ThumbnailPath));
-                }
-                else
-                {
-                    file.ThumbnailPath = string.Empty;
                 }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);

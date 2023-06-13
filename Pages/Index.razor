@@ -127,7 +127,7 @@
                         <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(PreviousFile.Extension.ToLower()))
                         {
-                            <img src="@(string.IsNullOrEmpty(PreviousFile.ThumbnailPath)?PreviousFile.Path:PreviousFile.ThumbnailPath)" class="img-fluid" @onclick="@Back" />
+                            <img src="@PreviousFile.DisplayPath" class="img-fluid" @onclick="@Back" />
                         }
                         else
                         {
@@ -146,10 +146,12 @@
                 }
                 else if (PHOTO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
                 {
-                    <img data-bs-toggle="modal" data-bs-target="#photoModal" src="@(string.IsNullOrEmpty(CurrentFile?.ThumbnailPath)?CurrentFile?.Path:CurrentFile?.ThumbnailPath)" class="img-fluid mx-auto d-block" />
-                    <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back" 
-                        IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())" 
-                        IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
+                    <img data-bs-toggle="modal" data-bs-target="#photoModal"
+                         src="@(CurrentFile!.DisplayPath)"
+                         class="img-fluid mx-auto d-block" />
+                    <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
+                                 IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())"
+                                 IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
                 }
                 else if ("pdf".Equals(CurrentFile?.Extension?.ToLower()))
                 {
@@ -171,7 +173,7 @@
                         <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(NextFile.Extension.ToLower()))
                         {
-                            <img src="@(string.IsNullOrEmpty(NextFile.ThumbnailPath)?NextFile.Path:NextFile.ThumbnailPath)" class="img-fluid" @onclick="@Next" />
+                            <img src="@NextFile.DisplayPath" class="img-fluid" @onclick="@Next" />
                         }
                         else
                         {
