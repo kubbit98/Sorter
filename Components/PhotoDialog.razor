@@ -3,7 +3,7 @@
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-body carousel-dark carousel slide">
-                <img src="@Photo.Path" class="img-fluid mx-auto d-block" data-bs-dismiss="modal" />
+                <img src="@Photo.Path" class="img-fluid mx-auto d-block" data-bs-dismiss="modal" style="max-height: 90vh;" />
                 @if (IsPrevPhoto)
                 {
                     <button class="carousel-control-prev" type="button" @onclick="Back">
