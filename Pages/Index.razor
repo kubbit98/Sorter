@@ -112,9 +112,25 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="CurrentFile.Name">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="NewFileName" @bind:event="oninput" @onkeyup="StateHasChanged" >
                     </div>
-                    <ButtonInDiv divCssClass="col-sm-6" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" />
+                    <ButtonInDiv divCssClass="col-sm-2" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" customButtonParameter=@DictNewFileName />
+                    <div class="col-sm-4">
+                        @if (string.IsNullOrWhiteSpace(NewFileName) || CurrentFile.Name.Equals(NewFileName))
+                        {
+                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                        }
+                        else if (NewFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                        {
+                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                            <p>Illegal name of folder</p>
+                        }
+                        else
+                        {
+                            DictNewFileName = null;
+                        }
+                    </div>
+
                 </div>
             }
         </div>
@@ -206,9 +222,7 @@
 }
 
 
-
 <FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@AddFolder" />
-
 
 @if (ModalConfigurationIsOpen)
 {
@@ -241,11 +255,13 @@
     private double? Cols;
     private string UnlockBoxPassword = string.Empty;
     private string? TruePassword;
+    private string NewFileName = string.Empty;
     private bool AllowRename;
     private bool ModalConfigurationIsOpen = false;
     private EStatus Status = EStatus.OnConstructor;
 
     private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
+    private Dictionary<string, object> DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
 
 
     public enum EStatus
@@ -273,6 +289,7 @@
                     await _PSSReadMyMediaCurrentIndex();
                     LoadSession();
                     CurrentFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes![MyMediaCurrentIndex].Item2);
+                    NewFileName = CurrentFile.Name;
                     if (MyMediaCurrentIndex > 0)
                         PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes![MyMediaCurrentIndex - 1].Item2);
                     if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
@@ -301,6 +318,7 @@
             MyMediaIndexes = new List<Tuple<int, string>>();
             LoadSession();
             CurrentFile = await GetFileFromFileService(index.Value);
+            NewFileName = CurrentFile.Name;
             MyMediaIndexes.Add(new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name));
             int? nextIndex = FileService.GetNextIndex();
             if (nextIndex.HasValue) NextFile = await GetFileFromFileService(nextIndex.Value);
@@ -354,6 +372,7 @@
                 }
             }
         }
+        if (null != CurrentFile) NewFileName = CurrentFile.Name;
         if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
         {
             NextFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex + 1].Item1, MyMediaIndexes[MyMediaCurrentIndex + 1].Item2);
@@ -395,7 +414,7 @@
 
             NextFile = CurrentFile;
             CurrentFile = (PreviousFile != null) ? PreviousFile : await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-
+            NewFileName = CurrentFile.Name;
             if (MyMediaCurrentIndex > 0) PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes[MyMediaCurrentIndex - 1].Item2);
             else PreviousFile = null;
             ReloadPlayerIfVideo();
@@ -479,7 +498,7 @@
     private async Task SaveFileName()
     {
         if (CurrentFile == null) return;
-        FileService.ChangeFileName(CurrentFile.FIndex!.Value, CurrentFile.Name);
+        FileService.ChangeFileName(CurrentFile.FIndex!.Value, NewFileName);
         CurrentFile = await GetFileFromFileService(CurrentFile!.FIndex!.Value);
         if (CurrentFile == null) return;
         MyMediaIndexes![MyMediaCurrentIndex] = new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name);

@@ -249,6 +249,7 @@ namespace Sorter.Data
         }
         public void ChangeFileName(int index, string newFileName)
         {
+            if (newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return;
             File file = Files[index];
             string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
             Console.WriteLine("File renamed from " + file.Name + "." + file.Extension + " to " + newFileName + "." + file.Extension);
