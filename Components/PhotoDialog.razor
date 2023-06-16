@@ -1,5 +1,4 @@
-﻿@using Sorter.Data;
-<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+﻿<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-body carousel-dark carousel slide">
@@ -24,7 +23,7 @@
 </div>
 
 @code {
-    [Parameter] public File Photo { get; set; }
+    [Parameter] public Sorter.Data.File Photo { get; set; }
     [Parameter] public bool IsPrevPhoto { get; set; }
     [Parameter] public bool IsNextPhoto { get; set; }
     [Parameter] public EventCallback OnNext { get; set; }

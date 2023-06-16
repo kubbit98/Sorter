@@ -1,10 +1,11 @@
 ﻿<div class="@divCssClass">
-    <button class="@buttonCssClass" @onclick="InvokeParentMethod">@buttonName</button>
+    <button class="@buttonCssClass" @onclick="InvokeParentMethod" @attributes=customButtonParameter>@buttonName</button>
 </div>
 
 @code {
     [Parameter] public string? divCssClass { get; set; }
     [Parameter] public string? buttonCssClass { get; set; }
+    [Parameter] public Dictionary<string, object>? customButtonParameter { get; set; }
     [Parameter] public string? buttonName { get; set; }
     [Parameter] public Action? buttonOnClick { get; set; }
     [Parameter] public EventCallback buttonOnClickTask { get; set; }

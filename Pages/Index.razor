@@ -94,7 +94,7 @@
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClick="ModalFolderCreate" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" customButtonParameter=@DictFolderDialog />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
         </div>
         @*folders*@
@@ -205,10 +205,11 @@
         break;
 }
 
-@if (ModalFolderIsOpen)
-{
-    <FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnClose="@ModalFolderClose" />
-}
+
+
+<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@AddFolder" />
+
+
 @if (ModalConfigurationIsOpen)
 {
     <ConfigDialog OnClose="@ModalConfigurationClose" />
@@ -241,9 +242,10 @@
     private string UnlockBoxPassword = string.Empty;
     private string? TruePassword;
     private bool AllowRename;
-    private bool ModalFolderIsOpen = false;
     private bool ModalConfigurationIsOpen = false;
     private EStatus Status = EStatus.OnConstructor;
+
+    private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
 
 
     public enum EStatus
@@ -421,12 +423,7 @@
         StateHasChanged();
     }
 
-    private void ModalFolderCreate()
-    {
-        ModalFolderIsOpen = true;
-        StateHasChanged();
-    }
-    private async Task ModalFolderClose(string folderName)
+    private async Task AddFolder(string folderName)
     {
         if (!String.IsNullOrWhiteSpace(folderName))
         {
@@ -435,7 +432,6 @@
                 Folders = await FileService.GetFoldersAsync();
             }
         }
-        ModalFolderIsOpen = false;
     }
 
     private void ModalConfigurationOpen()

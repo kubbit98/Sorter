@@ -236,6 +236,7 @@ namespace Sorter.Data
         public bool CreateFolder(string folderName)
         {
             if (Folders.Any(f => f.Name == folderName)) return false;
+            if (folderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return false;
             string fullPath = Path.Combine(destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
