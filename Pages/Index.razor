@@ -3,7 +3,7 @@
 @using Sorter.Data;
 @using Blazored.Toast.Configuration;
 @inject FileService FileService
-@inject IJSRuntime theJavaScriptEngine
+@inject IJSRuntime JS
 @inject IHostApplicationLifetime AppLifetime
 @inject IToastService toastService
 @inject ProtectedSessionStorage ProtectedSessionStore
@@ -20,7 +20,7 @@
         </div>
         <div class="row mb-3">
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
         </div>
         @if (ShowDebugInfo)
         {
@@ -51,7 +51,7 @@
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
         </div>
         @if (ShowDebugInfo)
         {
@@ -95,7 +95,7 @@
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" customButtonParameter=@DictFolderDialog />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
         </div>
         @*folders*@
         <div class="container">
@@ -112,7 +112,7 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="NewFileName" @bind:event="oninput" @onkeyup="StateHasChanged" >
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="NewFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
                     </div>
                     <ButtonInDiv divCssClass="col-sm-2" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" customButtonParameter=@DictNewFileName />
                     <div class="col-sm-4">
@@ -155,7 +155,7 @@
             <div class="col col-sm-6">
                 @if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
                 {
-                    <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
+                    <video class="img-fluid mx-auto d-block" controls autoplay id="videoTagId">
                         <source src="@CurrentFile?.Path" type="video/@CurrentFile?.Extension">
                         Your browser does not support the video tag.
                     </video>
@@ -224,10 +224,7 @@
 
 <FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@AddFolder" />
 
-@if (ModalConfigurationIsOpen)
-{
-    <ConfigDialog OnClose="@ModalConfigurationClose" />
-}
+<ConfigDialog OnClose="@ConfigurationChanged" />
 
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
@@ -257,10 +254,10 @@
     private string? TruePassword;
     private string NewFileName = string.Empty;
     private bool AllowRename;
-    private bool ModalConfigurationIsOpen = false;
     private EStatus Status = EStatus.OnConstructor;
 
     private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
+    private Dictionary<string, object> DictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
     private Dictionary<string, object> DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
 
 
@@ -453,23 +450,13 @@
         }
     }
 
-    private void ModalConfigurationOpen()
+    private async Task ConfigurationChanged()
     {
-        ModalConfigurationIsOpen = true;
-        StateHasChanged();
-    }
-    private async Task ModalConfigurationClose(bool isOk)
-    {
-        ModalConfigurationIsOpen = false;
-        if (isOk)
-        {
-            //StateHasChanged();
-            await _ResetProtectedSessionStore();
-            StoragePrefix = await FileService.GetStoragePrefix();
-            Status = EStatus.BeforeInit;
-            PreviousFile = CurrentFile = NextFile = null;
-            await _PSSWriteStatus();
-        }
+        await _ResetProtectedSessionStore();
+        StoragePrefix = await FileService.GetStoragePrefix();
+        Status = EStatus.BeforeInit;
+        PreviousFile = CurrentFile = NextFile = null;
+        await _PSSWriteStatus();
     }
 
     private async void ReloadPlayerIfVideo()
@@ -477,7 +464,7 @@
         if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
-            await theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+            await JS.InvokeVoidAsync("loadVideo");
         }
     }
 
