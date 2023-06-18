@@ -8,6 +8,7 @@ namespace Sorter.Data
         private readonly IOptionsMonitor<ConfigOptions> _options;
         private static int MAX_SIZE_OF_PHOTO = 850;
         private static string[] THUMBNAIL_EXTENSIONS = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
+        private static int THUMBNAIL_TO_CREATE = 5;
 
         private List<File> Files;
         private List<Folder> Folders;
@@ -34,7 +35,7 @@ namespace Sorter.Data
             indexOfActualProcessingFile = -1;
             if (useThumbnails && Files!.Count > 0)
             {
-                foreach (var f in Files.GetRange(0, 5))
+                foreach (var f in Files.GetRange(0, THUMBNAIL_TO_CREATE))
                 {
                     Task.Run(() => CreateThumbnail(f));
                 }
@@ -95,7 +96,7 @@ namespace Sorter.Data
                 indexOfActualProcessingFile++;
                 if (useThumbnails)
                 {
-                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, 5))
+                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, THUMBNAIL_TO_CREATE))
                     {
                         if (string.IsNullOrEmpty(f.ThumbnailPath)) Task.Run(() => CreateThumbnail(f));
                     }
@@ -132,7 +133,7 @@ namespace Sorter.Data
             indexOfActualProcessingFile = -1;
             if (useThumbnails && Files.Count > 0)
             {
-                foreach (var f in Files.GetRange(0, 5))
+                foreach (var f in Files.GetRange(0, THUMBNAIL_TO_CREATE))
                 {
                     CreateThumbnail(f);
                 }
@@ -236,6 +237,7 @@ namespace Sorter.Data
         public bool CreateFolder(string folderName)
         {
             if (Folders.Any(f => f.Name == folderName)) return false;
+            if (folderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return false;
             string fullPath = Path.Combine(destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
@@ -248,6 +250,7 @@ namespace Sorter.Data
         }
         public void ChangeFileName(int index, string newFileName)
         {
+            if (newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return;
             File file = Files[index];
             string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
             Console.WriteLine("File renamed from " + file.Name + "." + file.Extension + " to " + newFileName + "." + file.Extension);
@@ -270,17 +273,18 @@ namespace Sorter.Data
                 double ratio = Math.Min(ratioWidth, ratioHeight);
                 if (ratio < 1)
                 {
+                    string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
                     do
                     {
-                        file.ThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
-                    } while (System.IO.File.Exists(file.ThumbnailPath));
+                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                    } while (System.IO.File.Exists(temporaryThumbnailPath));
                     image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
                     do
                     {
-                        image.Save(file.ThumbnailPath);
+                        image.Save(temporaryThumbnailPath);
 
-                    } while (!System.IO.File.Exists(file.ThumbnailPath));
-                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), file.ThumbnailPath));
+                    } while (!System.IO.File.Exists(temporaryThumbnailPath));
+                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
                 }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);

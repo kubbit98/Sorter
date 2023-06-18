@@ -1,47 +1,56 @@
-﻿<div class="modal fade show" id="dialog" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+﻿@inject IJSRuntime JS
+<div class="modal fade" id="folderModal" tabindex="-1" aria-labelledby="folderModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Add new folder</h4>
-                <button type="button" class="close" @onclick="@Cancel">&times;</button>
+                <button type="button" class="close" data-bs-dismiss="modal" >&times;</button>
             </div>
             <div class="modal-body">
                 <p>Insert name for new folder</p>
-                <input type="text" id="FolderName" name="FolderName" @bind="FolderName" placeholder="New folder name">
-                <p>@Alert</p>
+                <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="FolderName" @bind:event="oninput" placeholder="New folder name">
+                @if (string.IsNullOrWhiteSpace(FolderName)) 
+                {
+                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                }
+                else if (ExistingFolders!.Contains(FolderName))
+                {
+                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                    <p>Folder with that name already exists</p>
+                }
+                else if (FolderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                {
+                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                    <p>Illegal name of folder</p>
+                }
+                else
+                {
+                    customButtonParameter = null;
+                }
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @onclick=@OkWithValue>Add folder</button>
-                <button type="button" class="btn btn-danger" @onclick="@Cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick=@AddFolderAndClose @attributes=customButtonParameter>Add folder</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
 </div>
 @code {
     [Parameter] public string[]? ExistingFolders { get; set; }
-    [Parameter] public EventCallback<string> OnClose { get; set; }
-    public string? Alert { get; set; }
-    public string? FolderName { get; set; }
-    private async Task Cancel()
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    private Dictionary<string, object>? customButtonParameter { get; set; }
+    private string? FolderName { get; set; }
+
+    public async Task Init()
     {
-        await InvokeAsync(() => OnClose.InvokeAsync());
+        FolderName = string.Empty;
     }
-    private async Task Ok()
+
+    private async Task AddFolderAndClose()
     {
-        await InvokeAsync(() => OnClose.InvokeAsync());
-    }
-    private async Task OkWithValue()
-    {
-        if (String.IsNullOrWhiteSpace(FolderName))
+        if (!String.IsNullOrWhiteSpace(FolderName) && !ExistingFolders!.Contains(FolderName))
         {
-            Alert = "Cannot add folder without name";
-            return;
+            await InvokeAsync(() => OnSave.InvokeAsync(FolderName));
         }
-        if (ExistingFolders!.Contains(FolderName))
-        {
-            Alert = "Folder with that name already exists";
-            return;
-        }
-        await InvokeAsync(() => OnClose.InvokeAsync(FolderName));
     }
 }

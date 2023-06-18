@@ -3,7 +3,7 @@
 @using Sorter.Data;
 @using Blazored.Toast.Configuration;
 @inject FileService FileService
-@inject IJSRuntime theJavaScriptEngine
+@inject IJSRuntime JS
 @inject IHostApplicationLifetime AppLifetime
 @inject IToastService toastService
 @inject ProtectedSessionStorage ProtectedSessionStore
@@ -20,7 +20,7 @@
         </div>
         <div class="row mb-3">
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
         </div>
         @if (ShowDebugInfo)
         {
@@ -51,7 +51,7 @@
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
         </div>
         @if (ShowDebugInfo)
         {
@@ -94,8 +94,8 @@
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClick="ModalFolderCreate" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClick="ModalConfigurationOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClickTask="FolderModalOpen" customButtonParameter="DictFolderDialog" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
         </div>
         @*folders*@
         <div class="container">
@@ -112,9 +112,25 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="CurrentFile.Name">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="NewFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
                     </div>
-                    <ButtonInDiv divCssClass="col-sm-6" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" />
+                    <ButtonInDiv divCssClass="col-sm-2" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" customButtonParameter=@DictNewFileName />
+                    <div class="col-sm-4">
+                        @if (string.IsNullOrWhiteSpace(NewFileName) || CurrentFile.Name.Equals(NewFileName))
+                        {
+                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                        }
+                        else if (NewFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                        {
+                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                            <p>Illegal name of folder</p>
+                        }
+                        else
+                        {
+                            DictNewFileName = null;
+                        }
+                    </div>
+
                 </div>
             }
         </div>
@@ -127,7 +143,7 @@
                         <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(PreviousFile.Extension.ToLower()))
                         {
-                            <img src="@PreviousFile.DisplayPath" class="img-fluid" @onclick="@Back" />
+                            <img src="@PreviousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
                         else
                         {
@@ -139,7 +155,7 @@
             <div class="col col-sm-6">
                 @if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
                 {
-                    <video style="max-width:800px;max-height:700px;" controls autoplay id="videoTagId">
+                    <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
                         <source src="@CurrentFile?.Path" type="video/@CurrentFile?.Extension">
                         Your browser does not support the video tag.
                     </video>
@@ -148,7 +164,7 @@
                 {
                     <img data-bs-toggle="modal" data-bs-target="#photoModal"
                          src="@(CurrentFile!.DisplayPath)"
-                         class="img-fluid mx-auto d-block" />
+                         class="img-fluid mx-auto d-block" style="max-height: 90vh;"/>
                     <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
                                  IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())"
                                  IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
@@ -173,7 +189,7 @@
                         <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(NextFile.Extension.ToLower()))
                         {
-                            <img src="@NextFile.DisplayPath" class="img-fluid" @onclick="@Next" />
+                            <img src="@NextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
                         else
                         {
@@ -205,14 +221,10 @@
         break;
 }
 
-@if (ModalFolderIsOpen)
-{
-    <FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnClose="@ModalFolderClose" />
-}
-@if (ModalConfigurationIsOpen)
-{
-    <ConfigDialog OnClose="@ModalConfigurationClose" />
-}
+
+<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@FolderModalClose" @ref=folderDialog/>
+
+<ConfigDialog OnChange="@ConfigModalClose" @ref=configDialog/>
 
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
@@ -240,10 +252,15 @@
     private double? Cols;
     private string UnlockBoxPassword = string.Empty;
     private string? TruePassword;
+    private string NewFileName = string.Empty;
     private bool AllowRename;
-    private bool ModalFolderIsOpen = false;
-    private bool ModalConfigurationIsOpen = false;
     private EStatus Status = EStatus.OnConstructor;
+    private FolderDialog folderDialog;
+    private ConfigDialog configDialog;
+
+    private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
+    private Dictionary<string, object> DictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
+    private Dictionary<string, object> DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
 
 
     public enum EStatus
@@ -271,6 +288,7 @@
                     await _PSSReadMyMediaCurrentIndex();
                     LoadSession();
                     CurrentFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes![MyMediaCurrentIndex].Item2);
+                    NewFileName = CurrentFile.Name;
                     if (MyMediaCurrentIndex > 0)
                         PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes![MyMediaCurrentIndex - 1].Item2);
                     if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
@@ -299,6 +317,7 @@
             MyMediaIndexes = new List<Tuple<int, string>>();
             LoadSession();
             CurrentFile = await GetFileFromFileService(index.Value);
+            NewFileName = CurrentFile.Name;
             MyMediaIndexes.Add(new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name));
             int? nextIndex = FileService.GetNextIndex();
             if (nextIndex.HasValue) NextFile = await GetFileFromFileService(nextIndex.Value);
@@ -352,6 +371,7 @@
                 }
             }
         }
+        if (null != CurrentFile) NewFileName = CurrentFile.Name;
         if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
         {
             NextFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex + 1].Item1, MyMediaIndexes[MyMediaCurrentIndex + 1].Item2);
@@ -393,7 +413,7 @@
 
             NextFile = CurrentFile;
             CurrentFile = (PreviousFile != null) ? PreviousFile : await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-
+            NewFileName = CurrentFile.Name;
             if (MyMediaCurrentIndex > 0) PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes[MyMediaCurrentIndex - 1].Item2);
             else PreviousFile = null;
             ReloadPlayerIfVideo();
@@ -421,34 +441,35 @@
         StateHasChanged();
     }
 
-    private void ModalFolderCreate()
+    private async Task FolderModalOpen()
     {
-        ModalFolderIsOpen = true;
-        StateHasChanged();
+        await folderDialog.Init();
     }
-    private async Task ModalFolderClose(string folderName)
+    private async Task FolderModalClose(string folderName)
     {
+        await JS.InvokeVoidAsync("closeModal", "folderModal");
         if (!String.IsNullOrWhiteSpace(folderName))
         {
             if (FileService.CreateFolder(folderName))
             {
                 Folders = await FileService.GetFoldersAsync();
             }
+            else
+            {
+                toastService.ShowError("Couldn't add folder");
+            }
         }
-        ModalFolderIsOpen = false;
     }
 
-    private void ModalConfigurationOpen()
+    private async Task ConfigModalOnOpen()
     {
-        ModalConfigurationIsOpen = true;
-        StateHasChanged();
+        await configDialog.Init();
     }
-    private async Task ModalConfigurationClose(bool isOk)
+    private async Task ConfigModalClose(bool isChanged)
     {
-        ModalConfigurationIsOpen = false;
-        if (isOk)
+        await JS.InvokeVoidAsync("closeModal", "configModal");
+        if (isChanged)
         {
-            //StateHasChanged();
             await _ResetProtectedSessionStore();
             StoragePrefix = await FileService.GetStoragePrefix();
             Status = EStatus.BeforeInit;
@@ -462,7 +483,7 @@
         if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
-            await theJavaScriptEngine.InvokeVoidAsync("loadVideo");
+            await JS.InvokeVoidAsync("loadVideo");
         }
     }
 
@@ -483,7 +504,7 @@
     private async Task SaveFileName()
     {
         if (CurrentFile == null) return;
-        FileService.ChangeFileName(CurrentFile.FIndex!.Value, CurrentFile.Name);
+        FileService.ChangeFileName(CurrentFile.FIndex!.Value, NewFileName);
         CurrentFile = await GetFileFromFileService(CurrentFile!.FIndex!.Value);
         if (CurrentFile == null) return;
         MyMediaIndexes![MyMediaCurrentIndex] = new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name);

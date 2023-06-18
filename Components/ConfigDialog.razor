@@ -1,17 +1,18 @@
 ﻿@using Sorter.Data;
 @using Microsoft.Extensions.Options;
+@inject IJSRuntime JS
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
 @inject ConfigOptionsService ConfigOptionsService
 @inject FileService FileService
 @inject IOptionsSnapshot<ConfigOptions> configOptions
 @inject IToastService toastService
 
-<div class="modal fade show" id="dialogConfig" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+<div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Configuration</h4>
-                <button type="button" class="close" @onclick="@Cancel">&times;</button>
+                <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
                 @*password*@
@@ -204,14 +205,15 @@
                         <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Rearrange test files to their original state" buttonOnClick="RearrangeTestFiles" />
                     }
                 }
-                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClickTask="Cancel" />
+                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClick="Close" />
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnClose { get; set; }
+    [Parameter] public EventCallback<bool> OnChange { get; set; }
+
     private string source = String.Empty;
     private List<string> excludeListSource = new List<string>();
     private string newExcludeSource = String.Empty;
@@ -228,12 +230,12 @@
     private string newPassword = String.Empty;
     private bool allowRename = true;
     private bool useThumbnails = true;
-    
-    private async Task Cancel()
-    {
-        await InvokeAsync(() => OnClose.InvokeAsync(false));
-    }
+
     protected override async Task OnInitializedAsync()
+    {
+        await Init();
+    }
+    public async Task Init()
     {
         source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
         excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
@@ -246,6 +248,10 @@
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
         useThumbnails = configOptions.Value.UseThumbnails;
+    }
+    private async void Close()
+    {
+        await InvokeAsync(() => OnChange.InvokeAsync(false));
     }
     private async void Save()
     {
@@ -275,8 +281,7 @@
             ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
             FileService.ResetFiles();
-            //OnInitializedAsync();
-            await InvokeAsync(() => OnClose.InvokeAsync(true));
+            await InvokeAsync(() => OnChange.InvokeAsync(true));
         }
         catch (Exception e)
         {
@@ -366,14 +371,13 @@
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
         FileService.ResetFiles();
-        //OnInitializedAsync();
-        await InvokeAsync(() => OnClose.InvokeAsync(true));
+        await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
     private async void RearrangeTestFiles()
     {
         ConfigOptionsService.RearrangeTestFiles();
         toastService.ShowInfo("Test files rearranged");
         FileService.ResetFiles();
-        await InvokeAsync(() => OnClose.InvokeAsync(true));
+        await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
 }
