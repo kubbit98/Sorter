@@ -454,6 +454,10 @@
             {
                 Folders = await FileService.GetFoldersAsync();
             }
+            else
+            {
+                toastService.ShowError("Couldn't add folder");
+            }
         }
     }
 
