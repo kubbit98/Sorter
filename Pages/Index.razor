@@ -143,7 +143,7 @@
                         <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(PreviousFile.Extension.ToLower()))
                         {
-                            <img src="@PreviousFile.DisplayPath" class="img-fluid" @onclick="@Back" />
+                            <img src="@PreviousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
                         else
                         {
@@ -189,7 +189,7 @@
                         <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
                         @if (PHOTO_EXTENSIONS.Contains(NextFile.Extension.ToLower()))
                         {
-                            <img src="@NextFile.DisplayPath" class="img-fluid" @onclick="@Next" />
+                            <img src="@NextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
                         else
                         {
