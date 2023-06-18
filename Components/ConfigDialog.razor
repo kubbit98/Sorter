@@ -213,6 +213,7 @@
 
 @code {
     [Parameter] public EventCallback<bool> OnChange { get; set; }
+
     private string source = String.Empty;
     private List<string> excludeListSource = new List<string>();
     private string newExcludeSource = String.Empty;
@@ -230,12 +231,12 @@
     private bool allowRename = true;
     private bool useThumbnails = true;
 
-    private DotNetObjectReference<ConfigDialog> dotNetObjectReference;
-
     protected override async Task OnInitializedAsync()
     {
-        dotNetObjectReference = DotNetObjectReference.Create(this);
-        JS.InvokeVoidAsync("configReference.setDotNetReference", dotNetObjectReference);
+        await Init();
+    }
+    public async Task Init()
+    {
         source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
         excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
         destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
@@ -247,11 +248,6 @@
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
         useThumbnails = configOptions.Value.UseThumbnails;
-    }
-    [JSInvokable("reloadModal")]
-    public async void reload()
-    {
-        await OnInitializedAsync();
     }
     private async void Close()
     {
@@ -285,7 +281,6 @@
             ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
             FileService.ResetFiles();
-            //OnInitializedAsync();
             await InvokeAsync(() => OnChange.InvokeAsync(true));
         }
         catch (Exception e)
@@ -376,7 +371,6 @@
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
         FileService.ResetFiles();
-        //OnInitializedAsync();
         await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
     private async void RearrangeTestFiles()

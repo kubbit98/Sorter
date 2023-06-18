@@ -40,16 +40,8 @@
     [Parameter] public EventCallback<string> OnSave { get; set; }
     private Dictionary<string, object>? customButtonParameter { get; set; }
     private string? FolderName { get; set; }
-    private DotNetObjectReference<FolderDialog> dotNetObjectReference;
-    
-    protected override async Task OnInitializedAsync()
-    {
-        dotNetObjectReference = DotNetObjectReference.Create(this);
-        JS.InvokeVoidAsync("folderReference.setDotNetReference", dotNetObjectReference);
-    }
 
-    [JSInvokable("reloadModal")]
-    public async void reload()
+    public async Task Init()
     {
         FolderName = string.Empty;
     }
@@ -58,10 +50,7 @@
     {
         if (!String.IsNullOrWhiteSpace(FolderName) && !ExistingFolders!.Contains(FolderName))
         {
-            await JS.InvokeVoidAsync("closeModal", "folderModal");
-            await Task.Delay(100);
             await InvokeAsync(() => OnSave.InvokeAsync(FolderName));
-            FolderName = string.Empty;
         }
     }
 }
