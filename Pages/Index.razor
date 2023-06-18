@@ -155,7 +155,7 @@
             <div class="col col-sm-6">
                 @if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
                 {
-                    <video class="img-fluid mx-auto d-block" controls autoplay id="videoTagId">
+                    <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
                         <source src="@CurrentFile?.Path" type="video/@CurrentFile?.Extension">
                         Your browser does not support the video tag.
                     </video>
@@ -164,7 +164,7 @@
                 {
                     <img data-bs-toggle="modal" data-bs-target="#photoModal"
                          src="@(CurrentFile!.DisplayPath)"
-                         class="img-fluid mx-auto d-block" />
+                         class="img-fluid mx-auto d-block" style="max-height: 90vh;"/>
                     <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
                                  IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())"
                                  IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
