@@ -217,7 +217,7 @@ namespace Sorter.Data
             {
                 if (Files[file!.FIndex!.Value].Name == file.Name)
                 {
-                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.Name));
+                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, string.Concat(file.Name, ".", file.Extension)));
                     file.PhysicalPath = Path.Combine(destiny, file.Name);
                     Files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
                     Console.WriteLine("File " + file.Name + " moved to " + destiny);
