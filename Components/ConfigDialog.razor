@@ -205,14 +205,14 @@
                         <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Rearrange test files to their original state" buttonOnClick="RearrangeTestFiles" />
                     }
                 }
-                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" customButtonParameter="@DictCloseDialog" />
+                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClick="Close" />
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<bool> OnChange { get; set; }
     private string source = String.Empty;
     private List<string> excludeListSource = new List<string>();
     private string newExcludeSource = String.Empty;
@@ -230,10 +230,12 @@
     private bool allowRename = true;
     private bool useThumbnails = true;
 
-    private Dictionary<string, object> DictCloseDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" } };
+    private DotNetObjectReference<ConfigDialog> dotNetObjectReference;
 
     protected override async Task OnInitializedAsync()
     {
+        dotNetObjectReference = DotNetObjectReference.Create(this);
+        JS.InvokeVoidAsync("configReference.setDotNetReference", dotNetObjectReference);
         source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
         excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
         destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
@@ -245,6 +247,15 @@
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
         useThumbnails = configOptions.Value.UseThumbnails;
+    }
+    [JSInvokable("reloadModal")]
+    public async void reload()
+    {
+        await OnInitializedAsync();
+    }
+    private async void Close()
+    {
+        await InvokeAsync(() => OnChange.InvokeAsync(false));
     }
     private async void Save()
     {
@@ -275,8 +286,7 @@
             toastService.ShowSuccess("Settings are saved");
             FileService.ResetFiles();
             //OnInitializedAsync();
-            await InvokeAsync(() => OnClose.InvokeAsync());
-            await JS.InvokeVoidAsync("closeModal", "configModal");
+            await InvokeAsync(() => OnChange.InvokeAsync(true));
         }
         catch (Exception e)
         {
@@ -367,15 +377,13 @@
         toastService.ShowInfo("Default configuration loaded");
         FileService.ResetFiles();
         //OnInitializedAsync();
-        await InvokeAsync(() => OnClose.InvokeAsync());
-        await JS.InvokeVoidAsync("closeModal", "configModal");
+        await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
     private async void RearrangeTestFiles()
     {
         ConfigOptionsService.RearrangeTestFiles();
         toastService.ShowInfo("Test files rearranged");
         FileService.ResetFiles();
-        await InvokeAsync(() => OnClose.InvokeAsync());
-        await JS.InvokeVoidAsync("closeModal", "configModal");
+        await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
 }

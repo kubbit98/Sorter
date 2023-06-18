@@ -20,7 +20,7 @@
         </div>
         <div class="row mb-3">
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOpen" />
         </div>
         @if (ShowDebugInfo)
         {
@@ -51,7 +51,7 @@
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
             <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOpen" />
         </div>
         @if (ShowDebugInfo)
         {
@@ -94,8 +94,8 @@
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
                 <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
             }
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" customButtonParameter=@DictFolderDialog />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" customButtonParameter=@DictConfigDialog />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClickTask="FolderModalOpen" />
+            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOpen" />
         </div>
         @*folders*@
         <div class="container">
@@ -222,9 +222,9 @@
 }
 
 
-<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@AddFolder" />
+<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@FolderModalClose" />
 
-<ConfigDialog OnClose="@ConfigurationChanged" />
+<ConfigDialog OnChange="@ConfigModalClose" />
 
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
@@ -256,8 +256,6 @@
     private bool AllowRename;
     private EStatus Status = EStatus.OnConstructor;
 
-    private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
-    private Dictionary<string, object> DictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
     private Dictionary<string, object> DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
 
 
@@ -439,8 +437,13 @@
         StateHasChanged();
     }
 
-    private async Task AddFolder(string folderName)
+    private async Task FolderModalOpen()
     {
+        await JS.InvokeVoidAsync("openFolderModal");
+    }
+    private async Task FolderModalClose(string folderName)
+    {
+        await JS.InvokeVoidAsync("closeModal", "folderModal");
         if (!String.IsNullOrWhiteSpace(folderName))
         {
             if (FileService.CreateFolder(folderName))
@@ -450,13 +453,21 @@
         }
     }
 
-    private async Task ConfigurationChanged()
+    private async Task ConfigModalOpen()
     {
-        await _ResetProtectedSessionStore();
-        StoragePrefix = await FileService.GetStoragePrefix();
-        Status = EStatus.BeforeInit;
-        PreviousFile = CurrentFile = NextFile = null;
-        await _PSSWriteStatus();
+        await JS.InvokeVoidAsync("openConfigModal");
+    }
+    private async Task ConfigModalClose(bool isChanged)
+    {
+        await JS.InvokeVoidAsync("closeModal", "configModal");
+        if (isChanged)
+        {
+            await _ResetProtectedSessionStore();
+            StoragePrefix = await FileService.GetStoragePrefix();
+            Status = EStatus.BeforeInit;
+            PreviousFile = CurrentFile = NextFile = null;
+            await _PSSWriteStatus();
+        }
     }
 
     private async void ReloadPlayerIfVideo()
