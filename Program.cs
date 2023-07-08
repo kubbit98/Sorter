@@ -1,5 +1,6 @@
 using Blazored.Toast;
 using Sorter.Data;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,4 +59,10 @@ app.UseStaticFiles(new StaticFileOptions()
     RequestPath = new PathString("/tmp")
 });
 
-app.Run();
+await app.StartAsync();
+Process.Start(new ProcessStartInfo("http://localhost:5000") { UseShellExecute = true });
+Console.WriteLine("If your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser");
+Console.WriteLine("\nhttp://localhost:5000\n");
+Console.WriteLine("To shutdown the app, just hit ctrl+c");
+await app.WaitForShutdownAsync();
+Console.WriteLine("You can close browser and console window now");
