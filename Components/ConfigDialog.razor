@@ -5,6 +5,7 @@
 @inject ConfigOptionsService ConfigOptionsService
 @inject FileService FileService
 @inject IOptionsSnapshot<ConfigOptions> configOptions
+@inject IOptionsMonitor<ConfigOptions> configOptionsMonitor
 @inject IToastService toastService
 
 <div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
@@ -127,17 +128,6 @@
                             </div>
                         </div>
                     </div>
-                    //thumbnails
-                    <div class="row mb-3">
-                        <div class="col-sm-10 offset-sm-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="useThumbnails" name="useThumbnails" @bind="useThumbnails">
-                                <label class="form-check-label" for="useThumbnails">
-                                    Use thumbnails for photos. It may cause an increase in CPU consumption, a visible deterioration of the quality of photos (only in the preview), however, it significantly increases the convenience of using the application among remote clients.
-                                </label>
-                            </div>
-                        </div>
-                    </div>
                     //white or black
                     <div class="row mb-3">
                         <div class="col-sm-10 offset-sm-2">
@@ -147,14 +137,19 @@
                                     Use white list of extensions instead of black list
                                 </label>
                             </div>
-                            @if (useWhite)
-                            {
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        @if (useWhite)
+                        {
+                            <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">White list:</label>
+                            <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
                                         @foreach (var item in whiteList)
                                         {
                                             <div class="col">
-                                                @item
+                                                @(item.Equals("") ? "No extension" : item)
                                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveWhite(item)">X</button>
                                             </div>
                                         }
@@ -166,15 +161,18 @@
                                         </div>
                                     </div>
                                 </div>
-                            }
-                            else
-                            {
+                            </div>
+                        }
+                        else
+                        {
+                            <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">Black list:</label>
+                            <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
                                         @foreach (var item in blackList)
                                         {
                                             <div class="col">
-                                                @item
+                                                @(item.Equals("") ? "No extension" : item)
                                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveBlack(item)">X</button>
                                             </div>
                                         }
@@ -186,8 +184,8 @@
                                         </div>
                                     </div>
                                 </div>
-                            }
-                        </div>
+                            </div>
+                        }
                     </div>
                 }
                 else
@@ -229,7 +227,6 @@
     private string truePassword = String.Empty;
     private string newPassword = String.Empty;
     private bool allowRename = true;
-    private bool useThumbnails = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -247,7 +244,6 @@
         truePassword = configOptions.Value.Password;
         newPassword = truePassword;
         allowRename = configOptions.Value.AllowRename;
-        useThumbnails = configOptions.Value.UseThumbnails;
     }
     private async void Close()
     {
@@ -275,12 +271,16 @@
         config.BlackList = blackList.ToArray();
         config.Password = newPassword;
         config.AllowRename = allowRename;
-        config.UseThumbnails = useThumbnails;
         try
         {
             ConfigOptionsService.SaveOptions(config);
             toastService.ShowSuccess("Settings are saved");
-            FileService.ResetFiles();
+            while (!ConfigOptionsService.CheckMonitor(config)) Thread.Sleep(100);
+            if (!await FileService.InitializeFiles(true))
+            {
+                toastService.ShowError("Cannot initialize service. The destination or/and source path is invalid. Visit the configuration page");
+                return;
+            }
             await InvokeAsync(() => OnChange.InvokeAsync(true));
         }
         catch (Exception e)
@@ -348,7 +348,8 @@
     }
     private void AddWhite()
     {
-        if (!string.IsNullOrWhiteSpace(newWhite) && !whiteList.Contains(newWhite))
+        newWhite = newWhite.Trim();
+        if (!whiteList.Contains(newWhite))
         {
             whiteList.Add(newWhite);
             newWhite = string.Empty;
@@ -360,7 +361,8 @@
     }
     private void AddBlack()
     {
-        if (!string.IsNullOrWhiteSpace(newBlack) && !blackList.Contains(newBlack))
+        newBlack = newBlack.Trim();
+        if (!blackList.Contains(newBlack))
         {
             blackList.Add(newBlack);
             newBlack = string.Empty;
@@ -370,14 +372,22 @@
     {
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
-        FileService.ResetFiles();
+        if (!await FileService.InitializeFiles(true))
+        {
+            toastService.ShowError("Something wrong with configuration.");
+            return;
+        }
         await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
     private async void RearrangeTestFiles()
     {
         ConfigOptionsService.RearrangeTestFiles();
         toastService.ShowInfo("Test files rearranged");
-        FileService.ResetFiles();
+        if (!await FileService.InitializeFiles(true))
+        {
+            toastService.ShowError("Something wrong with configuration.");
+            return;
+        }
         await InvokeAsync(() => OnChange.InvokeAsync(true));
     }
 }

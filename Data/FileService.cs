@@ -6,6 +6,7 @@ namespace Sorter.Data
     {
         private readonly IConfiguration _configuration;
         private readonly IOptionsMonitor<ConfigOptions> _options;
+        private readonly ConfigOptionsService _configOptionsService;
         private static int MAX_SIZE_OF_PHOTO = 850;
         private static string[] THUMBNAIL_EXTENSIONS = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
         private static int THUMBNAIL_TO_CREATE = 5;
@@ -25,21 +26,45 @@ namespace Sorter.Data
         private string truePassword;
         private bool allowRename;
         private bool useThumbnails;
+        private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, ConfigOptionsService configOptionsService)
         {
             _configuration = configuration;
             _options = options;
-            LoadConfig();
-            LoadFilesAndFolders();
-            indexOfActualProcessingFile = -1;
-            if (useThumbnails && Files!.Count > 0)
+            _configOptionsService = configOptionsService;
+            StoragePrefix = Path.GetRandomFileName();
+            initialized = false;
+        }
+        public bool CheckCorrectnessOfConfig()
+        {
+            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Source)) return false;
+            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Destination)) return false;
+            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Source))) return false;
+            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Destination))) return false;
+            return true;
+        }
+        public Task<bool> InitializeFiles(bool reInit)
+        {
+            if (!initialized || reInit)
             {
-                foreach (var f in Files.GetRange(0, THUMBNAIL_TO_CREATE))
+                while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) Thread.Sleep(100);
+                if (!CheckCorrectnessOfConfig()) return Task.FromResult(false);
+                LoadConfig();
+                LoadFilesAndFolders();
+                indexOfActualProcessingFile = -1;
+                if (useThumbnails && Files!.Count > 0)
                 {
-                    Task.Run(() => CreateThumbnail(f));
+                    foreach (var f in Files.GetRange(0, Math.Min(Files.Count - indexOfActualProcessingFile, THUMBNAIL_TO_CREATE)))
+                    {
+                        Task.Run(() => CreateThumbnail(f));
+                    }
+                    while (THUMBNAIL_EXTENSIONS.Contains(Files[0].Extension) && Files[0].ThumbnailPath == null) Thread.Sleep(100);
                 }
+                initialized = true;
+                if (reInit) StoragePrefix = Path.GetRandomFileName();
             }
+            return Task.FromResult(true);
         }
         public void LoadConfig()
         {
@@ -54,9 +79,7 @@ namespace Sorter.Data
                 useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
                 truePassword = _options.CurrentValue.Password;
                 allowRename = _options.CurrentValue.AllowRename;
-                useThumbnails = _options.CurrentValue.UseThumbnails;
-                StoragePrefix = Path.GetRandomFileName();
-
+                useThumbnails = _configuration.GetValue<bool>("UseThumbnails");
             }
             catch (NullReferenceException)
             {
@@ -96,14 +119,13 @@ namespace Sorter.Data
                 indexOfActualProcessingFile++;
                 if (useThumbnails)
                 {
-                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, THUMBNAIL_TO_CREATE))
+                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, Math.Min(Files.Count - indexOfActualProcessingFile, THUMBNAIL_TO_CREATE)))
                     {
                         if (string.IsNullOrEmpty(f.ThumbnailPath)) Task.Run(() => CreateThumbnail(f));
                     }
                 }
                 return indexOfActualProcessingFile;
             }
-
             return null;
         }
         public File? GetFileAtIndex(int index)
@@ -125,19 +147,6 @@ namespace Sorter.Data
             if (file == null) return null;
             if (!file.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
             return file;
-        }
-        public void ResetFiles()
-        {
-            LoadConfig();
-            LoadFilesAndFolders();
-            indexOfActualProcessingFile = -1;
-            if (useThumbnails && Files.Count > 0)
-            {
-                foreach (var f in Files.GetRange(0, THUMBNAIL_TO_CREATE))
-                {
-                    CreateThumbnail(f);
-                }
-            }
         }
         private void LoadFilesAndFolders()
         {

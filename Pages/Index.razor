@@ -141,7 +141,7 @@
                 {
                     <div class="row mb-3">
                         <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
-                        @if (PHOTO_EXTENSIONS.Contains(PreviousFile.Extension.ToLower()))
+                        @if (PreviousFile?.FileType == File.FileTypeEnum.PHOTO)
                         {
                             <img src="@PreviousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
@@ -153,33 +153,31 @@
                 }
             </div>
             <div class="col col-sm-6">
-                @if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
+                @switch (CurrentFile?.FileType)
                 {
-                    <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
-                        <source src="@CurrentFile?.Path" type="video/@CurrentFile?.Extension">
-                        Your browser does not support the video tag.
-                    </video>
-                }
-                else if (PHOTO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
-                {
-                    <img data-bs-toggle="modal" data-bs-target="#photoModal"
-                         src="@(CurrentFile!.DisplayPath)"
-                         class="img-fluid mx-auto d-block" style="max-height: 90vh;"/>
-                    <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
-                                 IsPrevPhoto="@PHOTO_EXTENSIONS.Contains(PreviousFile?.Extension.ToLower())"
-                                 IsNextPhoto="@PHOTO_EXTENSIONS.Contains(NextFile?.Extension.ToLower())" />
-                }
-                else if ("pdf".Equals(CurrentFile?.Extension?.ToLower()))
-                {
-                    <embed src="@CurrentFile?.Path" style="width:500px;height:707px;" />
-                }
-                else if (TEXT_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
-                {
-                    <pre>@GetTextFileContent().Result</pre>
-                }
-                else
-                {
-                    <p>Filetype @CurrentFile?.Extension is already not supported</p>
+                    case File.FileTypeEnum.VIDEO:
+                        <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
+                            <source src="@CurrentFile?.Path"> @*type="@CurrentFile?.VideoType"*@
+                            Your browser does not support the video tag.
+                        </video>
+                        break;
+                    case File.FileTypeEnum.PHOTO:
+                        <img data-bs-toggle="modal" data-bs-target="#photoModal"
+                             src="@(CurrentFile!.DisplayPath)"
+                             class="img-fluid mx-auto d-block" style="max-height: 90vh;" />
+                        <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
+                                     IsPrevPhoto="@(PreviousFile?.FileType==File.FileTypeEnum.PHOTO)"
+                                     IsNextPhoto="@(NextFile?.FileType==File.FileTypeEnum.PHOTO)" />
+                        break;
+                    case File.FileTypeEnum.PDF:
+                        <embed src="@CurrentFile?.Path" style="width:100%;height:90vh;" />
+                        break;
+                    case File.FileTypeEnum.TEXT:
+                        <pre>@GetTextFileContent().Result</pre>
+                        break;
+                    default:
+                        <p>Filetype @CurrentFile?.Extension is already not supported</p>
+                        break;
                 }
             </div>
             <div class="col col-sm-3">
@@ -187,7 +185,7 @@
                 {
                     <div class="row mb-3">
                         <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
-                        @if (PHOTO_EXTENSIONS.Contains(NextFile.Extension.ToLower()))
+                        @if (NextFile?.FileType == File.FileTypeEnum.PHOTO)
                         {
                             <img src="@NextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
@@ -222,9 +220,9 @@
 }
 
 
-<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@FolderModalClose" @ref=folderDialog/>
+<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@FolderModalClose" @ref=folderDialog />
 
-<ConfigDialog OnChange="@ConfigModalClose" @ref=configDialog/>
+<ConfigDialog OnChange="@ConfigModalClose" @ref=configDialog />
 
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
@@ -236,9 +234,6 @@
     private string StoragePrefix;
     private const bool ShowDebugInfo = false;
 
-    private static string[] VIDEO_EXTENSIONS = { "avi", "mp4", "m4v", "ogv", "webm", "mov", "wmv", "flv" }; //not sure if all of them works
-    private static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
-    private static string[] TEXT_EXTENSIONS = { "txt" };
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
     private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
@@ -265,10 +260,7 @@
 
     public enum EStatus
     {
-        OnConstructor,
-        BeforeInit,
-        Initialized,
-        Empty,
+        OnConstructor, BeforeInit, Initialized, Empty,
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -311,6 +303,11 @@
     }
     private async void InitSession()
     {
+        if (!await FileService.InitializeFiles(false))
+        {
+            toastService.ShowError("Cannot initialize service. The destination or/and source path is invalid. Visit the configuration page");
+            return;
+        }
         int? index = FileService.GetNextIndex();
         if (index.HasValue)
         {
@@ -432,7 +429,11 @@
     }
     private async void Reset()
     {
-        FileService.ResetFiles();
+        if (!await FileService.InitializeFiles(true))
+        {
+            toastService.ShowError("Cannot initialize service. The destination or/and source path is invalid. Visit the configuration page");
+            return;
+        }
         await _ResetProtectedSessionStore();
         StoragePrefix = await FileService.GetStoragePrefix();
         PreviousFile = CurrentFile = NextFile = null;
@@ -480,7 +481,7 @@
 
     private async void ReloadPlayerIfVideo()
     {
-        if (VIDEO_EXTENSIONS.Contains(CurrentFile?.Extension?.ToLower()))
+        if (File.FileTypeEnum.VIDEO==CurrentFile?.FileType)
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
             await JS.InvokeVoidAsync("loadVideo");

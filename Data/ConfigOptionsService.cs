@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Microsoft.Extensions.Options;
+using System.IO;
 using System.Text.Json;
 
 namespace Sorter.Data
@@ -7,14 +8,17 @@ namespace Sorter.Data
     {
         private readonly DestinationDFP _destinationDFP;
         private readonly SourceDFP _sourceDFP;
+        private readonly IOptionsMonitor<ConfigOptions> _configOptionsMonitor;
 
-        public ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP)
+        public ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor)
         {
             _destinationDFP = destinationDFP;
             _sourceDFP = sourceDFP;
+            _configOptionsMonitor = configOptionsMonitor;
         }
         public bool CheckPath(string path)
         {
+            if(string.IsNullOrEmpty(path)) return false;
             return Directory.Exists(Path.GetFullPath(path));
         }
         public string GetPathIfValid(string path)
@@ -88,6 +92,19 @@ namespace Sorter.Data
                     }
                 }
             }
+        }
+        public bool CheckMonitor(ConfigOptions config)
+        {
+            if (!_configOptionsMonitor.CurrentValue.Source.Equals(config.Source)) return false;
+            if (!_configOptionsMonitor.CurrentValue.ExcludeDirsSource.SequenceEqual(config.ExcludeDirsSource)) return false;
+            if (!_configOptionsMonitor.CurrentValue.Destination.Equals(config.Destination)) return false;
+            if (!_configOptionsMonitor.CurrentValue.ExcludeDirsDestination.SequenceEqual(config.ExcludeDirsDestination)) return false;
+            if (!_configOptionsMonitor.CurrentValue.UseWhiteListInsteadOfBlackList.Equals(config.UseWhiteListInsteadOfBlackList)) return false;
+            if (!_configOptionsMonitor.CurrentValue.WhiteList.SequenceEqual(config.WhiteList)) return false;
+            if (!_configOptionsMonitor.CurrentValue.BlackList.SequenceEqual(config.BlackList)) return false;
+            if (!_configOptionsMonitor.CurrentValue.Password.Equals(config.Password)) return false;
+            if (!_configOptionsMonitor.CurrentValue.AllowRename.Equals(config.AllowRename)) return false;
+            return true;
         }
     }
 }
