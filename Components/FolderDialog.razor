@@ -8,28 +8,28 @@
             </div>
             <div class="modal-body">
                 <p>Insert name for new folder</p>
-                <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="FolderName" @bind:event="oninput" placeholder="New folder name">
-                @if (string.IsNullOrWhiteSpace(FolderName)) 
+                <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="_folderName" @bind:event="oninput" placeholder="New folder name">
+                @if (string.IsNullOrWhiteSpace(_folderName)) 
                 {
-                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                    _customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
                 }
-                else if (ExistingFolders!.Contains(FolderName))
+                else if (ExistingFolders!.Contains(_folderName))
                 {
-                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                    _customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
                     <p>Folder with that name already exists</p>
                 }
-                else if (FolderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                else if (_folderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
                 {
-                    customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
+                    _customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
                     <p>Illegal name of folder</p>
                 }
                 else
                 {
-                    customButtonParameter = null;
+                    _customButtonParameter = null;
                 }
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @onclick=@AddFolderAndClose @attributes=customButtonParameter>Add folder</button>
+                <button type="button" class="btn btn-primary" @onclick=@AddFolderAndClose @attributes=_customButtonParameter>Add folder</button>
                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
@@ -37,20 +37,20 @@
 </div>
 @code {
     [Parameter] public string[]? ExistingFolders { get; set; }
-    [Parameter] public EventCallback<string> OnSave { get; set; }
-    private Dictionary<string, object>? customButtonParameter { get; set; }
-    private string? FolderName { get; set; }
+    [Parameter] public EventCallback<string> OnSaveTask { get; set; }
+    private Dictionary<string, object>? _customButtonParameter { get; set; }
+    private string? _folderName { get; set; }
 
     public async Task Init()
     {
-        FolderName = string.Empty;
+        _folderName = string.Empty;
     }
 
     private async Task AddFolderAndClose()
     {
-        if (!String.IsNullOrWhiteSpace(FolderName) && !ExistingFolders!.Contains(FolderName))
+        if (!String.IsNullOrWhiteSpace(_folderName) && !ExistingFolders!.Contains(_folderName))
         {
-            await InvokeAsync(() => OnSave.InvokeAsync(FolderName));
+            await InvokeAsync(() => OnSaveTask.InvokeAsync(_folderName));
         }
     }
 }

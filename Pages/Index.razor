@@ -10,124 +10,124 @@
 
 <h1>Sorter</h1>
 
-@switch (Status)
+@switch (_status)
 {
-    case EStatus.BeforeInit:
+    case Status.BeforeInit:
         <div class="row mb-3">
             <div class="col">
                 <p>Click to start</p>
             </div>
         </div>
         <div class="row mb-3">
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Init session" buttonOnClick="InitSession" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
-        @if (ShowDebugInfo)
+        @if (SHOW_DEBUG_INFO)
         {
             <div class="col col-sm-3">
                 <p>
-                    INDEX @MyMediaCurrentIndex
+                    INDEX @_myMediaCurrentIndex
                 </p>
-                @if (null != MyMediaIndexes)
+                @if (null != _myMediaIndexes)
                 {
-                    foreach (var tuple in MyMediaIndexes)
+                    foreach (var tuple in _myMediaIndexes)
                     {
                         <p>tupla: @tuple.Item1 | @tuple.Item2</p>
                     }
                 }
                 <p>
-                    status: @Status
+                    status: @_status
                 </p>
             </div>
         }
         break;
-    case EStatus.Empty:
+    case Status.Empty:
         <div class="row mb-3">
             <div class="col">
                 <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
             </div>
         </div>
         <div class="row mb-3">
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
-        @if (ShowDebugInfo)
+        @if (SHOW_DEBUG_INFO)
         {
             <div class="col col-sm-3">
                 <p>
-                    INDEX @MyMediaCurrentIndex
+                    INDEX @_myMediaCurrentIndex
                 </p>
-                @if (null != MyMediaIndexes)
+                @if (null != _myMediaIndexes)
                 {
-                    foreach (var tuple in MyMediaIndexes)
+                    foreach (var tuple in _myMediaIndexes)
                     {
                         <p>tupla: @tuple.Item1 | @tuple.Item2</p>
                     }
                 }
                 <p>
-                    status: @Status
+                    status: @_status
                 </p>
             </div>
         }
         break;
-    case EStatus.Initialized:
+    case Status.Initialized:
         @*name and password*@
         <div class="row mb-3">
             <div class="col-sm-8">
                 <p>
-                    @CurrentFile!.OnlyPath <strong>@CurrentFile.Name.@CurrentFile.Extension</strong>
+                    @_currentFile!.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
                 </p>
             </div>
             <label class="col-sm-2" for="password">Password to unlock more function:</label>
             <div class="col-sm-2">
-                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="UnlockBoxPassword" @bind:event="oninput">
+                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput">
             </div>
         </div>
         @*main buttons*@
         <div class="row mb-3">
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Back" buttonOnClick="Back" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Next" buttonOnClick="Next" />
-            @if (TruePassword!.Equals(UnlockBoxPassword))
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickAction="Next" />
+            @if (_truePassword!.Equals(_unlockBoxPassword))
             {
-                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Reset server" buttonOnClick="Reset" />
-                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Shut down" buttonOnClick="() => AppLifetime.StopApplication()" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
             }
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-secondary" buttonName="Add new folder modal" buttonOnClickTask="FolderModalOpen" customButtonParameter="DictFolderDialog" />
-            <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-outline-secondary" buttonName="Configuration" buttonOnClickTask="ConfigModalOnOpen" customButtonParameter="DictConfigDialog" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Add new folder modal" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
         @*folders*@
         <div class="container">
             @*folders*@
-            <div class="row row-cols-@Cols mb-3">
-                @for (int i = 0; i < Folders!.Length; i++)
+            <div class="row row-cols-@_cols mb-3">
+                @for (int i = 0; i < _folders!.Length; i++)
                 {
                     var k = i;
-                    <ButtonInDiv divCssClass="col d-grid mb-1" buttonCssClass="btn btn-primary" buttonName="@Folders[k].Name" buttonOnClick="()=>MoveFile(Folders[k].Path)" />
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].Name" ButtonOnClickAction="()=>MoveFile(_folders[k].Path)" />
                 }
             </div>
             @*rename*@
-            @if (TruePassword.Equals(UnlockBoxPassword) || AllowRename)
+            @if (_truePassword.Equals(_unlockBoxPassword) || _allowRename)
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="NewFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
                     </div>
-                    <ButtonInDiv divCssClass="col-sm-2" buttonCssClass="btn btn-secondary" buttonName="Save file name" buttonOnClickTask="SaveFileName" customButtonParameter=@DictNewFileName />
+                    <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
                     <div class="col-sm-4">
-                        @if (string.IsNullOrWhiteSpace(NewFileName) || CurrentFile.Name.Equals(NewFileName))
+                        @if (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName))
                         {
-                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
                         }
-                        else if (NewFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                        else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
                         {
-                            DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
                             <p>Illegal name of folder</p>
                         }
                         else
                         {
-                            DictNewFileName = null;
+                            _dictNewFileName = null;
                         }
                     </div>
 
@@ -137,13 +137,13 @@
         @*media*@
         <div class="row mb-3">
             <div class="col col-sm-3">
-                @if (null != PreviousFile)
+                @if (null != _previousFile)
                 {
                     <div class="row mb-3">
-                        <p>Previous file: @PreviousFile.Name<br />(in @PreviousFile.Path)</p>
-                        @if (PreviousFile?.FileType == File.FileTypeEnum.PHOTO)
+                        <p>Previous file: @_previousFile.Name<br />(in @_previousFile.Path)</p>
+                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
                         {
-                            <img src="@PreviousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
+                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
                         else
                         {
@@ -153,41 +153,41 @@
                 }
             </div>
             <div class="col col-sm-6">
-                @switch (CurrentFile?.FileType)
+                @switch (_currentFile?.FileType)
                 {
-                    case File.FileTypeEnum.VIDEO:
+                    case File.FileTypeEnum.Video:
                         <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
-                            <source src="@CurrentFile?.Path"> @*type="@CurrentFile?.VideoType"*@
+                            <source src="@_currentFile?.Path"> @*type="@CurrentFile?.VideoType"*@
                             Your browser does not support the video tag.
                         </video>
                         break;
-                    case File.FileTypeEnum.PHOTO:
+                    case File.FileTypeEnum.Photo:
                         <img data-bs-toggle="modal" data-bs-target="#photoModal"
-                             src="@(CurrentFile!.DisplayPath)"
+                             src="@(_currentFile!.DisplayPath)"
                              class="img-fluid mx-auto d-block" style="max-height: 90vh;" />
-                        <PhotoDialog Photo="@CurrentFile" OnNext="@Next" OnBack="@Back"
-                                     IsPrevPhoto="@(PreviousFile?.FileType==File.FileTypeEnum.PHOTO)"
-                                     IsNextPhoto="@(NextFile?.FileType==File.FileTypeEnum.PHOTO)" />
+                        <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back"
+                                     IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
+                                     IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
                     case File.FileTypeEnum.PDF:
-                        <embed src="@CurrentFile?.Path" style="width:100%;height:90vh;" />
+                        <embed src="@_currentFile?.Path" style="width:100%;height:90vh;" />
                         break;
-                    case File.FileTypeEnum.TEXT:
+                    case File.FileTypeEnum.Text:
                         <pre>@GetTextFileContent().Result</pre>
                         break;
                     default:
-                        <p>Filetype @CurrentFile?.Extension is already not supported</p>
+                        <p>Filetype @_currentFile?.Extension is already not supported</p>
                         break;
                 }
             </div>
             <div class="col col-sm-3">
-                @if (null != NextFile)
+                @if (null != _nextFile)
                 {
                     <div class="row mb-3">
-                        <p>Next file: @NextFile.Name<br />(in @NextFile.Path)</p>
-                        @if (NextFile?.FileType == File.FileTypeEnum.PHOTO)
+                        <p>Next file: @_nextFile.Name<br />(in @_nextFile.Path)</p>
+                        @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                         {
-                            <img src="@NextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
+                            <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
                         else
                         {
@@ -195,21 +195,21 @@
                         }
                     </div>
                 }
-                @if (ShowDebugInfo)
+                @if (SHOW_DEBUG_INFO)
                 {
                     <div class="row mb-3">
                         <p>
-                            INDEX @MyMediaCurrentIndex
+                            INDEX @_myMediaCurrentIndex
                         </p>
-                        @if (null != MyMediaIndexes)
+                        @if (null != _myMediaIndexes)
                         {
-                            foreach (var tuple in MyMediaIndexes)
+                            foreach (var tuple in _myMediaIndexes)
                             {
                                 <p>tupla: @tuple.Item1 | @tuple.Item2</p>
                             }
                         }
                         <p>
-                            status: @Status
+                            status: @_status
                         </p>
                     </div>
                 }
@@ -220,45 +220,45 @@
 }
 
 
-<FolderDialog ExistingFolders="@Folders?.Select(f=>f.Name).ToArray()" OnSave="@FolderModalClose" @ref=folderDialog />
+<FolderDialog ExistingFolders="@_folders?.Select(f=>f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
 
-<ConfigDialog OnChange="@ConfigModalClose" @ref=configDialog />
+<ConfigDialog OnChange="@ConfigModalClose" @ref=_configDialog />
 
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
 
 @code {
-    private const string StorageMyMediaList = "_MyMediaIndexes";
-    private const string StorageMyMediaCurrentIndex = "_MyMediaCurrentIndex";
-    private const string StorageStatus = "_Status";
-    private string StoragePrefix;
-    private const bool ShowDebugInfo = false;
+    private const string s_storageMyMediaList = "_MyMediaIndexes";
+    private const string s_storageMyMediaCurrentIndex = "_MyMediaCurrentIndex";
+    private const string s_storageStatus = "_Status";
+    private string _storagePrefix;
 
+    private const bool SHOW_DEBUG_INFO = false;
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
     private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
 
-    private List<Tuple<int, string>>? MyMediaIndexes;
-    private int MyMediaCurrentIndex;
-    private File? CurrentFile;
-    private File? PreviousFile;
-    private File? NextFile;
-    private Folder[]? Folders;
-    private double? Cols;
-    private string UnlockBoxPassword = string.Empty;
-    private string? TruePassword;
-    private string NewFileName = string.Empty;
-    private bool AllowRename;
-    private EStatus Status = EStatus.OnConstructor;
-    private FolderDialog folderDialog;
-    private ConfigDialog configDialog;
+    private List<Tuple<int, string>>? _myMediaIndexes;
+    private int _myMediaCurrentIndex;
+    private File? _currentFile;
+    private File? _previousFile;
+    private File? _nextFile;
+    private Folder[]? _folders;
+    private double? _cols;
+    private string _unlockBoxPassword = string.Empty;
+    private string? _truePassword;
+    private string _newFileName = string.Empty;
+    private bool _allowRename;
+    private Status _status = Status.OnConstructor;
+    private FolderDialog _folderDialog;
+    private ConfigDialog _configDialog;
 
-    private Dictionary<string, object> DictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
-    private Dictionary<string, object> DictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
-    private Dictionary<string, object> DictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+    private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
+    private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
+    private Dictionary<string, object> _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
 
 
-    public enum EStatus
+    public enum Status
     {
         OnConstructor, BeforeInit, Initialized, Empty,
     }
@@ -266,27 +266,27 @@
     {
         if (firstRender)
         {
-            StoragePrefix = await FileService.GetStoragePrefix();
+            _storagePrefix = await FileService.GetStoragePrefix();
             await _PSSReadStatus();
-            switch (Status)
+            switch (_status)
             {
-                case EStatus.OnConstructor:
-                    Status = EStatus.BeforeInit;
+                case Status.OnConstructor:
+                    _status = Status.BeforeInit;
                     break;
-                case EStatus.BeforeInit:
+                case Status.BeforeInit:
                     break;
-                case EStatus.Initialized:
+                case Status.Initialized:
                     await _PSSReadMyMediaIndexes();
                     await _PSSReadMyMediaCurrentIndex();
                     LoadSession();
-                    CurrentFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes![MyMediaCurrentIndex].Item2);
-                    NewFileName = CurrentFile.Name;
-                    if (MyMediaCurrentIndex > 0)
-                        PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes![MyMediaCurrentIndex - 1].Item2);
-                    if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
-                        NextFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex + 1].Item1, MyMediaIndexes![MyMediaCurrentIndex + 1].Item2);
+                    _currentFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes![_myMediaCurrentIndex].Item2);
+                    _newFileName = _currentFile.Name;
+                    if (_myMediaCurrentIndex > 0)
+                        _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes![_myMediaCurrentIndex - 1].Item2);
+                    if (_myMediaCurrentIndex + 1 < _myMediaIndexes!.Count)
+                        _nextFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex + 1].Item1, _myMediaIndexes![_myMediaCurrentIndex + 1].Item2);
                     break;
-                case EStatus.Empty:
+                case Status.Empty:
                     await _PSSReadMyMediaIndexes();
                     await _PSSReadMyMediaCurrentIndex();
                     break;
@@ -296,10 +296,10 @@
     }
     private async void LoadSession()
     {
-        Folders = await FileService.GetFoldersAsync();
-        Cols = Math.Min(Math.Ceiling(Math.Sqrt(Folders.Length)), BRAJANEK);
-        TruePassword = await FileService.GetTruePassword();
-        AllowRename = await FileService.GetAllowRename();
+        _folders = await FileService.GetFoldersAsync();
+        _cols = Math.Min(Math.Ceiling(Math.Sqrt(_folders.Length)), BRAJANEK);
+        _truePassword = await FileService.GetTruePassword();
+        _allowRename = await FileService.GetAllowRename();
     }
     private async void InitSession()
     {
@@ -311,16 +311,16 @@
         int? index = FileService.GetNextIndex();
         if (index.HasValue)
         {
-            MyMediaIndexes = new List<Tuple<int, string>>();
+            _myMediaIndexes = new List<Tuple<int, string>>();
             LoadSession();
-            CurrentFile = await GetFileFromFileService(index.Value);
-            NewFileName = CurrentFile.Name;
-            MyMediaIndexes.Add(new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name));
+            _currentFile = await GetFileFromFileService(index.Value);
+            _newFileName = _currentFile.Name;
+            _myMediaIndexes.Add(new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name));
             int? nextIndex = FileService.GetNextIndex();
-            if (nextIndex.HasValue) NextFile = await GetFileFromFileService(nextIndex.Value);
-            if (null != NextFile) MyMediaIndexes.Add(new Tuple<int, string>(NextFile.FIndex!.Value, NextFile.Name));
-            MyMediaCurrentIndex = 0;
-            Status = EStatus.Initialized;
+            if (nextIndex.HasValue) _nextFile = await GetFileFromFileService(nextIndex.Value);
+            if (null != _nextFile) _myMediaIndexes.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
+            _myMediaCurrentIndex = 0;
+            _status = Status.Initialized;
             await _PSSWriteMyMediaIndexes();
             await _PSSWriteMyMediaCurrentIndex();
             await _PSSWriteStatus();
@@ -328,9 +328,9 @@
         }
         else
         {
-            MyMediaIndexes = null;
-            MyMediaCurrentIndex = -1;
-            Status = EStatus.Empty;
+            _myMediaIndexes = null;
+            _myMediaCurrentIndex = -1;
+            _status = Status.Empty;
             await _PSSWriteStatus();
             StateHasChanged();
             toastService.ShowError("There is no files to show - are paths are valid? Check it on the configuration page");
@@ -339,52 +339,52 @@
 
     private async void Next()
     {
-        PreviousFile = CurrentFile;
-        MyMediaCurrentIndex++;
+        _previousFile = _currentFile;
+        _myMediaCurrentIndex++;
         await _PSSWriteMyMediaCurrentIndex();
-        if (NextFile != null) CurrentFile = NextFile;
+        if (_nextFile != null) _currentFile = _nextFile;
         else
         {
-            if (!MyMediaIndexes!.Any(t => t.Item1 == MyMediaCurrentIndex))
+            if (!_myMediaIndexes!.Any(t => t.Item1 == _myMediaCurrentIndex))
             {
-                CurrentFile = null;
-                Status = EStatus.Empty;
+                _currentFile = null;
+                _status = Status.Empty;
                 await _PSSWriteStatus();
             }
             else
             {
-                File f = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes![MyMediaCurrentIndex].Item2);
+                File f = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes![_myMediaCurrentIndex].Item2);
                 if (f == null)
                 {
                     toastService.ShowWarning("Something went wrong");
-                    MyMediaIndexes = null;
-                    MyMediaCurrentIndex = -1;
-                    Status = EStatus.BeforeInit;
+                    _myMediaIndexes = null;
+                    _myMediaCurrentIndex = -1;
+                    _status = Status.BeforeInit;
                     await _ResetProtectedSessionStore();
                 }
                 else
                 {
-                    CurrentFile = f;
+                    _currentFile = f;
                 }
             }
         }
-        if (null != CurrentFile) NewFileName = CurrentFile.Name;
-        if (MyMediaCurrentIndex + 1 < MyMediaIndexes!.Count)
+        if (null != _currentFile) _newFileName = _currentFile.Name;
+        if (_myMediaCurrentIndex + 1 < _myMediaIndexes!.Count)
         {
-            NextFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex + 1].Item1, MyMediaIndexes[MyMediaCurrentIndex + 1].Item2);
+            _nextFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex + 1].Item1, _myMediaIndexes[_myMediaCurrentIndex + 1].Item2);
         }
         else
         {
             int? index = FileService.GetNextIndex();
             if (index.HasValue)
             {
-                NextFile = await GetFileFromFileService(index.Value);
-                MyMediaIndexes!.Add(new Tuple<int, string>(NextFile!.FIndex!.Value, NextFile.Name));
+                _nextFile = await GetFileFromFileService(index.Value);
+                _myMediaIndexes!.Add(new Tuple<int, string>(_nextFile!.FIndex!.Value, _nextFile.Name));
                 await _PSSWriteMyMediaIndexes();
             }
             else
             {
-                NextFile = null;
+                _nextFile = null;
             }
         }
 
@@ -393,26 +393,26 @@
     }
     private async void Back()
     {
-        if (MyMediaCurrentIndex <= 0)
+        if (_myMediaCurrentIndex <= 0)
         {
             toastService.ShowWarning("No more files");
             return;
         }
-        MyMediaCurrentIndex--;
+        _myMediaCurrentIndex--;
         try
         {
-            if (Status.Equals(EStatus.Empty))
+            if (_status.Equals(Status.Empty))
             {
-                if (null == Folders) LoadSession();
-                Status = EStatus.Initialized;
+                if (null == _folders) LoadSession();
+                _status = Status.Initialized;
                 await _PSSWriteStatus();
             }
 
-            NextFile = CurrentFile;
-            CurrentFile = (PreviousFile != null) ? PreviousFile : await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex].Item1, MyMediaIndexes[MyMediaCurrentIndex].Item2);
-            NewFileName = CurrentFile.Name;
-            if (MyMediaCurrentIndex > 0) PreviousFile = await GetFileFromFileService(MyMediaIndexes![MyMediaCurrentIndex - 1].Item1, MyMediaIndexes[MyMediaCurrentIndex - 1].Item2);
-            else PreviousFile = null;
+            _nextFile = _currentFile;
+            _currentFile = (_previousFile != null) ? _previousFile : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
+            _newFileName = _currentFile.Name;
+            if (_myMediaCurrentIndex > 0) _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
+            else _previousFile = null;
             ReloadPlayerIfVideo();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();
@@ -420,9 +420,9 @@
         catch (Exception)
         {
             toastService.ShowWarning("Something went wrong");
-            MyMediaIndexes = null;
-            MyMediaCurrentIndex = -1;
-            Status = EStatus.BeforeInit;
+            _myMediaIndexes = null;
+            _myMediaCurrentIndex = -1;
+            _status = Status.BeforeInit;
             await _ResetProtectedSessionStore();
             StateHasChanged();
         }
@@ -435,8 +435,8 @@
             return;
         }
         await _ResetProtectedSessionStore();
-        StoragePrefix = await FileService.GetStoragePrefix();
-        PreviousFile = CurrentFile = NextFile = null;
+        _storagePrefix = await FileService.GetStoragePrefix();
+        _previousFile = _currentFile = _nextFile = null;
         InitSession();
         ReloadPlayerIfVideo();
         StateHasChanged();
@@ -444,7 +444,7 @@
 
     private async Task FolderModalOpen()
     {
-        await folderDialog.Init();
+        await _folderDialog.Init();
     }
     private async Task FolderModalClose(string folderName)
     {
@@ -453,7 +453,7 @@
         {
             if (FileService.CreateFolder(folderName))
             {
-                Folders = await FileService.GetFoldersAsync();
+                _folders = await FileService.GetFoldersAsync();
             }
             else
             {
@@ -464,7 +464,7 @@
 
     private async Task ConfigModalOnOpen()
     {
-        await configDialog.Init();
+        await _configDialog.Init();
     }
     private async Task ConfigModalClose(bool isChanged)
     {
@@ -472,16 +472,16 @@
         if (isChanged)
         {
             await _ResetProtectedSessionStore();
-            StoragePrefix = await FileService.GetStoragePrefix();
-            Status = EStatus.BeforeInit;
-            PreviousFile = CurrentFile = NextFile = null;
+            _storagePrefix = await FileService.GetStoragePrefix();
+            _status = Status.BeforeInit;
+            _previousFile = _currentFile = _nextFile = null;
             await _PSSWriteStatus();
         }
     }
 
     private async void ReloadPlayerIfVideo()
     {
-        if (File.FileTypeEnum.VIDEO==CurrentFile?.FileType)
+        if (File.FileTypeEnum.Video==_currentFile?.FileType)
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
             await JS.InvokeVoidAsync("loadVideo");
@@ -491,11 +491,11 @@
     private async Task<File> GetFileFromFileService(int index, string fileName = "")
     {
         string newPrefix = await FileService.GetStoragePrefix();
-        if (newPrefix != StoragePrefix)
+        if (newPrefix != _storagePrefix)
         {
-            StoragePrefix = newPrefix;
+            _storagePrefix = newPrefix;
             toastService.ShowInfo("Page was reloaded due to data discrepancy");
-            Status = EStatus.BeforeInit;
+            _status = Status.BeforeInit;
             await _PSSWriteStatus();
             return null;
         }
@@ -504,23 +504,23 @@
     }
     private async Task SaveFileName()
     {
-        if (CurrentFile == null) return;
-        FileService.ChangeFileName(CurrentFile.FIndex!.Value, NewFileName);
-        CurrentFile = await GetFileFromFileService(CurrentFile!.FIndex!.Value);
-        if (CurrentFile == null) return;
-        MyMediaIndexes![MyMediaCurrentIndex] = new Tuple<int, string>(CurrentFile.FIndex!.Value, CurrentFile.Name);
+        if (_currentFile == null) return;
+        FileService.ChangeFileName(_currentFile.FIndex!.Value, _newFileName);
+        _currentFile = await GetFileFromFileService(_currentFile!.FIndex!.Value);
+        if (_currentFile == null) return;
+        _myMediaIndexes![_myMediaCurrentIndex] = new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name);
         await _PSSWriteMyMediaIndexes();
         StateHasChanged();
     }
     private async Task<string> GetTextFileContent()
     {
-        if (CurrentFile == null) return "";
-        return await FileService.GetTextFileContent(CurrentFile);
+        if (_currentFile == null) return "";
+        return await FileService.GetTextFileContent(_currentFile);
     }
     private async Task MoveFile(string destiny)
     {
-        if (CurrentFile == null) return;
-        var oldFile = CurrentFile;
+        if (_currentFile == null) return;
+        var oldFile = _currentFile;
         Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
@@ -528,39 +528,39 @@
 
     private async Task _PSSReadMyMediaIndexes()
     {
-        MyMediaIndexes = (await ProtectedSessionStore.GetAsync<List<Tuple<int, string>>>(StoragePrefix + StorageMyMediaList)).Value;
+        _myMediaIndexes = (await ProtectedSessionStore.GetAsync<List<Tuple<int, string>>>(_storagePrefix + s_storageMyMediaList)).Value;
     }
     private async Task _PSSReadMyMediaCurrentIndex()
     {
-        MyMediaCurrentIndex = (await ProtectedSessionStore.GetAsync<int>(StoragePrefix + StorageMyMediaCurrentIndex)).Value;
+        _myMediaCurrentIndex = (await ProtectedSessionStore.GetAsync<int>(_storagePrefix + s_storageMyMediaCurrentIndex)).Value;
     }
     private async Task _PSSReadStatus()
     {
-        Status = (await ProtectedSessionStore.GetAsync<EStatus>(StoragePrefix + StorageStatus)).Value;
+        _status = (await ProtectedSessionStore.GetAsync<Status>(_storagePrefix + s_storageStatus)).Value;
     }
     private async Task _PSSWriteMyMediaIndexes()
     {
-        await ProtectedSessionStore.SetAsync(StoragePrefix + StorageMyMediaList, MyMediaIndexes);
+        await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaList, _myMediaIndexes);
     }
     private async Task _PSSWriteMyMediaCurrentIndex()
     {
-        await ProtectedSessionStore.SetAsync(StoragePrefix + StorageMyMediaCurrentIndex, MyMediaCurrentIndex);
+        await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaCurrentIndex, _myMediaCurrentIndex);
     }
     private async Task _PSSWriteStatus()
     {
-        await ProtectedSessionStore.SetAsync(StoragePrefix + StorageStatus, Status);
+        await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageStatus, _status);
     }
     private async Task _PSSDeleteMyMediaIndexes()
     {
-        await ProtectedSessionStore.DeleteAsync(StoragePrefix + StorageMyMediaList);
+        await ProtectedSessionStore.DeleteAsync(_storagePrefix + s_storageMyMediaList);
     }
     private async Task _PSSDeleteMyMediaCurrentIndex()
     {
-        await ProtectedSessionStore.DeleteAsync(StoragePrefix + StorageMyMediaCurrentIndex);
+        await ProtectedSessionStore.DeleteAsync(_storagePrefix + s_storageMyMediaCurrentIndex);
     }
     private async Task _PSSDeleteStatus()
     {
-        await ProtectedSessionStore.DeleteAsync(StoragePrefix + StorageStatus);
+        await ProtectedSessionStore.DeleteAsync(_storagePrefix + s_storageStatus);
     }
     private async Task _ResetProtectedSessionStore()
     {

@@ -7,14 +7,15 @@ namespace Sorter.Data
         private readonly IConfiguration _configuration;
         private readonly IOptionsMonitor<ConfigOptions> _options;
         private readonly ConfigOptionsService _configOptionsService;
-        private static int MAX_SIZE_OF_PHOTO = 850;
-        private static string[] THUMBNAIL_EXTENSIONS = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
-        private static int THUMBNAIL_TO_CREATE = 5;
 
-        private List<File> Files;
-        private List<Folder> Folders;
-        private int indexOfActualProcessingFile;
-        private string StoragePrefix;
+        private static int s_maxSizeOfPhotoInPixels = 850;
+        private static string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
+        private static int s_thumbnailsToCreateAhead = 5;
+
+        private List<File> files;
+        private List<Folder> folders;
+        private int indexOfLastProcessingFile;
+        private string sessionStoragePrefix;
 
         private string source;
         private string destination;
@@ -33,7 +34,7 @@ namespace Sorter.Data
             _configuration = configuration;
             _options = options;
             _configOptionsService = configOptionsService;
-            StoragePrefix = Path.GetRandomFileName();
+            sessionStoragePrefix = Path.GetRandomFileName();
             initialized = false;
         }
         public bool CheckCorrectnessOfConfig()
@@ -52,17 +53,17 @@ namespace Sorter.Data
                 if (!CheckCorrectnessOfConfig()) return Task.FromResult(false);
                 LoadConfig();
                 LoadFilesAndFolders();
-                indexOfActualProcessingFile = -1;
-                if (useThumbnails && Files!.Count > 0)
+                indexOfLastProcessingFile = -1;
+                if (useThumbnails && files!.Count > 0)
                 {
-                    foreach (var f in Files.GetRange(0, Math.Min(Files.Count - indexOfActualProcessingFile, THUMBNAIL_TO_CREATE)))
+                    foreach (var f in files.GetRange(0, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
                     {
                         Task.Run(() => CreateThumbnail(f));
                     }
-                    while (THUMBNAIL_EXTENSIONS.Contains(Files[0].Extension) && Files[0].ThumbnailPath == null) Thread.Sleep(100);
+                    while (s_thumbnailExtensions.Contains(files[0].Extension) && files[0].ThumbnailPath == null) Thread.Sleep(100);
                 }
                 initialized = true;
-                if (reInit) StoragePrefix = Path.GetRandomFileName();
+                if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
             }
             return Task.FromResult(true);
         }
@@ -92,7 +93,7 @@ namespace Sorter.Data
         }
         public Task<string> GetStoragePrefix()
         {
-            return Task.FromResult(StoragePrefix);
+            return Task.FromResult(sessionStoragePrefix);
         }
         public Task<string> GetTruePassword()
         {
@@ -106,7 +107,7 @@ namespace Sorter.Data
         }
         public Task<Folder[]> GetFoldersAsync()
         {
-            return Task.FromResult(Folders.ToArray());
+            return Task.FromResult(folders.ToArray());
         }
         private File GetCopyOfFile(File file)
         {
@@ -114,25 +115,25 @@ namespace Sorter.Data
         }
         public int? GetNextIndex()
         {
-            if (indexOfActualProcessingFile < Files.Count - 1)
+            if (indexOfLastProcessingFile < files.Count - 1)
             {
-                indexOfActualProcessingFile++;
+                indexOfLastProcessingFile++;
                 if (useThumbnails)
                 {
-                    foreach (var f in Files.GetRange(indexOfActualProcessingFile, Math.Min(Files.Count - indexOfActualProcessingFile, THUMBNAIL_TO_CREATE)))
+                    foreach (var f in files.GetRange(indexOfLastProcessingFile, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
                     {
                         if (string.IsNullOrEmpty(f.ThumbnailPath)) Task.Run(() => CreateThumbnail(f));
                     }
                 }
-                return indexOfActualProcessingFile;
+                return indexOfLastProcessingFile;
             }
             return null;
         }
         public File? GetFileAtIndex(int index)
         {
-            if (index < Files.Count && index >= 0)
+            if (index < files.Count && index >= 0)
             {
-                File file = GetCopyOfFile(Files[index]);
+                File file = GetCopyOfFile(files[index]);
                 file.Path = file.PhysicalPath;
                 if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
                 else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
@@ -150,8 +151,8 @@ namespace Sorter.Data
         }
         private void LoadFilesAndFolders()
         {
-            Files = ProcessFilesInDirectoryRecursively(source);
-            Folders = ProcessDirectoryRecursively(destination);
+            files = ProcessFilesInDirectoryRecursively(source);
+            folders = ProcessDirectoryRecursively(destination);
         }
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
@@ -224,11 +225,11 @@ namespace Sorter.Data
         {
             try
             {
-                if (Files[file!.FIndex!.Value].Name == file.Name)
+                if (files[file!.FIndex!.Value].Name == file.Name)
                 {
                     System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, string.Concat(file.Name, ".", file.Extension)));
                     file.PhysicalPath = Path.Combine(destiny, file.Name);
-                    Files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
+                    files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
                     Console.WriteLine("File " + file.Name + " moved to " + destiny);
                 }
                 else Console.WriteLine("The file index has changed, you need to reload session");
@@ -245,14 +246,14 @@ namespace Sorter.Data
         }
         public bool CreateFolder(string folderName)
         {
-            if (Folders.Any(f => f.Name == folderName)) return false;
+            if (folders.Any(f => f.Name == folderName)) return false;
             if (folderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return false;
             string fullPath = Path.Combine(destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
             if (folderName != null)
             {
-                Folders.Add(new Folder(fullPath, folderName));
+                folders.Add(new Folder(fullPath, folderName));
                 return true;
             }
             return false;
@@ -260,25 +261,25 @@ namespace Sorter.Data
         public void ChangeFileName(int index, string newFileName)
         {
             if (newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return;
-            File file = Files[index];
+            File file = files[index];
             string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
             Console.WriteLine("File renamed from " + file.Name + "." + file.Extension + " to " + newFileName + "." + file.Extension);
             System.IO.File.Move(file.PhysicalPath, newFullPath);
-            Files[index].PhysicalPath = newFullPath;
-            Files[index].Name = newFileName;
-            Files[index].Path = newFullPath;
-            if (Files[index].Path.Contains(source)) Files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, Files[index].PhysicalPath));
-            else if (Files[index].Path.Contains(destination)) Files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, Files[index].PhysicalPath));
+            files[index].PhysicalPath = newFullPath;
+            files[index].Name = newFileName;
+            files[index].Path = newFullPath;
+            if (files[index].Path.Contains(source)) files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, files[index].PhysicalPath));
+            else if (files[index].Path.Contains(destination)) files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, files[index].PhysicalPath));
         }
         public void CreateThumbnail(File file)
         {
-            if (!THUMBNAIL_EXTENSIONS.Contains(file.Extension) || !string.IsNullOrWhiteSpace(file.ThumbnailPath))
+            if (!s_thumbnailExtensions.Contains(file.Extension) || !string.IsNullOrWhiteSpace(file.ThumbnailPath))
                 return;
             //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
             using (Image image = Image.Load(file.PhysicalPath))
             {
-                double ratioWidth = MAX_SIZE_OF_PHOTO / (double)image.Width;
-                double ratioHeight = MAX_SIZE_OF_PHOTO / (double)image.Height;
+                double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
+                double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
                 double ratio = Math.Min(ratioWidth, ratioHeight);
                 if (ratio < 1)
                 {
