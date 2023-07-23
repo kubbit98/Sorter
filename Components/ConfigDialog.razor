@@ -21,18 +21,18 @@
                     <div class="form-group row">
                         <label for="password" class="col-sm-2 col-form-label">Password</label>
                         <div class="col-sm-10">
-                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
+                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
                         </div>
                     </div>
                 </form>
                 <br />
-                @if (truePassword.Equals(unlockBoxPassword))
+                @if (_truePassword.Equals(_unlockBoxPassword))
                 {
                     //new password
                     <div class="row mb-3">
                         <label for="newPass" class="col-sm-2 col-form-label">New password:</label>
                         <div class="col-sm-10">
-                            <input class="form-control" type="password" id="newPass" name="newPass" @bind="newPassword" placeholder="New password">
+                            <input class="form-control" type="password" id="newPass" name="newPass" @bind="_newPassword" placeholder="New password">
                         </div>
                     </div>
                     //password hint
@@ -45,10 +45,10 @@
                     <div class="row mb-3">
                         <label for="source" class="col-sm-2 col-form-label">Source:</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="text" id="source" name="source" @bind="source" @bind:event="oninput" placeholder="Source directory path">
+                            <input class="form-control" type="text" id="source" name="source" @bind="_source" @bind:event="oninput" placeholder="Source directory path">
                         </div>
                         <div class="col-sm-4">
-                            @if (!String.IsNullOrWhiteSpace(source) && Directory.Exists(Path.GetFullPath(source)))
+                            @if (!String.IsNullOrWhiteSpace(_source) && Directory.Exists(Path.GetFullPath(_source)))
                             {
                                 <p>Path is valid</p>
                             }
@@ -63,7 +63,7 @@
                         <label for="exclude-dirs-sour" class="col-sm-2 col-form-label">Directories in source to exclude:</label>
                         <div class="col-sm-10">
                             <div class="row row-cols-auto">
-                                @foreach (var item in excludeListSource)
+                                @foreach (var item in _excludeSourceList)
                                 {
                                     <div class="col">
                                         @item
@@ -71,7 +71,7 @@
                                     </div>
                                 }
                                 <div class="col">
-                                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeSource" />
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeSource" />
                                 </div>
                                 <div class="col">
                                     <button class="btn btn-dark btn-sm" @onclick="AddExcludeSource">Add</button>
@@ -83,10 +83,10 @@
                     <div class="row mb-3">
                         <label for="destination" class="col-sm-2 col-form-label">Destination:</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="text" id="destination" name="destination" @bind="destination" @bind:event="oninput" placeholder="Destination directory path">
+                            <input class="form-control" type="text" id="destination" name="destination" @bind="_destination" @bind:event="oninput" placeholder="Destination directory path">
                         </div>
                         <div class="col-sm-4">
-                            @if (!String.IsNullOrWhiteSpace(destination) && Directory.Exists(Path.GetFullPath(destination)))
+                            @if (!String.IsNullOrWhiteSpace(_destination) && Directory.Exists(Path.GetFullPath(_destination)))
                             {
                                 <p>Path is valid</p>
                             }
@@ -101,7 +101,7 @@
                         <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">Directories in destination to exclude:</label>
                         <div class="col-sm-10">
                             <div class="row row-cols-auto">
-                                @foreach (var item in excludeListDestination)
+                                @foreach (var item in _excludeDestinationList)
                                 {
                                     <div class="col">
                                         @item
@@ -109,7 +109,7 @@
                                     </div>
                                 }
                                 <div class="col">
-                                    <input class="form-control" placeholder="Folder to exclude" @bind="newExcludeDestination" />
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeDestination" />
                                 </div>
                                 <div class="col">
                                     <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination">Add</button>
@@ -121,7 +121,7 @@
                     <div class="row mb-3">
                         <div class="col-sm-10 offset-sm-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="allowRename">
+                                <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="_allowRename">
                                 <label class="form-check-label" for="allowRename">
                                     Allow all users to rename the files
                                 </label>
@@ -132,7 +132,7 @@
                     <div class="row mb-3">
                         <div class="col-sm-10 offset-sm-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="useWhite">
+                                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="_useWhite">
                                 <label class="form-check-label" for="gridCheck1">
                                     Use white list of extensions instead of black list
                                 </label>
@@ -140,13 +140,13 @@
                         </div>
                     </div>
                     <div class="row mb-3">
-                        @if (useWhite)
+                        @if (_useWhite)
                         {
                             <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">White list:</label>
                             <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
-                                        @foreach (var item in whiteList)
+                                        @foreach (var item in _whiteList)
                                         {
                                             <div class="col">
                                                 @(item.Equals("") ? "No extension" : item)
@@ -154,7 +154,7 @@
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="newWhite" />
+                                            <input class="form-control" placeholder="New extension" @bind="_newWhite" />
                                         </div>
                                         <div class="col">
                                             <button class="btn btn-dark btn-sm" @onclick="AddWhite">Add</button>
@@ -169,7 +169,7 @@
                             <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
-                                        @foreach (var item in blackList)
+                                        @foreach (var item in _blackList)
                                         {
                                             <div class="col">
                                                 @(item.Equals("") ? "No extension" : item)
@@ -177,7 +177,7 @@
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="newBlack" />
+                                            <input class="form-control" placeholder="New extension" @bind="_newBlack" />
                                         </div>
                                         <div class="col">
                                             <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
@@ -194,16 +194,16 @@
                 }
             </div>
             <div class="modal-footer">
-                @if (truePassword.Equals(unlockBoxPassword))
+                @if (_truePassword.Equals(_unlockBoxPassword))
                 {
-                    <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-primary" buttonName="Save new configuration" buttonOnClick="Save" />
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" />
                     @if (!@hostingEnv.IsProduction())
                     {
-                        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Load default config for testing" buttonOnClick="LoadDefaultTestConfig" />
-                        <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-info" buttonName="Rearrange test files to their original state" buttonOnClick="RearrangeTestFiles" />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Rearrange test files to their original state" ButtonOnClickAction="RearrangeTestFiles" />
                     }
                 }
-                <ButtonInDiv divCssClass="col d-grid" buttonCssClass="btn btn-warning" buttonName="Return" buttonOnClick="Close" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" />
             </div>
         </div>
     </div>
@@ -212,21 +212,21 @@
 @code {
     [Parameter] public EventCallback<bool> OnChange { get; set; }
 
-    private string source = String.Empty;
-    private List<string> excludeListSource = new List<string>();
-    private string newExcludeSource = String.Empty;
-    private string destination = String.Empty;
-    private List<string> excludeListDestination = new List<string>();
-    private string newExcludeDestination = String.Empty;
-    private bool useWhite = true;
-    private List<string> whiteList = new List<string>();
-    private string newWhite = String.Empty;
-    private List<string> blackList = new List<string>();
-    private string newBlack = String.Empty;
-    private string unlockBoxPassword = String.Empty;
-    private string truePassword = String.Empty;
-    private string newPassword = String.Empty;
-    private bool allowRename = true;
+    private string _source = String.Empty;
+    private List<string> _excludeSourceList = new List<string>();
+    private string _newExcludeSource = String.Empty;
+    private string _destination = String.Empty;
+    private List<string> _excludeDestinationList = new List<string>();
+    private string _newExcludeDestination = String.Empty;
+    private bool _useWhite = true;
+    private List<string> _whiteList = new List<string>();
+    private string _newWhite = String.Empty;
+    private List<string> _blackList = new List<string>();
+    private string _newBlack = String.Empty;
+    private string _unlockBoxPassword = String.Empty;
+    private string _truePassword = String.Empty;
+    private string _newPassword = String.Empty;
+    private bool _allowRename = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -234,16 +234,16 @@
     }
     public async Task Init()
     {
-        source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
-        excludeListSource = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
-        destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
-        excludeListDestination = Array.ConvertAll(configOptions.Value.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
-        useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
-        whiteList = configOptions.Value.WhiteList.ToList();
-        blackList = configOptions.Value.BlackList.ToList();
-        truePassword = configOptions.Value.Password;
-        newPassword = truePassword;
-        allowRename = configOptions.Value.AllowRename;
+        _source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
+        _excludeSourceList = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+        _destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
+        _excludeDestinationList = Array.ConvertAll(configOptions.Value.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+        _useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
+        _whiteList = configOptions.Value.WhiteList.ToList();
+        _blackList = configOptions.Value.BlackList.ToList();
+        _truePassword = configOptions.Value.Password;
+        _newPassword = _truePassword;
+        _allowRename = configOptions.Value.AllowRename;
     }
     private async void Close()
     {
@@ -252,25 +252,25 @@
     private async void Save()
     {
         var config = configOptions.Value;
-        if (!ConfigOptionsService.CheckPath(source))
+        if (!ConfigOptionsService.CheckPath(_source))
         {
             toastService.ShowError("Source path is invalid");
             return;
         }
-        if (!ConfigOptionsService.CheckPath(destination))
+        if (!ConfigOptionsService.CheckPath(_destination))
         {
             toastService.ShowError("Destination path is invalid");
             return;
         }
-        config.Source = source;
-        config.ExcludeDirsSource = excludeListSource.ToArray();
-        config.Destination = destination;
-        config.ExcludeDirsDestination = excludeListDestination.ToArray();
-        config.UseWhiteListInsteadOfBlackList = useWhite;
-        config.WhiteList = whiteList.ToArray();
-        config.BlackList = blackList.ToArray();
-        config.Password = newPassword;
-        config.AllowRename = allowRename;
+        config.Source = _source;
+        config.ExcludeDirsSource = _excludeSourceList.ToArray();
+        config.Destination = _destination;
+        config.ExcludeDirsDestination = _excludeDestinationList.ToArray();
+        config.UseWhiteListInsteadOfBlackList = _useWhite;
+        config.WhiteList = _whiteList.ToArray();
+        config.BlackList = _blackList.ToArray();
+        config.Password = _newPassword;
+        config.AllowRename = _allowRename;
         try
         {
             ConfigOptionsService.SaveOptions(config);
@@ -290,19 +290,19 @@
     }
     private void RemoveExcludeSource(string exclude)
     {
-        excludeListSource.Remove(exclude);
+        _excludeSourceList.Remove(exclude);
     }
     private void AddExcludeSource()
     {
-        if (!string.IsNullOrWhiteSpace(newExcludeSource))
+        if (!string.IsNullOrWhiteSpace(_newExcludeSource))
         {
             try
             {
-                var path = Path.GetFullPath(newExcludeSource.Replace("\"", ""));
-                if (Directory.Exists(path) && !excludeListSource.Contains(path))
+                var path = Path.GetFullPath(_newExcludeSource.Replace("\"", ""));
+                if (Directory.Exists(path) && !_excludeSourceList.Contains(path))
                 {
-                    excludeListSource.Add(path);
-                    newExcludeSource = string.Empty;
+                    _excludeSourceList.Add(path);
+                    _newExcludeSource = string.Empty;
                 }
                 else
                 {
@@ -317,19 +317,19 @@
     }
     private void RemoveExcludeDestination(string exclude)
     {
-        excludeListDestination.Remove(exclude);
+        _excludeDestinationList.Remove(exclude);
     }
     private void AddExcludeDestination()
     {
-        if (!string.IsNullOrWhiteSpace(newExcludeDestination))
+        if (!string.IsNullOrWhiteSpace(_newExcludeDestination))
         {
             try
             {
-                var path = Path.GetFullPath(newExcludeDestination.Replace("\"", ""));
-                if (Directory.Exists(path) && !excludeListDestination.Contains(path))
+                var path = Path.GetFullPath(_newExcludeDestination.Replace("\"", ""));
+                if (Directory.Exists(path) && !_excludeDestinationList.Contains(path))
                 {
-                    excludeListDestination.Add(path);
-                    newExcludeDestination = string.Empty;
+                    _excludeDestinationList.Add(path);
+                    _newExcludeDestination = string.Empty;
                 }
                 else
                 {
@@ -344,28 +344,28 @@
     }
     private void RemoveWhite(string white)
     {
-        whiteList.Remove(white);
+        _whiteList.Remove(white);
     }
     private void AddWhite()
     {
-        newWhite = newWhite.Trim();
-        if (!whiteList.Contains(newWhite))
+        _newWhite = _newWhite.Trim();
+        if (!_whiteList.Contains(_newWhite))
         {
-            whiteList.Add(newWhite);
-            newWhite = string.Empty;
+            _whiteList.Add(_newWhite);
+            _newWhite = string.Empty;
         }
     }
     private void RemoveBlack(string black)
     {
-        blackList.Remove(black);
+        _blackList.Remove(black);
     }
     private void AddBlack()
     {
-        newBlack = newBlack.Trim();
-        if (!blackList.Contains(newBlack))
+        _newBlack = _newBlack.Trim();
+        if (!_blackList.Contains(_newBlack))
         {
-            blackList.Add(newBlack);
-            newBlack = string.Empty;
+            _blackList.Add(_newBlack);
+            _newBlack = string.Empty;
         }
     }
     private async void LoadDefaultTestConfig()

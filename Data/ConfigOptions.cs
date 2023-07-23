@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Sorter.Data
+﻿namespace Sorter.Data
 {
     public class ConfigOptions
     {

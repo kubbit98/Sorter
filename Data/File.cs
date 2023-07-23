@@ -2,13 +2,13 @@
 
 public class File
 {
-    public static string[] VIDEO_EXTENSIONS = { "flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r" }; //not sure if all of them works
-    public static string[] PHOTO_EXTENSIONS = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
-    public static string[] TEXT_EXTENSIONS = { "txt" };
-    public static string[] PDF_EXTENSIONS = { "pdf" };
+    public static string[] s_videoExtensions = { "flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r" }; //not sure if all of them works
+    public static string[] s_photoExtensions = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
+    public static string[] s_textExtensions = { "txt" };
+    public static string[] s_pdfExtensions = { "pdf" };
     public enum FileTypeEnum
     {
-        VIDEO, PHOTO, TEXT, PDF, NOTSUPPORTED
+        Video, Photo, Text, PDF, NotSupported
     }
     public File(string physicalPath, string name, string extension)
     {
@@ -53,11 +53,11 @@ public class File
     {
         get
         {
-            if (PHOTO_EXTENSIONS.Contains(Extension.ToLower())) return FileTypeEnum.PHOTO;
-            else if (VIDEO_EXTENSIONS.Contains(Extension.ToLower())) return FileTypeEnum.VIDEO;
-            else if (PDF_EXTENSIONS.Contains(Extension.ToLower())) return FileTypeEnum.PDF;
-            else if (TEXT_EXTENSIONS.Contains(Extension.ToLower())) return FileTypeEnum.TEXT;
-            else return FileTypeEnum.NOTSUPPORTED;
+            if (s_photoExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Photo;
+            else if (s_videoExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Video;
+            else if (s_pdfExtensions.Contains(Extension.ToLower())) return FileTypeEnum.PDF;
+            else if (s_textExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Text;
+            else return FileTypeEnum.NotSupported;
         }
     }
     //public string VideoType //i used this to type in video source
