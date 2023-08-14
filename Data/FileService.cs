@@ -227,10 +227,10 @@ namespace Sorter.Data
             {
                 if (files[file!.FIndex!.Value].Name == file.Name)
                 {
-                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, string.Concat(file.Name, ".", file.Extension)));
-                    file.PhysicalPath = Path.Combine(destiny, file.Name);
+                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.NameWithExtension));
+                    file.PhysicalPath = Path.Combine(destiny, file.NameWithExtension);
                     files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
-                    Console.WriteLine("File " + file.Name + " moved to " + destiny);
+                    Console.WriteLine("File {0} moved to {1}", file.NameWithExtension, destiny);
                 }
                 else Console.WriteLine("The file index has changed, you need to reload session");
             }

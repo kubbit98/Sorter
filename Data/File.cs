@@ -49,6 +49,14 @@ public class File
             else return ThumbnailPath;
         }
     }
+    public string NameWithExtension
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Extension)) return Name;
+            else return Name + "." + Extension;
+        }
+    }
     public FileTypeEnum FileType
     {
         get

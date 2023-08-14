@@ -140,14 +140,14 @@
                 @if (null != _previousFile)
                 {
                     <div class="row mb-3">
-                        <p>Previous file: @_previousFile.Name<br />(in @_previousFile.Path)</p>
+                        <p>Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
                         @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
                         {
                             <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
                         else
                         {
-                            <p>Next file is not photo</p>
+                            <p>Previous file is not photo</p>
                         }
                     </div>
                 }
@@ -184,7 +184,7 @@
                 @if (null != _nextFile)
                 {
                     <div class="row mb-3">
-                        <p>Next file: @_nextFile.Name<br />(in @_nextFile.Path)</p>
+                        <p>Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
                         @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                         {
                             <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
