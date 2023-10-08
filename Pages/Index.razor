@@ -8,19 +8,12 @@
 @inject IToastService toastService
 @inject ProtectedSessionStorage ProtectedSessionStore
 
-<h1>Sorter</h1>
-
 @switch (_status)
 {
     case Status.BeforeInit:
-        <div class="row mb-3">
-            <div class="col">
-                <p>Click to start</p>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
+        <div class="row w-50 d-flex flex-column justify-content-center m-auto">
+            <button class="btn btn-primary my-1 mx-auto w-50" @onclick="InitSession">Start session</button>
+            <button class="btn btn-outline-secondary my-1 mx-auto w-50" @onclick="ConfigModalOnOpen" @attributes="_dictConfigDialog">Configuration</button>
         </div>
         @if (SHOW_DEBUG_INFO)
         {
