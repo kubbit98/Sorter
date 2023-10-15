@@ -163,7 +163,7 @@ namespace Sorter.Data
                 {
                     return folders;
                 }
-                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath))
+                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath).OrderBy(f=>f))
                 {
                     try
                     {
@@ -195,7 +195,7 @@ namespace Sorter.Data
                 {
                     return files;
                 }
-                foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath))
+                foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath).OrderBy(f => f))
                 {
                     var fileName = Path.GetFileNameWithoutExtension(fullPathToFile);
                     var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
@@ -203,7 +203,7 @@ namespace Sorter.Data
                         || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
                     files.Add(new File(fullPathToFile, fileName, fileExtension));
                 }
-                foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath))
+                foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath).OrderBy(f => f))
                 {
                     try
                     {
