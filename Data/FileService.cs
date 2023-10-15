@@ -56,7 +56,7 @@ namespace Sorter.Data
                 indexOfLastProcessingFile = -1;
                 if (useThumbnails && files!.Count > 0)
                 {
-                    foreach (var f in files.GetRange(0, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
+                    foreach (var f in files.GetRange(0, Math.Min(files.Count, s_thumbnailsToCreateAhead)))
                     {
                         Task.Run(() => CreateThumbnail(f));
                     }
