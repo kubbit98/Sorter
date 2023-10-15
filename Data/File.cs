@@ -10,12 +10,17 @@ public class File
     {
         Video, Photo, Text, PDF, NotSupported
     }
+    public enum ThumbnailEnum
+    {
+        Exists, WillBe, WillNot, Unknown
+    }
     public File(string physicalPath, string name, string extension)
     {
         Path = physicalPath;
         PhysicalPath = physicalPath;
         Name = name;
         Extension = extension;
+        IsThumbnailExist = ThumbnailEnum.Unknown;
     }
 
     public string Path { get; set; }
@@ -68,6 +73,7 @@ public class File
             else return FileTypeEnum.NotSupported;
         }
     }
+    public ThumbnailEnum IsThumbnailExist { get; set; }
     //public string VideoType //i used this to type in video source
     //{
     //    get

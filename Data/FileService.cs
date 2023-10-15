@@ -60,7 +60,7 @@ namespace Sorter.Data
                     {
                         Task.Run(() => CreateThumbnail(f));
                     }
-                    while (s_thumbnailExtensions.Contains(files[0].Extension) && files[0].ThumbnailPath == null) Thread.Sleep(100);
+                    while (files[0].IsThumbnailExist == File.ThumbnailEnum.Unknown || files[0].IsThumbnailExist == File.ThumbnailEnum.WillBe) Thread.Sleep(100);
                 }
                 initialized = true;
                 if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
@@ -122,7 +122,7 @@ namespace Sorter.Data
                 {
                     foreach (var f in files.GetRange(indexOfLastProcessingFile, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
                     {
-                        if (string.IsNullOrEmpty(f.ThumbnailPath)) Task.Run(() => CreateThumbnail(f));
+                        if (f.IsThumbnailExist == File.ThumbnailEnum.Unknown) Task.Run(() => CreateThumbnail(f));
                     }
                 }
                 return indexOfLastProcessingFile;
@@ -163,7 +163,7 @@ namespace Sorter.Data
                 {
                     return folders;
                 }
-                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath).OrderBy(f=>f))
+                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath).OrderBy(f => f))
                 {
                     try
                     {
@@ -273,28 +273,39 @@ namespace Sorter.Data
         }
         public void CreateThumbnail(File file)
         {
-            if (!s_thumbnailExtensions.Contains(file.Extension) || !string.IsNullOrWhiteSpace(file.ThumbnailPath))
-                return;
             //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
-            using (Image image = Image.Load(file.PhysicalPath))
+            if (file.IsThumbnailExist == File.ThumbnailEnum.Unknown)
             {
-                double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
-                double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
-                double ratio = Math.Min(ratioWidth, ratioHeight);
-                if (ratio < 1)
+                if (!s_thumbnailExtensions.Contains(file.Extension))
                 {
-                    string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
-                    do
+                    file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+                    return;
+                }
+                file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
+                using (Image image = Image.Load(file.PhysicalPath))
+                {
+                    double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
+                    double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
+                    double ratio = Math.Min(ratioWidth, ratioHeight);
+                    if (ratio < 1)
                     {
-                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
-                    } while (System.IO.File.Exists(temporaryThumbnailPath));
-                    image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
-                    do
+                        string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
+                        do
+                        {
+                            temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                        } while (System.IO.File.Exists(temporaryThumbnailPath));
+                        image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
+                        do
+                        {
+                            image.Save(temporaryThumbnailPath);
+                        } while (!System.IO.File.Exists(temporaryThumbnailPath));
+                        file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
+                        file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                    }
+                    else
                     {
-                        image.Save(temporaryThumbnailPath);
-
-                    } while (!System.IO.File.Exists(temporaryThumbnailPath));
-                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
+                        file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+                    }
                 }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);
