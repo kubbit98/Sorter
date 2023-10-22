@@ -10,6 +10,7 @@ namespace Sorter.Data
 
         private static int s_maxSizeOfPhotoInPixels = 850;
         private static string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
+        private static string[] s_globalExtensionExclude = { "ds_store" };
         private static int s_thumbnailsToCreateAhead = 5;
 
         private List<File> files;
@@ -199,6 +200,7 @@ namespace Sorter.Data
                 {
                     var fileName = Path.GetFileNameWithoutExtension(fullPathToFile);
                     var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
+                    if (s_globalExtensionExclude.Contains(fileExtension)) continue;
                     if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
                         || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
                     files.Add(new File(fullPathToFile, fileName, fileExtension));
