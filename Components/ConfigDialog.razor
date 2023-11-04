@@ -133,7 +133,7 @@
                         <div class="col-sm-10 offset-sm-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="_useWhite">
-                                <label class="form-check-label" for="gridCheck1">
+                                <label class="form-check-label" for="use_white">
                                     Use white list of extensions instead of black list
                                 </label>
                             </div>
@@ -142,7 +142,7 @@
                     <div class="row mb-3">
                         @if (_useWhite)
                         {
-                            <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">White list:</label>
+                            <label for="white-list" class="col-sm-2 col-form-label">White list:</label>
                             <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
@@ -165,7 +165,7 @@
                         }
                         else
                         {
-                            <label for="exclude-dirs-dest" class="col-sm-2 col-form-label">Black list:</label>
+                            <label for="black-list" class="col-sm-2 col-form-label">Black list:</label>
                             <div class="col-sm-10">
                                 <div class="container">
                                     <div class="row row-cols-auto">
