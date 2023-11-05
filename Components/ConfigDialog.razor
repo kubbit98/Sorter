@@ -4,8 +4,9 @@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnv
 @inject ConfigOptionsService ConfigOptionsService
 @inject FileService FileService
-@inject IOptionsSnapshot<ConfigOptions> configOptions
-@inject IOptionsMonitor<ConfigOptions> configOptionsMonitor
+@inject IConfiguration configuration
+@inject IOptionsMonitor<ConfigOptions> configOptions
+@inject ILogger<ConfigDialog> logger
 @inject IToastService toastService
 
 <div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
@@ -17,30 +18,20 @@
             </div>
             <div class="modal-body">
                 @*password*@
-                <form class="form">
-                    <div class="form-group row">
-                        <label for="password" class="col-sm-2 col-form-label">Password</label>
-                        <div class="col-sm-10">
-                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
-                        </div>
-                    </div>
-                </form>
-                <br />
-                @if (_truePassword.Equals(_unlockBoxPassword))
+                @if (!_truePassword.Equals(string.Empty))
                 {
-                    //new password
-                    <div class="row mb-3">
-                        <label for="newPass" class="col-sm-2 col-form-label">New password:</label>
-                        <div class="col-sm-10">
-                            <input class="form-control" type="password" id="newPass" name="newPass" @bind="_newPassword" placeholder="New password">
+                    <form class="form">
+                        <div class="form-group row">
+                            <label for="password" class="col-sm-2 col-form-label">Password</label>
+                            <div class="col-sm-10">
+                                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
+                            </div>
                         </div>
-                    </div>
-                    //password hint
-                    <div class="row mb-3">
-                        <div class="col-sm-10 offset-2">
-                            <p>Remember: this password is neither secure nor serious. It's just a quick way to hide your configuration from your friends</p>
-                        </div>
-                    </div>
+                    </form>
+                    <br />
+                }
+                @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
+                {
                     //source
                     <div class="row mb-3">
                         <label for="source" class="col-sm-2 col-form-label">Source:</label>
@@ -118,16 +109,19 @@
                         </div>
                     </div>
                     //renaming
-                    <div class="row mb-3">
-                        <div class="col-sm-10 offset-sm-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="_allowRename">
-                                <label class="form-check-label" for="allowRename">
-                                    Allow all users to rename the files
-                                </label>
+                    @if (!_truePassword.Equals(string.Empty))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-10 offset-sm-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="_allowRename">
+                                    <label class="form-check-label" for="allowRename">
+                                        Allow all users to rename the files
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    }
                     //white or black
                     <div class="row mb-3">
                         <div class="col-sm-10 offset-sm-2">
@@ -190,11 +184,11 @@
                 }
                 else
                 {
-                    <p>You need to provide password, to change the app settings. Password can be find in config.json file</p>
+                    <p>You need to provide password, to change the app settings. Password can be find in appsettings.json file</p>
                 }
             </div>
             <div class="modal-footer">
-                @if (_truePassword.Equals(_unlockBoxPassword))
+                @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
                     <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" />
                     @if (!@hostingEnv.IsProduction())
@@ -225,7 +219,6 @@
     private string _newBlack = String.Empty;
     private string _unlockBoxPassword = String.Empty;
     private string _truePassword = String.Empty;
-    private string _newPassword = String.Empty;
     private bool _allowRename = true;
 
     protected override async Task OnInitializedAsync()
@@ -234,16 +227,15 @@
     }
     public async Task Init()
     {
-        _source = ConfigOptionsService.GetPathIfValid(configOptions.Value.Source);
-        _excludeSourceList = Array.ConvertAll(configOptions.Value.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
-        _destination = ConfigOptionsService.GetPathIfValid(configOptions.Value.Destination);
-        _excludeDestinationList = Array.ConvertAll(configOptions.Value.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
-        _useWhite = configOptions.Value.UseWhiteListInsteadOfBlackList;
-        _whiteList = configOptions.Value.WhiteList.ToList();
-        _blackList = configOptions.Value.BlackList.ToList();
-        _truePassword = configOptions.Value.Password;
-        _newPassword = _truePassword;
-        _allowRename = configOptions.Value.AllowRename;
+        _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
+        _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+        _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);
+        _excludeDestinationList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+        _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
+        _whiteList = configOptions.CurrentValue.WhiteList.ToList();
+        _blackList = configOptions.CurrentValue.BlackList.ToList();
+        _truePassword = configuration.GetValue<string>("Password");
+        _allowRename = configOptions.CurrentValue.AllowRename;
     }
     private async void Close()
     {
@@ -251,7 +243,7 @@
     }
     private async void Save()
     {
-        var config = configOptions.Value;
+        var config = configOptions.CurrentValue;
         if (!ConfigOptionsService.CheckPath(_source))
         {
             toastService.ShowError("Source path is invalid");
@@ -269,7 +261,6 @@
         config.UseWhiteListInsteadOfBlackList = _useWhite;
         config.WhiteList = _whiteList.ToArray();
         config.BlackList = _blackList.ToArray();
-        config.Password = _newPassword;
         config.AllowRename = _allowRename;
         try
         {
@@ -311,7 +302,7 @@
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                logger.LogError(e.Message);
             }
         }
     }
@@ -338,7 +329,7 @@
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                logger.LogError(e.Message);
             }
         }
     }
@@ -372,6 +363,7 @@
     {
         ConfigOptionsService.LoadDefaultTestConfig();
         toastService.ShowInfo("Default configuration loaded");
+        Thread.Sleep(1000);
         if (!await FileService.InitializeFiles(true))
         {
             toastService.ShowError("Something wrong with configuration.");
@@ -383,6 +375,7 @@
     {
         ConfigOptionsService.RearrangeTestFiles();
         toastService.ShowInfo("Test files rearranged");
+        Thread.Sleep(1000);
         if (!await FileService.InitializeFiles(true))
         {
             toastService.ShowError("Something wrong with configuration.");

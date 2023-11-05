@@ -18,7 +18,7 @@ namespace Sorter.Data
         }
         public bool CheckPath(string path)
         {
-            if(string.IsNullOrEmpty(path)) return false;
+            if (string.IsNullOrEmpty(path)) return false;
             return Directory.Exists(Path.GetFullPath(path));
         }
         public string GetPathIfValid(string path)
@@ -102,7 +102,6 @@ namespace Sorter.Data
             if (!_configOptionsMonitor.CurrentValue.UseWhiteListInsteadOfBlackList.Equals(config.UseWhiteListInsteadOfBlackList)) return false;
             if (!_configOptionsMonitor.CurrentValue.WhiteList.SequenceEqual(config.WhiteList)) return false;
             if (!_configOptionsMonitor.CurrentValue.BlackList.SequenceEqual(config.BlackList)) return false;
-            if (!_configOptionsMonitor.CurrentValue.Password.Equals(config.Password)) return false;
             if (!_configOptionsMonitor.CurrentValue.AllowRename.Equals(config.AllowRename)) return false;
             return true;
         }

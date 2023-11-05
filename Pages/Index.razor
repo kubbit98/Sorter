@@ -48,9 +48,9 @@
             </div>
         </div>
         <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
+            <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
         @if (SHOW_DEBUG_INFO)
@@ -80,16 +80,19 @@
                     @_currentFile!.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
                 </p>
             </div>
-            <label class="col-sm-2" for="password">Password to unlock more function:</label>
-            <div class="col-sm-2">
-                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput">
-            </div>
+            @if (!_password!.Equals(string.Empty))
+            {
+                <label class="col-sm-2" for="password">Password to unlock more function:</label>
+                <div class="col-sm-2">
+                    <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput">
+                </div>
+            }
         </div>
         @*main buttons*@
         <div class="row mb-3">
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickAction="Next" />
-            @if (_truePassword!.Equals(_unlockBoxPassword))
+            @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
             {
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
@@ -108,7 +111,7 @@
                 }
             </div>
             @*rename*@
-            @if (_truePassword.Equals(_unlockBoxPassword) || _allowRename)
+            @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
@@ -246,7 +249,7 @@
     private Folder[]? _folders;
     private double? _cols;
     private string _unlockBoxPassword = string.Empty;
-    private string? _truePassword;
+    private string? _password;
     private string _newFileName = string.Empty;
     private bool _allowRename;
     private Status _status = Status.OnConstructor;
@@ -298,7 +301,7 @@
     {
         _folders = await FileService.GetFoldersAsync();
         _cols = Math.Min(Math.Ceiling(Math.Sqrt(_folders.Length)), BRAJANEK);
-        _truePassword = await FileService.GetTruePassword();
+        _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
     }
     private async void InitSession()
@@ -481,7 +484,7 @@
 
     private async void ReloadPlayerIfVideo()
     {
-        if (File.FileTypeEnum.Video==_currentFile?.FileType)
+        if (File.FileTypeEnum.Video == _currentFile?.FileType)
         {
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
             await JS.InvokeVoidAsync("loadVideo");

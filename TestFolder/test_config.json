@@ -12,8 +12,6 @@
     ],
     "BlackList": [
     ],
-    "Password": "a",
-    "AllowRename": false,
-    "UseThumbnails": true
+    "AllowRename": false
   }
 }

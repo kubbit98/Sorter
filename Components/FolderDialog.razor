@@ -4,12 +4,12 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Add new folder</h4>
-                <button type="button" class="close" data-bs-dismiss="modal" >&times;</button>
+                <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
                 <p>Insert name for new folder</p>
                 <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="_folderName" @bind:event="oninput" placeholder="New folder name">
-                @if (string.IsNullOrWhiteSpace(_folderName)) 
+                @if (string.IsNullOrWhiteSpace(_folderName))
                 {
                     _customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
                 }

@@ -5,19 +5,19 @@ namespace Sorter.Data
 {
     public class SourceDFP : DynamicFileProvider
     {
-        public SourceDFP(string root) : base(root)
+        public SourceDFP(string root, ILogger logger) : base(root, logger)
         {
         }
     }
     public class DestinationDFP : DynamicFileProvider
     {
-        public DestinationDFP(string root) : base(root)
+        public DestinationDFP(string root, ILogger logger) : base(root, logger)
         {
         }
     }
     public class TempDFP : DynamicFileProvider
     {
-        public TempDFP(string root) : base(root)
+        public TempDFP(string root, ILogger logger) : base(root, logger)
         {
             if (string.IsNullOrWhiteSpace(root))
             {
@@ -27,7 +27,7 @@ namespace Sorter.Data
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Console.WriteLine("Creating folder for thumbnails in " + path);
+                _logger.LogInformation("Creating folder for thumbnails in " + path);
             }
             else
             {
@@ -40,7 +40,7 @@ namespace Sorter.Data
                 {
                     dir.Delete(true);
                 }
-                Console.WriteLine("Clearing temporary directory at " + path);
+                _logger.LogInformation("Clearing temporary directory at " + path);
             }
             UpdateProvider(path);
         }
@@ -48,9 +48,11 @@ namespace Sorter.Data
     public class DynamicFileProvider : IFileProvider
     {
         PhysicalFileProvider PhysicalFileProvider { get; set; }
-        public DynamicFileProvider(string root)
+        protected readonly ILogger _logger;
+        public DynamicFileProvider(string root, ILogger logger)
         {
             if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root))) PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
+            _logger = logger;
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)
@@ -66,8 +68,8 @@ namespace Sorter.Data
             }
             catch
             {
-                Console.WriteLine("Exception in PhysicalFileProvider. 99% of the time it's a wrong configuration. All you have to do is set the configuration accordingly and initialize the service.");
-                return new NotFoundFileInfo("heheheheh");
+                _logger.LogError("Exception in PhysicalFileProvider. 99% of the time it's a wrong configuration. All you have to do is set the configuration accordingly and initialize the service.");
+                return new NotFoundFileInfo("FolderNotFound");
             }
         }
 

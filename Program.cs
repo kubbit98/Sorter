@@ -19,9 +19,9 @@ builder.Services.AddBlazoredToast();
 
 builder.Services.AddSingleton<FileService>();
 builder.Services.AddSingleton<ConfigOptionsService>();
-builder.Services.AddSingleton(_ => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source")));
-builder.Services.AddSingleton(_ => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination")));
-builder.Services.AddSingleton(_ => new TempDFP(builder.Configuration.GetValue<string>("TempPath")));
+builder.Services.AddSingleton(provider => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source"), provider.GetRequiredService<ILogger<SourceDFP>>()));
+builder.Services.AddSingleton(provider => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination"), provider.GetRequiredService<ILogger<DestinationDFP>>()));
+builder.Services.AddSingleton(provider => new TempDFP(builder.Configuration.GetValue<string>("TempPath"), provider.GetRequiredService<ILogger<TempDFP>>()));
 
 var app = builder.Build();
 
@@ -61,8 +61,8 @@ app.UseStaticFiles(new StaticFileOptions()
 
 await app.StartAsync();
 Process.Start(new ProcessStartInfo("http://localhost:5000") { UseShellExecute = true });
-Console.WriteLine("If your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser");
-Console.WriteLine("\nhttp://localhost:5000\n");
-Console.WriteLine("To shutdown the app, just hit ctrl+c");
+
+app.Logger.LogInformation("\nIf your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser\n\nhttp://localhost:5000\n\nTo shutdown the app, just hit ctrl+c or close the window");
+
 await app.WaitForShutdownAsync();
-Console.WriteLine("You can close browser and console window now");
+app.Logger.LogInformation("You can close browser and console window now");
