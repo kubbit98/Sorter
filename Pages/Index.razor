@@ -166,10 +166,10 @@
                         </video>
                         break;
                     case File.FileTypeEnum.Photo:
-                        <img data-bs-toggle="modal" data-bs-target="#photoModal"
+                        <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
                              src="@(_currentFile!.DisplayPath)"
                              class="img-fluid mx-auto d-block" style="max-height: 90vh;" />
-                        <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back"
+                        <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
@@ -256,6 +256,7 @@
     private Status _status = Status.OnConstructor;
     private FolderDialog _folderDialog;
     private ConfigDialog _configDialog;
+    private PhotoDialog _photoDialog;
 
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
@@ -444,6 +445,11 @@
         InitSession();
         ReloadPlayerIfVideo();
         StateHasChanged();
+    }
+
+    private async Task PhotoModalOpen()
+    {
+        await _photoDialog.Init();
     }
 
     private async Task FolderModalOpen()

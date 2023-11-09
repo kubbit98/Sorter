@@ -1,8 +1,12 @@
-﻿<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
+﻿@inject IJSRuntime JS
+
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-body carousel-dark carousel slide">
-                <img src="@Photo.Path" class="img-fluid mx-auto d-block" data-bs-dismiss="modal" style="max-height: 90vh;" />
+                <div class="photo-modal-zoom align-items-center justify-content-center" id="zoom">
+                    <img src="@Photo.Path" class="img-fluid" />
+                </div>
                 @if (IsPrevPhoto)
                 {
                     <button class="carousel-control-prev" type="button" @onclick="Back">
@@ -28,12 +32,18 @@
     [Parameter] public bool IsNextPhoto { get; set; }
     [Parameter] public EventCallback OnNext { get; set; }
     [Parameter] public EventCallback OnBack { get; set; }
+    public async Task Init()
+    {
+        await JS.InvokeVoidAsync("loadZoom");
+    }
     private async Task Next()
     {
         await InvokeAsync(() => OnNext.InvokeAsync());
+        await JS.InvokeVoidAsync("resetPosition");
     }
     private async Task Back()
     {
         await InvokeAsync(() => OnBack.InvokeAsync());
+        await JS.InvokeVoidAsync("resetPosition");
     }
 }
