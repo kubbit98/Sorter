@@ -51,7 +51,7 @@
         <div class="row mb-3">
             <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
         @if (SHOW_DEBUG_INFO)
@@ -96,7 +96,7 @@
             @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
             {
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="() => AppLifetime.StopApplication()" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
             }
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Add new folder modal" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
@@ -445,6 +445,11 @@
         InitSession();
         ReloadPlayerIfVideo();
         StateHasChanged();
+    }
+    private async void ShutdownApp()
+    {
+        JS.InvokeVoidAsync("close");
+        AppLifetime.StopApplication();
     }
 
     private async Task PhotoModalOpen()
