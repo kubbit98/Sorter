@@ -1,0 +1,24 @@
+.modal-body {
+    overflow: hidden;
+    padding: 0;
+    border: 16px solid #fff;
+    border-radius: 0.3rem;
+}
+
+.photo-modal-zoom {
+    margin: auto;
+    width: fit-content;
+    height: fit-content;
+    transform-origin: 0px 0px;
+    transform: scale(1) translate(0px, 0px);
+    cursor: grab;
+    /*transition: transform 0.2s ease;*/
+}
+
+    .photo-modal-zoom > img {
+        max-height: 90vh;
+    }
+
+.carousel-control-prev, .carousel-control-next {
+    width: 5%;
+}
