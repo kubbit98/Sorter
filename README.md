@@ -7,6 +7,10 @@ This app is a simple web program which is aimed at simplifying the process of so
 
 The application has been tested on Windows 11, Linux (Fedora 38) and macOS (Sonoma). For macOS, however, it had to be compiled under macOS itself, for apple reasons (https://github.com/dotnet/runtime/issues/49091), so although nothing needs to be changed in the code, there will not be a downloadable executable package available in releases, since I don't have any macOS to package the app.
 
+## Presentation
+
+[![Watch the presentation](https://img.youtube.com/vi/h57BWJZT7WI/hqdefault.jpg)](https://youtu.be/h57BWJZT7WI)
+
 ## Installation
 
 To run the application, simply download the latest version appropriate for your operating system from the [releases](https://github.com/kubbit98/Sorter/releases). 
