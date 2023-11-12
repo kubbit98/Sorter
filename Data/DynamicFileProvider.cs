@@ -47,24 +47,42 @@ namespace Sorter.Data
     }
     public class DynamicFileProvider : IFileProvider
     {
-        PhysicalFileProvider PhysicalFileProvider { get; set; }
+        PhysicalFileProvider? PhysicalFileProvider { get; set; }
         protected readonly ILogger _logger;
         public DynamicFileProvider(string root, ILogger logger)
         {
-            if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root))) PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
-            _logger = logger;
+            PhysicalFileProvider = null;
+            
+            if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root)))
+                PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
+
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
-            return ((IFileProvider)PhysicalFileProvider).GetDirectoryContents(subpath);
+            if (PhysicalFileProvider != null)
+            {
+                return PhysicalFileProvider.GetDirectoryContents(subpath);
+            }
+            else
+            {
+                return NotFoundDirectoryContents.Singleton;
+            }
         }
 
         public IFileInfo GetFileInfo(string subpath)
         {
             try
             {
-                return ((IFileProvider)PhysicalFileProvider).GetFileInfo(subpath);
+                if (PhysicalFileProvider != null)
+                {
+                    return PhysicalFileProvider.GetFileInfo(subpath);
+                }
+                else
+                {
+                    return new NotFoundFileInfo(subpath);
+                }
             }
             catch
             {
@@ -75,7 +93,14 @@ namespace Sorter.Data
 
         public IChangeToken Watch(string filter)
         {
-            return ((IFileProvider)PhysicalFileProvider).Watch(filter);
+            if (PhysicalFileProvider != null)
+            {
+                return PhysicalFileProvider.Watch(filter);
+            }
+            else
+            {
+                return NullChangeToken.Singleton;
+            }
         }
         public void UpdateProvider(string newPath)
         {

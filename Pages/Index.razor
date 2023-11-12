@@ -25,6 +25,7 @@
         </div>
         @if (SHOW_DEBUG_INFO)
         {
+            // unreachable beacuse of the variable false which is manually set in this file
             <div class="col col-sm-3">
                 <p>
                     INDEX @_myMediaCurrentIndex
@@ -108,7 +109,7 @@
                 @for (int i = 0; i < _folders!.Length; i++)
                 {
                     var k = i;
-                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].Name" ButtonOnClickAction="()=>MoveFile(_folders[k].Path)" />
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].Name" ButtonOnClickAction="async ()=> await MoveFile(_folders[k].Path)" />
                 }
             </div>
             @*rename*@
@@ -131,7 +132,7 @@
                         }
                         else
                         {
-                            _dictNewFileName = null;
+                            _dictNewFileName = null!;
                         }
                     </div>
 
@@ -235,7 +236,7 @@
     private const string s_storageMyMediaList = "_MyMediaIndexes";
     private const string s_storageMyMediaCurrentIndex = "_MyMediaCurrentIndex";
     private const string s_storageStatus = "_Status";
-    private string _storagePrefix;
+    private string _storagePrefix = string.Empty;
 
     private const bool SHOW_DEBUG_INFO = false;
     private const int LOAD_VIDEO_TIME_DELAY = 100;
@@ -254,9 +255,9 @@
     private string _newFileName = string.Empty;
     private bool _allowRename;
     private Status _status = Status.OnConstructor;
-    private FolderDialog _folderDialog;
-    private ConfigDialog _configDialog;
-    private PhotoDialog _photoDialog;
+    private FolderDialog _folderDialog = new FolderDialog();
+    private ConfigDialog _configDialog = new ConfigDialog();
+    private PhotoDialog _photoDialog = new PhotoDialog();
 
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
@@ -448,7 +449,7 @@
     }
     private async void ShutdownApp()
     {
-        JS.InvokeVoidAsync("close");
+        await JS.InvokeVoidAsync("close");
         AppLifetime.StopApplication();
     }
 
@@ -512,11 +513,22 @@
             toastService.ShowInfo("Page was reloaded due to data discrepancy");
             _status = Status.BeforeInit;
             await _PSSWriteStatus();
-            return null;
         }
+        
         var file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
-        return file;
+
+        if (file == null) {
+            toastService.ShowWarning("Something went wrong");
+            _myMediaIndexes = null;
+            _myMediaCurrentIndex = -1;
+            _status = Status.BeforeInit;
+            await _ResetProtectedSessionStore();
+            StateHasChanged();
+        }
+        
+        return file ?? throw new Exception("File not found");
     }
+    
     private async Task SaveFileName()
     {
         if (_currentFile == null) return;
@@ -555,8 +567,17 @@
     }
     private async Task _PSSWriteMyMediaIndexes()
     {
-        await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaList, _myMediaIndexes);
+        if (_myMediaIndexes != null)
+        {
+            await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaList, _myMediaIndexes);
+        }
+        else
+        {
+            _myMediaIndexes = new List<Tuple<int, string>>();
+            await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaList, _myMediaIndexes);
+        }
     }
+
     private async Task _PSSWriteMyMediaCurrentIndex()
     {
         await ProtectedSessionStore.SetAsync(_storagePrefix + s_storageMyMediaCurrentIndex, _myMediaCurrentIndex);

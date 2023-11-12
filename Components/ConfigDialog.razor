@@ -227,15 +227,17 @@
     }
     public async Task Init()
     {
-        _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
-        _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
-        _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);
-        _excludeDestinationList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
-        _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
-        _whiteList = configOptions.CurrentValue.WhiteList.ToList();
-        _blackList = configOptions.CurrentValue.BlackList.ToList();
-        _truePassword = configuration.GetValue<string>("Password");
-        _allowRename = configOptions.CurrentValue.AllowRename;
+        await Task.Run(() => {
+            _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
+            _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+            _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);
+            _excludeDestinationList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+            _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
+            _whiteList = configOptions.CurrentValue.WhiteList.ToList();
+            _blackList = configOptions.CurrentValue.BlackList.ToList();
+            _truePassword = configuration.GetValue<string>("Password");
+            _allowRename = configOptions.CurrentValue.AllowRename;
+        });
     }
     private async void Close()
     {

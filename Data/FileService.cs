@@ -13,24 +13,31 @@ namespace Sorter.Data
         private static string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
         private static string[] s_globalExtensionExclude = { "ds_store" };
         private static int s_thumbnailsToCreateAhead = 5;
-
-        private List<File> files;
-        private List<Folder> folders;
-        private int indexOfLastProcessingFile;
-        private string sessionStoragePrefix;
-
-        private string source;
-        private string destination;
-        private string[] excludeDirsInSource;
-        private string[] excludeDirsInDestination;
-        private string[] whiteList;
-        private string[] blackList;
+        private List<File> files = new List<File>();
+        private List<Folder> folders = new List<Folder>();
+        private string source = "";
+        private string destination = "";
+        private string[] excludeDirsInSource = Array.Empty<string>();
+        private string[] excludeDirsInDestination = Array.Empty<string>();
+        private string[] whiteList = Array.Empty<string>();
+        private string[] blackList = Array.Empty<string>();
         private bool useWhiteListInsteadOfBlackList;
         private string password;
         private bool allowRename;
         private bool useThumbnails;
         private bool initialized;
+        private string sessionStoragePrefix;
+        private int indexOfLastProcessingFile = -1;
 
+
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FileService"/> class with the specified configuration, options, configuration options service, and logger.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="configOptionsService">The configuration options service.</param>
+        /// <param name="logger">The logger.</param>
         public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, ConfigOptionsService configOptionsService, ILogger<FileService> logger)
         {
             _configuration = configuration;
@@ -40,7 +47,18 @@ namespace Sorter.Data
             password = _configuration.GetValue<string>("Password");
             sessionStoragePrefix = Path.GetRandomFileName();
             initialized = false;
+
+            // source = Path.GetFullPath(_options.CurrentValue.Source ?? "");
+            // excludeDirsInSource = Array.ConvertAll(_options.CurrentValue.ExcludeDirsSource ?? Array.Empty<string>(), dir => Path.GetFullPath(dir));
+            // destination = Path.GetFullPath(_options.CurrentValue.Destination ?? "");
+            // excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination ?? Array.Empty<string>(), dir => Path.GetFullPath(dir));
+            // whiteList = _options.CurrentValue.WhiteList ?? Array.Empty<string>();
         }
+
+        /// <summary>
+        /// Checks the correctness of the configuration.
+        /// </summary>
+        /// <returns>True if the configuration is correct, false otherwise.</returns>
         public bool CheckCorrectnessOfConfig()
         {
             if (string.IsNullOrWhiteSpace(_options.CurrentValue.Source)) return false;
@@ -49,6 +67,12 @@ namespace Sorter.Data
             if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Destination))) return false;
             return true;
         }
+
+        /// <summary>
+        /// Initializes the files and folders for sorting.
+        /// </summary>
+        /// <param name="reInit">If true, re-initializes the files and folders.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a boolean value indicating whether the initialization was successful.</returns>
         public Task<bool> InitializeFiles(bool reInit)
         {
             if (!initialized || reInit)
@@ -71,6 +95,10 @@ namespace Sorter.Data
             }
             return Task.FromResult(true);
         }
+
+        /// <summary>
+        /// Loads the configuration settings from the options and configuration files.
+        /// </summary>
         public void LoadConfig()
         {
             try
@@ -94,27 +122,55 @@ namespace Sorter.Data
                 throw;
             }
         }
+        
+        /// <summary>
+        /// Gets the storage prefix.
+        /// </summary>
+        /// <returns>The storage prefix.</returns>
         public Task<string> GetStoragePrefix()
         {
             return Task.FromResult(sessionStoragePrefix);
         }
+
+        /// <summary>
+        /// Gets the password.
+        /// </summary>
+        /// <returns>The password.</returns>
         public Task<string> GetPassword()
         {
             return Task.FromResult(password);
         }
+
+        /// <summary>
+        /// Gets the value of AllowRename from the current options.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the value of AllowRename.</returns>
         public Task<bool> GetAllowRename()
         {
             allowRename = _options.CurrentValue.AllowRename;
             return Task.FromResult(allowRename);
         }
+
+        /// <summary>
+        /// Returns an array of folders asynchronously.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains an array of folders.</returns>
         public Task<Folder[]> GetFoldersAsync()
         {
             return Task.FromResult(folders.ToArray());
         }
+
+        /// <summary>
+        /// Represents a file in the file system.
+        /// </summary>
         private File GetCopyOfFile(File file)
         {
             return new File(file.PhysicalPath, file.Name, file.Extension) { ThumbnailPath = file.ThumbnailPath };
         }
+        /// <summary>
+        /// Gets the index of the next file to be processed.
+        /// </summary>
+        /// <returns>The index of the next file to be processed, or null if there are no more files to process.</returns>
         public int? GetNextIndex()
         {
             if (indexOfLastProcessingFile < files.Count - 1)
@@ -131,6 +187,12 @@ namespace Sorter.Data
             }
             return null;
         }
+
+        /// <summary>
+        /// Gets the file at the specified index from the list of files.
+        /// </summary>
+        /// <param name="index">The index of the file to get.</param>
+        /// <returns>The file at the specified index, or null if the index is out of range.</returns>
         public File? GetFileAtIndex(int index)
         {
             if (index < files.Count && index >= 0)
@@ -144,6 +206,13 @@ namespace Sorter.Data
             }
             return null;
         }
+        
+        /// <summary>
+        /// Gets the file at the specified index and verifies that it has the specified name.
+        /// </summary>
+        /// <param name="index">The index of the file to retrieve.</param>
+        /// <param name="name">The expected name of the file.</param>
+        /// <returns>The file at the specified index.</returns>
         public File? GetFileAtIndex(int index, string name)
         {
             File? file = GetFileAtIndex(index);
@@ -151,11 +220,22 @@ namespace Sorter.Data
             if (!file.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
             return file;
         }
+
+        /// <summary>
+        /// Loads files and folders from the source and destination directories recursively.
+        /// </summary>
         private void LoadFilesAndFolders()
         {
             files = ProcessFilesInDirectoryRecursively(source);
             folders = ProcessDirectoryRecursively(destination);
         }
+
+
+        /// <summary>
+        /// Recursively processes a directory and returns a list of all the folders found.
+        /// </summary>
+        /// <param name="targetDirectoryPath">The path of the directory to process.</param>
+        /// <returns>A list of all the folders found in the directory.</returns>
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
             List<Folder> folders = new List<Folder>();
@@ -188,6 +268,12 @@ namespace Sorter.Data
             }
             return folders;
         }
+
+        /// <summary>
+        /// Recursively processes all files in the specified directory and returns a list of File objects.
+        /// </summary>
+        /// <param name="sourceDirectoryPath">The path of the directory to process.</param>
+        /// <returns>A list of File objects representing all files in the specified directory and its subdirectories.</returns>
         private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
         {
             List<File> files = new List<File>();
@@ -224,6 +310,12 @@ namespace Sorter.Data
             }
             return files;
         }
+
+        /// <summary>
+        /// Moves the specified file to the specified destination.
+        /// </summary>
+        /// <param name="file">The file to be moved.</param>
+        /// <param name="destiny">The destination directory.</param>
         public void MoveFile(File file, string destiny)
         {
             try
@@ -242,11 +334,23 @@ namespace Sorter.Data
                 _logger.LogError("Cannot move file\n" + e.Message);
             }
         }
+
+        /// <summary>
+        /// Gets the content of a text file.
+        /// </summary>
+        /// <param name="file">The file to read.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the content of the file.</returns>
         public Task<string> GetTextFileContent(File file)
         {
             if (file == null) throw new Exception("No file"); ;
             return Task.FromResult(System.IO.File.ReadAllText(file!.PhysicalPath));
         }
+
+        /// <summary>
+        /// Creates a new folder with the given name in the destination directory.
+        /// </summary>
+        /// <param name="folderName">The name of the folder to create.</param>
+        /// <returns>True if the folder was created successfully, false otherwise.</returns>
         public bool CreateFolder(string folderName)
         {
             if (folders.Any(f => f.Name == folderName)) return false;
@@ -261,6 +365,12 @@ namespace Sorter.Data
             }
             return false;
         }
+
+        /// <summary>
+        /// Renames the file at the specified index with the new file name.
+        /// </summary>
+        /// <param name="index">The index of the file to rename.</param>
+        /// <param name="newFileName">The new file name to use.</param>
         public void ChangeFileName(int index, string newFileName)
         {
             if (newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return;
@@ -274,6 +384,11 @@ namespace Sorter.Data
             if (files[index].Path.Contains(source)) files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, files[index].PhysicalPath));
             else if (files[index].Path.Contains(destination)) files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, files[index].PhysicalPath));
         }
+
+        /// <summary>
+        /// Creates a thumbnail for the given file if it doesn't already exist.
+        /// </summary>
+        /// <param name="file">The file to create a thumbnail for.</param>
         public void CreateThumbnail(File file)
         {
             //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
