@@ -17,7 +17,7 @@ To run the application, simply download the latest version appropriate for your 
 
 ## Configuration
 
-The basic and most important configuration is done inside the application, is persistent and saved in the config.json file
+The basic and most important configuration is done inside the application, it is persistent and saved in the config.json file
 
 ## Advanced configuration
 You can look at some deeper settings in [appsettings.json](https://github.com/kubbit98/Sorter/blob/master/appsettings.json) file:
