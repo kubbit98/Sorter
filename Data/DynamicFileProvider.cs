@@ -52,7 +52,6 @@ namespace Sorter.Data
         public DynamicFileProvider(string root, ILogger logger)
         {
             PhysicalFileProvider = null;
-            
             if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root)))
                 PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
 

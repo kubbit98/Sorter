@@ -286,6 +286,7 @@
                     await _PSSReadMyMediaCurrentIndex();
                     LoadSession();
                     _currentFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes![_myMediaCurrentIndex].Item2);
+                    if (_currentFile == null) break;
                     _newFileName = _currentFile.Name;
                     if (_myMediaCurrentIndex > 0)
                         _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes![_myMediaCurrentIndex - 1].Item2);
@@ -385,8 +386,11 @@
             if (index.HasValue)
             {
                 _nextFile = await GetFileFromFileService(index.Value);
-                _myMediaIndexes!.Add(new Tuple<int, string>(_nextFile!.FIndex!.Value, _nextFile.Name));
-                await _PSSWriteMyMediaIndexes();
+                if (_nextFile != null)
+                {
+                    _myMediaIndexes!.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
+                    await _PSSWriteMyMediaIndexes();
+                }
             }
             else
             {
@@ -510,14 +514,19 @@
         if (newPrefix != _storagePrefix)
         {
             _storagePrefix = newPrefix;
-            toastService.ShowInfo("Page was reloaded due to data discrepancy");
+            toastService.ShowWarning("Page was reloaded due to data discrepancy");
+            _myMediaIndexes = null;
+            _myMediaCurrentIndex = -1;
             _status = Status.BeforeInit;
-            await _PSSWriteStatus();
+            await _ResetProtectedSessionStore();
+            StateHasChanged();
+            return null!;
         }
-        
+
         var file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
 
-        if (file == null) {
+        if (file == null)
+        {
             toastService.ShowWarning("Something went wrong");
             _myMediaIndexes = null;
             _myMediaCurrentIndex = -1;
@@ -525,10 +534,9 @@
             await _ResetProtectedSessionStore();
             StateHasChanged();
         }
-        
         return file ?? throw new Exception("File not found");
     }
-    
+
     private async Task SaveFileName()
     {
         if (_currentFile == null) return;
