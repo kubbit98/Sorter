@@ -14,17 +14,17 @@ namespace Sorter.Data
         private static string[] s_globalExtensionExclude = { "ds_store" };
         private static int s_thumbnailsToCreateAhead = 5;
 
-        private List<File> files;
-        private List<Folder> folders;
-        private int indexOfLastProcessingFile;
+        private List<File> files = new List<File>();
+        private List<Folder> folders = new List<Folder>();
+        private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
 
-        private string source;
-        private string destination;
-        private string[] excludeDirsInSource;
-        private string[] excludeDirsInDestination;
-        private string[] whiteList;
-        private string[] blackList;
+        private string source = "";
+        private string destination = "";
+        private string[] excludeDirsInSource = Array.Empty<string>();
+        private string[] excludeDirsInDestination = Array.Empty<string>();
+        private string[] whiteList = Array.Empty<string>();
+        private string[] blackList = Array.Empty<string>();
         private bool useWhiteListInsteadOfBlackList;
         private string password;
         private bool allowRename;
@@ -156,6 +156,7 @@ namespace Sorter.Data
             files = ProcessFilesInDirectoryRecursively(source);
             folders = ProcessDirectoryRecursively(destination);
         }
+
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
             List<Folder> folders = new List<Folder>();

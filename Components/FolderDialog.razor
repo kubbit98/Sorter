@@ -43,7 +43,9 @@
 
     public async Task Init()
     {
-        _folderName = string.Empty;
+        await Task.Run(() => {
+            _folderName = string.Empty;
+        });
     }
 
     private async Task AddFolderAndClose()

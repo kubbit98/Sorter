@@ -5,7 +5,10 @@
         <div class="modal-content">
             <div class="modal-body carousel-dark carousel slide">
                 <div class="photo-modal-zoom align-items-center justify-content-center" id="zoom">
-                    <img src="@Photo.Path" class="img-fluid" />
+                    @if (Photo != null)
+                    {
+                        <img src="@Photo.Path" class="img-fluid" />
+                    }
                 </div>
                 @if (IsPrevPhoto)
                 {
@@ -27,14 +30,18 @@
 </div>
 
 @code {
-    [Parameter] public Sorter.Data.File Photo { get; set; }
+    [Parameter] public Sorter.Data.File? Photo { get; set; } = null;
     [Parameter] public bool IsPrevPhoto { get; set; }
     [Parameter] public bool IsNextPhoto { get; set; }
     [Parameter] public EventCallback OnNext { get; set; }
     [Parameter] public EventCallback OnBack { get; set; }
+
     public async Task Init()
     {
-        await JS.InvokeVoidAsync("loadZoom");
+        if (Photo != null)
+        {
+            await JS.InvokeVoidAsync("loadZoom");
+        }
     }
     private async Task Next()
     {
