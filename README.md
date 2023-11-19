@@ -3,11 +3,12 @@
 
 ## Description
 
-This app is a simple web program which is aimed at simplifying the process of sorting various files via simple control panel. Additional features of the sorter app is generation of thumbnails of photos, so that their loading during sorting is much faster than the classic several MB files, and simultaneous support for multiple sessions which do not collide with each other (disabled by default).
+This app is a simple web program which is aimed at simplifying the process of sorting various files via simple control panel. Additional features of the sorter app is generation of thumbnails of photos, so that their loading during sorting is much faster than the classic several MB files, and simultaneous support for multiple sessions which do not collide with each other.
 
 The application has been tested on Windows 11, Linux (Fedora 38) and macOS (Sonoma). For macOS, however, it had to be compiled under macOS itself, for apple reasons (https://github.com/dotnet/runtime/issues/49091), so although nothing needs to be changed in the code, there will not be a downloadable executable package available in releases, since I don't have any macOS to package the app.
 
 ## Presentation
+You can watch the presentation here:
 
 [![Watch the presentation](https://img.youtube.com/vi/h57BWJZT7WI/hqdefault.jpg)](https://youtu.be/h57BWJZT7WI)
 
