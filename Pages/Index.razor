@@ -117,7 +117,7 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
+                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
                     </div>
                     <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
                     <div class="col-sm-4">
@@ -546,6 +546,14 @@
         _myMediaIndexes![_myMediaCurrentIndex] = new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name);
         await _PSSWriteMyMediaIndexes();
         StateHasChanged();
+    }
+    private async Task SaveFileNameKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveFileName();
+            StateHasChanged();
+        }
     }
     private async Task<string> GetTextFileContent()
     {
