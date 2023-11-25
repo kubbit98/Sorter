@@ -1,11 +1,25 @@
+var dotNetObjRef;
+var listenerRegistered = false;
+var photoModal;
+var isListenForRegisterKey = false;
+function registerDNF(dotNetObject) {
+    dotNetObjRef = dotNetObject;
+};
 function resetPosition() {
-    document.getElementById("zoom").style.transform = "translate(0px, 0px) scale(1)";
+    var zoom = document.getElementById("zoom");
+    if (null == zoom) return;
+    zoom.style.transform = "translate(0px, 0px) scale(1)"
     loadZoom();
 }
 function loadZoom() {
-    document.getElementById('photoModal').addEventListener('hidden.bs.modal', function (e) {
-        resetPosition();
-    })   
+    if (null == photoModal) photoModal = document.getElementById('photoModal');
+    else if (photoModal != document.getElementById('photoModal')) listenerRegistered = false;
+    if (!listenerRegistered) {
+        document.getElementById('photoModal').addEventListener('hidden.bs.modal', function (e) {
+            resetPosition();
+        })
+        listenerRegistered = true;
+    }
     var scale = 1,
         scaleStep = 1.4,
         minZoom = 1,
@@ -23,8 +37,6 @@ function loadZoom() {
     }
     zoom.onmousedown = function (e) {
         e.preventDefault();
-        //console.log(e.clientX + " " + e.clientY);
-        //console.log(e.offsetX + " " + e.offsetY);
         start = { x: e.clientX - pointX, y: e.clientY - pointY };
         panning = true;
     }
@@ -64,13 +76,82 @@ function loadZoom() {
     }
 }
 function loadVideo() {
-    document.getElementById("videoTagId")?.load();
+    var element = document.getElementById("videoTagId");
+    if (null != element) {
+        element.load();
+        element.focus({ focusVisible: true });
+    }
 }
-function closeModal(modal) {
-    var modal = bootstrap.Modal.getInstance(document.getElementById(modal))
-    modal.hide();
+function closeModal(modalId) {
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
+    if (null != modal) modal.hide();
 }
 function openModal(modalId) {
-    var modal = new bootstrap.Modal(document.getElementById(modalId))
-    modal.show();
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
+    if (null != modal) modal.show();
 }
+function toggleModal(modalId) {
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
+    if (null != modal) {
+        if (modal._isShown) {
+            modal.hide();
+        }
+        else {
+            modal.show();
+            loadZoom();
+        }
+    }
+}
+async function setFocusOnElement(elementId) {
+    document.getElementById(elementId).focus({ focusVisible: true });
+}
+var activeButton;
+async function setButtonSuccess(isTrue) {
+    if (isTrue == "true") {
+
+        if (isListenForRegisterKey) {
+            activeButton.classList = ['btn btn-primary'];
+        }
+        else {
+            isListenForRegisterKey = true;
+        }
+        if (document.activeElement.hasAttribute('data-keybind-button')) {
+            activeButton = document.activeElement;
+            activeButton.classList = ['btn btn-info'];
+        }
+    }
+    else {
+        activeButton.classList = ['btn btn-primary'];
+        isListenForRegisterKey = false;
+        activeButton = null;
+    }
+}
+async function configKeyBindModal() {
+    var modal = document.getElementById('keyBindsModal')
+    //https://stackoverflow.com/a/49583286
+    modal.addEventListener('hide.bs.modal', function (event) {
+        if (isListenForRegisterKey) {
+            event.preventDefault();
+            setButtonSuccess(false);
+        }
+    })
+}
+window.addEventListener('keydown', function (event) {
+    if (event.key == ' ') {
+        event.preventDefault();
+    }
+    if (isListenForRegisterKey) {
+        if (event.key == 'Shift') {
+            return;
+        }
+        else if (event.key == 'Alt' || event.key == 'Control') {
+            setButtonSuccess(false);
+            return;
+        }
+        dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, isListenForRegisterKey, activeButton.title);
+        setButtonSuccess(false);
+    }
+    else if (!document.activeElement.hasAttribute('data-prevent-keydown')) {
+        dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, isListenForRegisterKey, '');
+    }
+});

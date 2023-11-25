@@ -1,5 +1,5 @@
 ﻿<div class="@DivCssClass">
-    <button class="@ButtonCssClass" @onclick="InvokeParentMethod" @attributes=CustomButtonParameter>@ButtonName</button>
+    <button class="@ButtonCssClass" @onclick="InvokeParentMethod" @attributes=CustomButtonParameter title="@Title">@ButtonName</button>
 </div>
 
 @code {
@@ -7,6 +7,7 @@
     [Parameter] public string? ButtonCssClass { get; set; }
     [Parameter] public Dictionary<string, object>? CustomButtonParameter { get; set; }
     [Parameter] public string? ButtonName { get; set; }
+    [Parameter] public string? Title { get; set; }
     [Parameter] public Action? ButtonOnClickAction { get; set; }
     [Parameter] public EventCallback ButtonOnClickTask { get; set; }
     private void InvokeParentMethod()

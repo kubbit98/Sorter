@@ -6,16 +6,17 @@ namespace Sorter.Data
     {
         private readonly IConfiguration _configuration;
         private readonly IOptionsMonitor<ConfigOptions> _options;
+        private readonly IOptionsMonitor<KeyBindsOptions> _keyOptions;
         private readonly ConfigOptionsService _configOptionsService;
         private readonly ILogger _logger;
 
-        private static int s_maxSizeOfPhotoInPixels = 850;
-        private static string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
-        private static string[] s_globalExtensionExclude = { "ds_store" };
-        private static int s_thumbnailsToCreateAhead = 5;
+        private static readonly int s_maxSizeOfPhotoInPixels = 850;
+        private static readonly string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
+        private static readonly string[] s_globalExtensionExclude = { "ds_store" };
+        private static readonly int s_thumbnailsToCreateAhead = 5;
 
-        private List<File> files = new List<File>();
-        private List<Folder> folders = new List<Folder>();
+        private List<File> files = new();
+        private List<Folder> folders = new();
         private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
 
@@ -26,15 +27,16 @@ namespace Sorter.Data
         private string[] whiteList = Array.Empty<string>();
         private string[] blackList = Array.Empty<string>();
         private bool useWhiteListInsteadOfBlackList;
-        private string password;
+        private readonly string password;
         private bool allowRename;
         private bool useThumbnails;
         private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, ConfigOptionsService configOptionsService, ILogger<FileService> logger)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger)
         {
             _configuration = configuration;
             _options = options;
+            _keyOptions = keyOptions;
             _configOptionsService = configOptionsService;
             _logger = logger;
             password = _configuration.GetValue<string>("Password");
@@ -111,10 +113,6 @@ namespace Sorter.Data
         {
             return Task.FromResult(folders.ToArray());
         }
-        private File GetCopyOfFile(File file)
-        {
-            return new File(file.PhysicalPath, file.Name, file.Extension) { ThumbnailPath = file.ThumbnailPath };
-        }
         public int? GetNextIndex()
         {
             if (indexOfLastProcessingFile < files.Count - 1)
@@ -135,7 +133,7 @@ namespace Sorter.Data
         {
             if (index < files.Count && index >= 0)
             {
-                File file = GetCopyOfFile(files[index]);
+                File file = (File)files[index].Clone();
                 file.Path = file.PhysicalPath;
                 if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
                 else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
@@ -155,11 +153,12 @@ namespace Sorter.Data
         {
             files = ProcessFilesInDirectoryRecursively(source);
             folders = ProcessDirectoryRecursively(destination);
+            AppendDirectoriesWithKeyBinds();
         }
 
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
-            List<Folder> folders = new List<Folder>();
+            List<Folder> folders = new();
             try
             {
                 if (!Directory.Exists(Path.GetFullPath(targetDirectoryPath)))
@@ -191,7 +190,7 @@ namespace Sorter.Data
         }
         private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
         {
-            List<File> files = new List<File>();
+            List<File> files = new();
             try
             {
                 if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)) || excludeDirsInSource.Contains(Path.GetFullPath(sourceDirectoryPath)))
@@ -224,6 +223,21 @@ namespace Sorter.Data
                 _logger.LogError("Error with whole source folder " + e.Message);
             }
             return files;
+        }
+        public void AppendDirectoriesWithKeyBinds()
+        {
+            var dict = _keyOptions.CurrentValue.KeyBinds;
+            foreach (var folder in folders)
+            {
+                if (dict.ContainsValue(folder.Path))
+                {
+                    folder.KeyBind=dict.FirstOrDefault(x => x.Value == folder.Path).Key.First();
+                }
+                else
+                {
+                    folder.KeyBind = '\0';
+                }
+            }
         }
         public void MoveFile(File file, string destiny)
         {
@@ -286,30 +300,28 @@ namespace Sorter.Data
                     return;
                 }
                 file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
-                using (Image image = Image.Load(file.PhysicalPath))
+                using Image image = Image.Load(file.PhysicalPath);
+                double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
+                double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
+                double ratio = Math.Min(ratioWidth, ratioHeight);
+                if (ratio < 1)
                 {
-                    double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
-                    double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
-                    double ratio = Math.Min(ratioWidth, ratioHeight);
-                    if (ratio < 1)
+                    string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
+                    do
                     {
-                        string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
-                        do
-                        {
-                            temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
-                        } while (System.IO.File.Exists(temporaryThumbnailPath));
-                        image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
-                        do
-                        {
-                            image.Save(temporaryThumbnailPath);
-                        } while (!System.IO.File.Exists(temporaryThumbnailPath));
-                        file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
-                        file.IsThumbnailExist = File.ThumbnailEnum.Exists;
-                    }
-                    else
+                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                    } while (System.IO.File.Exists(temporaryThumbnailPath));
+                    image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
+                    do
                     {
-                        file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-                    }
+                        image.Save(temporaryThumbnailPath);
+                    } while (!System.IO.File.Exists(temporaryThumbnailPath));
+                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
+                    file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                }
+                else
+                {
+                    file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
                 }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);

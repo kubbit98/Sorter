@@ -1,11 +1,11 @@
 ﻿namespace Sorter.Data;
 
-public class File
+public class File : ICloneable
 {
-    public static string[] s_videoExtensions = { "flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r" }; //not sure if all of them works
-    public static string[] s_photoExtensions = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
-    public static string[] s_textExtensions = { "txt" };
-    public static string[] s_pdfExtensions = { "pdf" };
+    private static readonly string[] s_videoExtensions = { "flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r" }; //not sure if all of them works
+    private static readonly string[] s_photoExtensions = { "gif", "jpeg", "jpg", "png", "webp", "apng", "avif" }; //supported by <img> tag
+    private static readonly string[] s_textExtensions = { "txt" };
+    private static readonly string[] s_pdfExtensions = { "pdf" };
     public enum FileTypeEnum
     {
         Video, Photo, Text, PDF, NotSupported
@@ -22,6 +22,14 @@ public class File
         Extension = extension;
         IsThumbnailExist = ThumbnailEnum.Unknown;
     }
+    public File(string physicalPath, string name, string extension, ThumbnailEnum isThumbnailExist)
+    {
+        Path = physicalPath;
+        PhysicalPath = physicalPath;
+        Name = name;
+        Extension = extension;
+        IsThumbnailExist = isThumbnailExist;
+    }
 
     public string Path { get; set; }
     public string PhysicalPath { get; set; }
@@ -36,7 +44,7 @@ public class File
             string path = PhysicalPath;
             try
             {
-                return path.Substring(0, path.LastIndexOf(System.IO.Path.DirectorySeparatorChar)) + System.IO.Path.DirectorySeparatorChar;
+                return path[..path.LastIndexOf(System.IO.Path.DirectorySeparatorChar)] + System.IO.Path.DirectorySeparatorChar;
             }
             catch
             {
@@ -74,50 +82,8 @@ public class File
         }
     }
     public ThumbnailEnum IsThumbnailExist { get; set; }
-    //public string VideoType //i used this to type in video source
-    //{
-    //    get
-    //    {
-    //        switch (Extension)
-    //        {
-    //            case "flv":
-    //                return "video/x-flv";
-    //            case "m3u8":
-    //                return "application/x-mpegURL";
-    //            case "ts":
-    //                return "video/MP2T";
-    //            case "3gp":
-    //                return "video/3gpp";
-    //            case "qt":
-    //                return "video/quicktime";
-    //            case "wmv":
-    //                return "video/x-ms-wmv";
-    //            case "m4v":
-    //                return "video/x-m4v";
-    //            case "mpg":
-    //                return "video/mpeg";
-    //            case "asf":
-    //                return "video/x-ms-asf";
-    //            case "ogv":
-    //            case "oga":
-    //            case "ogx":
-    //            case "ogg":
-    //            case "spx":
-    //                return "video/ogg";
-    //            case "webm":
-    //                return "video/webm";
-    //            case "avi":
-    //            case "mov":
-    //            case "mp4":
-    //            case "m4a":
-    //            case "m4p":
-    //            case "m4b":
-    //            case "m4r":
-    //                return "video/mp4";
-    //            default:
-    //                return "video/mp4";
-    //        }
-    //    }
-    //}
-
+    public object Clone()
+    {
+        return new File(PhysicalPath, Name, Extension, IsThumbnailExist);
+    }
 }
