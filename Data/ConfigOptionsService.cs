@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using System.IO;
 using System.Text.Json;
 
 namespace Sorter.Data
@@ -9,12 +8,14 @@ namespace Sorter.Data
         private readonly DestinationDFP _destinationDFP;
         private readonly SourceDFP _sourceDFP;
         private readonly IOptionsMonitor<ConfigOptions> _configOptionsMonitor;
+        private readonly IOptionsMonitor<KeyBindsOptions> _keyBindsOptions;
 
-        public ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor)
+        public ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor, IOptionsMonitor<KeyBindsOptions> keyBindsOptions)
         {
             _destinationDFP = destinationDFP;
             _sourceDFP = sourceDFP;
             _configOptionsMonitor = configOptionsMonitor;
+            _keyBindsOptions = keyBindsOptions;
         }
         public bool CheckPath(string path)
         {
@@ -49,6 +50,19 @@ namespace Sorter.Data
                 throw new Exception("Error upon writing the configuration");
             }
         }
+        public void SaveKeyBinds(KeyBindsOptions keyBindsOptions)
+        {
+            try
+            {
+                string jsonString = JsonSerializer.Serialize(keyBindsOptions);
+                jsonString = string.Concat("{\"KeyBinds\": ", jsonString, "}");
+                System.IO.File.WriteAllText("keybinds.json", jsonString);
+            }
+            catch
+            {
+                throw new Exception("Error upon writing the configuration");
+            }
+        }
         public void LoadDefaultTestConfig()
         {
             System.IO.File.Copy(Path.Combine("TestFolder", "test_config.json"), "config.json", true);
@@ -66,7 +80,7 @@ namespace Sorter.Data
                 Directory.CreateDirectory(src);
             }
 
-            DirectoryInfo di = new DirectoryInfo(dst);
+            DirectoryInfo di = new(dst);
             foreach (FileInfo file in di.GetFiles())
             {
                 file.Delete();
@@ -84,12 +98,10 @@ namespace Sorter.Data
                 string path = Path.Combine(src, i + ".txt");
                 if (!System.IO.File.Exists(path))
                 {
-                    using (StreamWriter sw = System.IO.File.CreateText(path))
-                    {
-                        sw.WriteLine("File number");
-                        sw.WriteLine(i);
-                        sw.WriteLine(":P");
-                    }
+                    using StreamWriter sw = System.IO.File.CreateText(path);
+                    sw.WriteLine("File number");
+                    sw.WriteLine(i);
+                    sw.WriteLine(":P");
                 }
             }
         }
@@ -104,6 +116,10 @@ namespace Sorter.Data
             if (!_configOptionsMonitor.CurrentValue.BlackList.SequenceEqual(config.BlackList)) return false;
             if (!_configOptionsMonitor.CurrentValue.AllowRename.Equals(config.AllowRename)) return false;
             return true;
+        }
+        public bool CheckMonitor(KeyBindsOptions config)
+        {
+            return config.KeyBinds.OrderBy(kvp => kvp.Key).SequenceEqual(_keyBindsOptions.CurrentValue.KeyBinds.OrderBy(kvp => kvp.Key));
         }
     }
 }

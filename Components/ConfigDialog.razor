@@ -9,12 +9,12 @@
 @inject ILogger<ConfigDialog> logger
 @inject IToastService toastService
 
-<div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
+<div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true" data-prevent-keydown>
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Configuration</h4>
-                <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+                <button type="button" class="close" data-bs-dismiss="modal" data-prevent-keydown>&times;</button>
             </div>
             <div class="modal-body">
                 @*password*@
@@ -24,7 +24,7 @@
                         <div class="form-group row">
                             <label for="password" class="col-sm-2 col-form-label">Password</label>
                             <div class="col-sm-10">
-                                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here">
+                                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here" data-prevent-keydown>
                             </div>
                         </div>
                     </form>
@@ -36,7 +36,7 @@
                     <div class="row mb-3">
                         <label for="source" class="col-sm-2 col-form-label">Source:</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="text" id="source" name="source" @bind="_source" @bind:event="oninput" placeholder="Source directory path">
+                            <input class="form-control" type="text" id="source" name="source" @bind="_source" @bind:event="oninput" placeholder="Source directory path" data-prevent-keydown />
                         </div>
                         <div class="col-sm-4">
                             @if (!String.IsNullOrWhiteSpace(_source) && Directory.Exists(Path.GetFullPath(_source)))
@@ -58,14 +58,14 @@
                                 {
                                     <div class="col">
                                         @item
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeSource(item)">X</button>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeSource(item)" data-prevent-keydown>X</button>
                                     </div>
                                 }
                                 <div class="col">
-                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeSource" />
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeSource" data-prevent-keydown />
                                 </div>
                                 <div class="col">
-                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeSource">Add</button>
+                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeSource" data-prevent-keydown>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -74,7 +74,7 @@
                     <div class="row mb-3">
                         <label for="destination" class="col-sm-2 col-form-label">Destination:</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="text" id="destination" name="destination" @bind="_destination" @bind:event="oninput" placeholder="Destination directory path">
+                            <input class="form-control" type="text" id="destination" name="destination" @bind="_destination" @bind:event="oninput" placeholder="Destination directory path" data-prevent-keydown>
                         </div>
                         <div class="col-sm-4">
                             @if (!String.IsNullOrWhiteSpace(_destination) && Directory.Exists(Path.GetFullPath(_destination)))
@@ -96,14 +96,14 @@
                                 {
                                     <div class="col">
                                         @item
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeDestination(item)">X</button>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveExcludeDestination(item)" data-prevent-keydown>X</button>
                                     </div>
                                 }
                                 <div class="col">
-                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeDestination" />
+                                    <input class="form-control" placeholder="Folder to exclude" @bind="_newExcludeDestination" data-prevent-keydown />
                                 </div>
                                 <div class="col">
-                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination">Add</button>
+                                    <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination" data-prevent-keydown>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -114,7 +114,7 @@
                         <div class="row mb-3">
                             <div class="col-sm-10 offset-sm-2">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="_allowRename">
+                                    <input class="form-check-input" type="checkbox" id="allowRename" name="allowRename" @bind="_allowRename" data-prevent-keydown>
                                     <label class="form-check-label" for="allowRename">
                                         Allow all users to rename the files
                                     </label>
@@ -126,7 +126,7 @@
                     <div class="row mb-3">
                         <div class="col-sm-10 offset-sm-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="_useWhite">
+                                <input class="form-check-input" type="checkbox" id="use_white" name="use_white" @bind="_useWhite" data-prevent-keydown>
                                 <label class="form-check-label" for="use_white">
                                     Use white list of extensions instead of black list
                                 </label>
@@ -144,14 +144,14 @@
                                         {
                                             <div class="col">
                                                 @(item.Equals("") ? "No extension" : item)
-                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveWhite(item)">X</button>
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveWhite(item)" data-prevent-keydown>X</button>
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="_newWhite" />
+                                            <input class="form-control" placeholder="New extension" @bind="_newWhite" data-prevent-keydown />
                                         </div>
                                         <div class="col">
-                                            <button class="btn btn-dark btn-sm" @onclick="AddWhite">Add</button>
+                                            <button class="btn btn-dark btn-sm" @onclick="AddWhite" data-prevent-keydown>Add</button>
                                         </div>
                                     </div>
                                 </div>
@@ -167,14 +167,14 @@
                                         {
                                             <div class="col">
                                                 @(item.Equals("") ? "No extension" : item)
-                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveBlack(item)">X</button>
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveBlack(item)" data-prevent-keydown>X</button>
                                             </div>
                                         }
                                         <div class="col">
-                                            <input class="form-control" placeholder="New extension" @bind="_newBlack" />
+                                            <input class="form-control" placeholder="New extension" @bind="_newBlack" data-prevent-keydown />
                                         </div>
                                         <div class="col">
-                                            <button class="btn btn-dark btn-sm" @onclick="AddBlack">Add</button>
+                                            <button class="btn btn-dark btn-sm" @onclick="AddBlack" data-prevent-keydown>Add</button>
                                         </div>
                                     </div>
                                 </div>
@@ -190,14 +190,14 @@
             <div class="modal-footer">
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
-                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" />
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" CustomButtonParameter=_dictPreventKeydown />
                     @if (!@hostingEnv.IsProduction())
                     {
-                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" />
-                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Rearrange test files to their original state" ButtonOnClickAction="RearrangeTestFiles" />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Rearrange test files to their original state" ButtonOnClickAction="RearrangeTestFiles" CustomButtonParameter=_dictPreventKeydown />
                     }
                 }
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
             </div>
         </div>
     </div>
@@ -205,6 +205,7 @@
 
 @code {
     [Parameter] public EventCallback<bool> OnChange { get; set; }
+    private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } };
 
     private string _source = String.Empty;
     private List<string> _excludeSourceList = new List<string>();
@@ -227,7 +228,8 @@
     }
     public async Task Init()
     {
-        await Task.Run(() => {
+        await Task.Run(() =>
+        {
             _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
             _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
             _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);

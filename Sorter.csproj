@@ -4,13 +4,14 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>0.9.1</VersionPrefix>
+		<VersionPrefix>0.10.0</VersionPrefix>
 		<VersionSuffix>beta</VersionSuffix>
 		<Version>$(VersionPrefix)-$(VersionSuffix)</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/kubbit98/Sorter</PackageProjectUrl>
 		<AssemblyVersion></AssemblyVersion>
+		<AssemblyName>sorter</AssemblyName>
 		<Title>Sorter</Title>
 		<NeutralLanguage>en-001</NeutralLanguage>
 		<PackageLicenseFile>COPYING</PackageLicenseFile>
@@ -20,6 +21,7 @@
 		<Content Update="TestFolder\**" CopyToPublishDirectory="Never" />
 		<Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
 		<Content Update="config.json" CopyToPublishDirectory="Never" />
+		<Content Update="keybinds.json" CopyToPublishDirectory="Never" />
 		<!--<EmbeddedResource Remove="TestFolder\**" />
 		<EmbeddedResource Remove="appsettings*.json" />
 		<EmbeddedResource Remove="config.json" />-->

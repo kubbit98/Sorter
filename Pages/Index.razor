@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 @using Sorter.Data;
 @using Blazored.Toast.Configuration;
+@using System.Text.RegularExpressions;
 @inject FileService FileService
 @inject IJSRuntime JS
 @inject IHostApplicationLifetime AppLifetime
@@ -9,7 +10,7 @@
 @inject ProtectedSessionStorage ProtectedSessionStore
 
 <PageTitle>sorter app</PageTitle>
-<h1>sorter app</h1>
+<h1 id="h1">sorter app</h1>
 
 @switch (_status)
 {
@@ -50,7 +51,7 @@
             </div>
         </div>
         <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
+            <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
@@ -86,20 +87,21 @@
             {
                 <label class="col-sm-2" for="password">Password to unlock more function:</label>
                 <div class="col-sm-2">
-                    <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput">
+                    <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
                 </div>
             }
         </div>
         @*main buttons*@
         <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickAction="Back" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickAction="Next" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickTask="Next" />
             @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
             {
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
             }
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Add new folder modal" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" />
+            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Keybinding configuration" ButtonOnClickTask="KeyBindsModalOnOpen" CustomButtonParameter="_dictKeyBindsDialog" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
         @*folders*@
@@ -109,7 +111,7 @@
                 @for (int i = 0; i < _folders!.Length; i++)
                 {
                     var k = i;
-                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].Name" ButtonOnClickAction="async ()=> await MoveFile(_folders[k].Path)" />
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async ()=> await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
                 }
             </div>
             @*rename*@
@@ -117,7 +119,7 @@
             {
                 <div class="row mb-3">
                     <div class="col-sm-6">
-                        <input class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged">
+                        <input @ref="_fileNameInput" data-prevent-keydown class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
                     </div>
                     <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
                     <div class="col-sm-4">
@@ -162,14 +164,15 @@
                 {
                     case File.FileTypeEnum.Video:
                         <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
-                            <source src="@_currentFile?.Path"> @*type="@CurrentFile?.VideoType"*@
+                            <source src="@_currentFile?.Path">
                             Your browser does not support the video tag.
                         </video>
                         break;
                     case File.FileTypeEnum.Photo:
                         <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
                              src="@(_currentFile!.DisplayPath)"
-                             class="img-fluid mx-auto d-block" style="max-height: 90vh;" />
+                             class="img-fluid mx-auto d-block"
+                             style="max-height: 90vh;" />
                         <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
@@ -224,11 +227,12 @@
         break;
 }
 
-
-<FolderDialog ExistingFolders="@_folders?.Select(f=>f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
-
+@if (_status == Status.Initialized)
+{
+    <FolderDialog ExistingFolders="@_folders?.Select(f=>f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
+    <KeyBindsDialog OnChange="@KeyBindsModalClose" ExistingFolders="_folders" @ref=_keyBindsDialog />
+}
 <ConfigDialog OnChange="@ConfigModalClose" @ref=_configDialog />
-
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
                 RemoveToastsOnNavigation="true" PauseProgressOnHover="true" MaxToastCount="3" Timeout="10" />
 
@@ -242,6 +246,8 @@
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
     private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
+    
+    private static Regex s_alfanumeralRegex = new Regex(@"^[a-zA-Z0-9]$");
 
     private List<Tuple<int, string>>? _myMediaIndexes;
     private int _myMediaCurrentIndex;
@@ -257,12 +263,15 @@
     private Status _status = Status.OnConstructor;
     private FolderDialog _folderDialog = new FolderDialog();
     private ConfigDialog _configDialog = new ConfigDialog();
+    private KeyBindsDialog _keyBindsDialog = new KeyBindsDialog();
     private PhotoDialog _photoDialog = new PhotoDialog();
+    private ElementReference _fileNameInput;
 
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
+    private Dictionary<string, object> _dictKeyBindsDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#keyBindsModal" } };
     private Dictionary<string, object> _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-
+    //private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } }; //add CustomButtonParameter=_dictPreventKeydown to buttonindiv to prevent key down event, not sure if useful so commented out
 
     public enum Status
     {
@@ -298,6 +307,8 @@
                     await _PSSReadMyMediaCurrentIndex();
                     break;
             }
+            var dotNetReference = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerDNF", dotNetReference);
         }
         if (firstRender) StateHasChanged();
     }
@@ -344,8 +355,9 @@
         }
     }
 
-    private async void Next()
+    private async Task Next()
     {
+        if (_status != Status.Initialized) return;
         _previousFile = _currentFile;
         _myMediaCurrentIndex++;
         await _PSSWriteMyMediaCurrentIndex();
@@ -401,8 +413,9 @@
         ReloadPlayerIfVideo();
         StateHasChanged();
     }
-    private async void Back()
+    private async Task Back()
     {
+        if (_status != Status.Initialized && _status != Status.Empty) return;
         if (_myMediaCurrentIndex <= 0)
         {
             toastService.ShowWarning("No more files");
@@ -457,9 +470,55 @@
         AppLifetime.StopApplication();
     }
 
+    [JSInvokable]
+    public async void HandleKeyDown(string key, bool isListenForRegisterKey, string folderTitle)
+    {
+        switch (_status)
+        {
+            case Status.BeforeInit:
+                if (key == " ") InitSession();
+                break;
+            case Status.Initialized:
+                if (isListenForRegisterKey && key.Length == 1) await RegisterKeyInFolder(key.First(), folderTitle);
+                else if (key == "ArrowRight")
+                {
+                    if ((null != _nextFile && _nextFile.FileType != File.FileTypeEnum.Photo) || null == _nextFile) await JS.InvokeVoidAsync("closeModal", "photoModal");
+                    else if (null != _nextFile && _nextFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
+                    await Next();
+                }
+                else if (key == "ArrowLeft")
+                {
+                    if (null != _previousFile && _previousFile.FileType != File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("closeModal", "photoModal");
+                    else if (null != _previousFile && _previousFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
+                    await Back();
+                }
+                else if (key == "F2") await _fileNameInput.FocusAsync();
+                else if (key == " " && null != _currentFile && _currentFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("toggleModal", "photoModal");
+                else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
+                {
+                    var folder = _folders.Where(f => f.KeyBind == key.First()).FirstOrDefault();
+                    if (null != folder)
+                    {
+                        if ((null != _nextFile && _nextFile.FileType != File.FileTypeEnum.Photo) || null == _nextFile) await JS.InvokeVoidAsync("closeModal", "photoModal");
+                        else if (null != _nextFile && _nextFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
+                        await MoveFile(folder.Path);
+                    }
+                }
+                break;
+            case Status.Empty:
+                if (key == "ArrowLeft")
+                {
+                    if (null != _previousFile && _previousFile.FileType != File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("closeModal", "photoModal");
+                    else if (null != _previousFile && _previousFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
+                    await Back();
+                }
+                break;
+        }
+    }
+
     private async Task PhotoModalOpen()
     {
-        await _photoDialog.Init();
+        await JS.InvokeVoidAsync("loadZoom");
     }
 
     private async Task FolderModalOpen()
@@ -496,6 +555,21 @@
             _status = Status.BeforeInit;
             _previousFile = _currentFile = _nextFile = null;
             await _PSSWriteStatus();
+        }
+    }
+
+    private async Task KeyBindsModalOnOpen()
+    {
+        await _keyBindsDialog.Init();
+    }
+    private async Task KeyBindsModalClose(bool isChanged)
+    {
+        await JS.InvokeVoidAsync("closeModal", "keyBindsModal");
+        if (isChanged)
+        {
+            FileService.AppendDirectoriesWithKeyBinds();
+            _folders = await FileService.GetFoldersAsync();
+            StateHasChanged();
         }
     }
 
@@ -547,6 +621,16 @@
         await _PSSWriteMyMediaIndexes();
         StateHasChanged();
     }
+    private async Task SaveFileNameKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveFileName();
+            StateHasChanged();
+            await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+        }
+        else if (e.Key == "Escape") await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+    }
     private async Task<string> GetTextFileContent()
     {
         if (_currentFile == null) return "";
@@ -556,9 +640,37 @@
     {
         if (_currentFile == null) return;
         var oldFile = _currentFile;
-        Next();
+        Task next = Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
+    }
+
+    private async Task RegisterKeyInFolder(char key, string path)
+    {
+        if (null != _keyBindsDialog.MyFolders && (key.Equals('\0') || key.Equals(' ')))
+        {
+            _keyBindsDialog.MyFolders.Where(f => f.Path == path).First().KeyBind = '\0';
+            StateHasChanged();
+        }
+        else
+        {
+            if (s_alfanumeralRegex.IsMatch(key.ToString()) && null != _keyBindsDialog.MyFolders && !string.IsNullOrEmpty(path))
+            {
+                if (_keyBindsDialog.MyFolders.Any(f => f.KeyBind == key)) await UnregisterKeyInFolder(key);
+                _keyBindsDialog.MyFolders.Where(f => f.Path == path).First().KeyBind = key;
+                StateHasChanged();
+            }
+        }
+    }
+    private async Task UnregisterKeyInFolder(char key)
+    {
+        if (null != _keyBindsDialog.MyFolders)
+        {
+            await Task.Run(() =>
+            {
+                _keyBindsDialog.MyFolders.Where(f => f.KeyBind == key).First().KeyBind = '\0';
+            });
+        }
     }
 
     private async Task _PSSReadMyMediaIndexes()

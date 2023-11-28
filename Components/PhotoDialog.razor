@@ -36,13 +36,6 @@
     [Parameter] public EventCallback OnNext { get; set; }
     [Parameter] public EventCallback OnBack { get; set; }
 
-    public async Task Init()
-    {
-        if (Photo != null)
-        {
-            await JS.InvokeVoidAsync("loadZoom");
-        }
-    }
     private async Task Next()
     {
         await InvokeAsync(() => OnNext.InvokeAsync());

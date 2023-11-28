@@ -1,0 +1,122 @@
+﻿@using Sorter.Data;
+@using Microsoft.Extensions.Options;
+@inject IJSRuntime JS
+@inject ConfigOptionsService ConfigOptionsService
+@inject FileService FileService
+@inject IConfiguration configuration
+@inject IOptionsMonitor<ConfigOptions> configOptions
+@inject ILogger<ConfigDialog> logger
+@inject IToastService toastService
+
+
+<div class="modal fade" id="keyBindsModal" tabindex="-1" aria-labelledby="keyBindsLabel" aria-hidden="true" data-prevent-keydown>
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Keybinding configuration</h4>
+                <button type="button" class="close" data-bs-dismiss="modal" data-prevent-keydown>&times;</button>
+            </div>
+            <div class="modal-body">
+                @*password*@
+                @if (!_truePassword.Equals(string.Empty))
+                {
+                    <form class="form">
+                        <div class="form-group row">
+                            <label for="password" class="col-sm-2 col-form-label">Password</label>
+                            <div class="col-sm-10">
+                                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here" data-prevent-keydown>
+                            </div>
+                        </div>
+                    </form>
+                    <br />
+                }
+                @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
+                {
+                    <div>
+                        <p>Click folder, then key on keyboard. Alphanumeric key for selecting a keybind, spacebar for clearing keybind, any remaining key for canceling.</p>
+                    </div>
+                    <div class="row row-cols-4 mb-3">
+                        @if (null != MyFolders)
+                            @for (int i = 0; i < MyFolders.Length; i++)
+                            {
+                                var k = i;
+                                <ButtonInDiv DivCssClass="col d-grid mb-1"
+                                             ButtonCssClass="btn btn-primary"
+                                             ButtonName="@MyFolders[k].DisplayName"
+                                             ButtonOnClickAction="async ()=> await SetKeyBind(MyFolders[k])"
+                                             Title="@MyFolders[k].Path"
+                                             CustomButtonParameter="@_dictOnlyKeyBindButton" />
+                            }
+                    </div>
+                }
+                else
+                {
+                    <p>You need to provide password, to change the app settings. Password can be find in appsettings.json file</p>
+                }
+            </div>
+            <div class="modal-footer">
+                @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
+                {
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new keybindings" ButtonOnClickAction="Save" CustomButtonParameter=_dictPreventKeydown />
+                }
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public EventCallback<bool> OnChange { get; set; }
+    [Parameter] public Folder[]? ExistingFolders { get; set; }
+
+    public Folder[]? MyFolders { get; set; }
+    private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } };
+    private Dictionary<string, object> _dictOnlyKeyBindButton = new Dictionary<string, object> { { "data-keybind-button", "" }, { "data-prevent-keydown", "" } };
+    private string _unlockBoxPassword = String.Empty;
+    private string _truePassword = String.Empty;
+
+
+    public async Task Init()
+    {
+        await Task.Run((Action)(() =>
+        {
+            _truePassword = configuration.GetValue<string>("Password");
+            if (null != this.ExistingFolders) this.MyFolders = (Folder[])ExistingFolders.Select(element => (Folder)element.Clone()).ToArray();
+        }));
+        await JS.InvokeVoidAsync("configKeyBindModal");
+    }
+    private async void Close()
+    {
+        await InvokeAsync(() => OnChange.InvokeAsync(false));
+    }
+    private async void Save()
+    {
+        KeyBindsOptions _config = new KeyBindsOptions();
+        if (null != MyFolders)
+        {
+            foreach (var folder in MyFolders)
+            {
+                if (!folder.KeyBind.Equals('\0')) _config.KeyBinds.Add(folder.KeyBind.ToString(), folder.Path);
+            }
+        }
+        try
+        {
+            ConfigOptionsService.SaveKeyBinds(_config);
+            toastService.ShowSuccess("Settings are saved");
+            while (!ConfigOptionsService.CheckMonitor(_config))
+            {
+                Thread.Sleep(100);
+            }
+            await InvokeAsync(() => OnChange.InvokeAsync(true));
+        }
+        catch (Exception e)
+        {
+            toastService.ShowError(e.Message);
+        }
+    }
+    private async Task SetKeyBind(Folder folder)
+    {
+        await JS.InvokeVoidAsync("setButtonSuccess", "true");
+    }
+}

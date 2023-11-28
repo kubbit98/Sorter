@@ -1,14 +1,14 @@
 ﻿@inject IJSRuntime JS
-<div class="modal fade" id="folderModal" tabindex="-1" aria-labelledby="folderModalLabel" aria-hidden="true">
+<div class="modal fade" id="folderModal" tabindex="-1" aria-labelledby="folderModalLabel" aria-hidden="true" data-prevent-keydown>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Add new folder</h4>
-                <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+                <button type="button" class="close" data-bs-dismiss="modal" data-prevent-keydown>&times;</button>
             </div>
             <div class="modal-body">
                 <p>Insert name for new folder</p>
-                <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="_folderName" @bind:event="oninput" placeholder="New folder name">
+                <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="_folderName" @bind:event="oninput" placeholder="New folder name" data-prevent-keydown>
                 @if (string.IsNullOrWhiteSpace(_folderName))
                 {
                     _customButtonParameter = new Dictionary<string, object> { { "disabled", "" } };
@@ -29,8 +29,8 @@
                 }
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @onclick=@AddFolderAndClose @attributes=_customButtonParameter>Add folder</button>
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick=@AddFolderAndClose @attributes=_customButtonParameter data-prevent-keydown>Add folder</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" data-prevent-keydown>Cancel</button>
             </div>
         </div>
     </div>

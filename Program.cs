@@ -8,11 +8,13 @@ builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
 {
     try { config.AddJsonFile("config.json", optional: true, reloadOnChange: true); }
     catch (InvalidDataException) { }
-
+    try { config.AddJsonFile("keybinds.json", optional: true, reloadOnChange: true); }
+    catch (InvalidDataException) { }
 });
 builder.WebHost.UseStaticWebAssets();
 // Add services to the container.
 builder.Services.AddOptions<ConfigOptions>().BindConfiguration(ConfigOptions.config);
+builder.Services.AddOptions<KeyBindsOptions>().BindConfiguration(KeyBindsOptions.config);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddBlazoredToast();
