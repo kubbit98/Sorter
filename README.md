@@ -7,6 +7,8 @@ This app is a simple web program which is aimed at simplifying the process of so
 
 The application has been tested on Windows 11, Linux (Fedora 38) and macOS (Sonoma). For macOS, however, it had to be compiled under macOS itself, for apple reasons (https://github.com/dotnet/runtime/issues/49091), so although nothing needs to be changed in the code, there will not be a downloadable executable package available in releases, since I don't have any macOS to package the app.
 
+As of version 0.10, the application also has support for keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
+
 ## Presentation
 You can watch the presentation here:
 
@@ -18,7 +20,7 @@ To run the application, simply download the latest version appropriate for your 
 
 ## Configuration
 
-The basic and most important configuration is done inside the application, it is persistent and saved in the config.json file
+The basic and most important configuration is done inside the application, it is persistent and saved in the config.json and keybinds.json file.
 
 ## Advanced configuration
 You can look at some deeper settings in [appsettings.json](https://github.com/kubbit98/Sorter/blob/master/appsettings.json) file:
