@@ -2,6 +2,7 @@
 
 public class Folder : ICloneable
 {
+    private static readonly int s_maxDisplayNameLength = 42;
     public Folder(string path, string name)
     {
         Path = path;
@@ -15,7 +16,8 @@ public class Folder : ICloneable
     {
         get
         {
-            return KeyBind.Equals('\0') ? Name : string.Concat(Name, " (", KeyBind.ToString(), ")");
+            string shortName = Name.Length > s_maxDisplayNameLength ? string.Concat(Name[..s_maxDisplayNameLength], "[...]") : Name;
+            return KeyBind.Equals('\0') ? shortName : string.Concat(shortName, " (", KeyBind.ToString(), ")");
         }
     }
     public object Clone()

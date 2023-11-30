@@ -14,6 +14,7 @@ namespace Sorter.Data
         private static readonly string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
         private static readonly string[] s_globalExtensionExclude = { "ds_store" };
         private static readonly int s_thumbnailsToCreateAhead = 5;
+        private static readonly int s_maxLengthOfTextFile = 5000;
 
         private List<File> files = new();
         private List<Folder> folders = new();
@@ -155,7 +156,6 @@ namespace Sorter.Data
             folders = ProcessDirectoryRecursively(destination);
             AppendDirectoriesWithKeyBinds();
         }
-
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
             List<Folder> folders = new();
@@ -231,7 +231,7 @@ namespace Sorter.Data
             {
                 if (dict.ContainsValue(folder.Path))
                 {
-                    folder.KeyBind=dict.FirstOrDefault(x => x.Value == folder.Path).Key.First();
+                    folder.KeyBind = dict.FirstOrDefault(x => x.Value == folder.Path).Key.First();
                 }
                 else
                 {
@@ -259,8 +259,13 @@ namespace Sorter.Data
         }
         public Task<string> GetTextFileContent(File file)
         {
-            if (file == null) throw new Exception("No file"); ;
-            return Task.FromResult(System.IO.File.ReadAllText(file!.PhysicalPath));
+            if (file == null) throw new Exception("No file");
+            string content = System.IO.File.ReadAllText(file.PhysicalPath);
+            if (content.Length > s_maxLengthOfTextFile)
+            {
+                content = string.Concat(content[..s_maxLengthOfTextFile], "[...]");
+            }
+            return Task.FromResult(content);
         }
         public bool CreateFolder(string folderName)
         {
