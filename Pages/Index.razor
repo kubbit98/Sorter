@@ -181,10 +181,10 @@
                         <embed src="@_currentFile?.Path" style="width:100%;height:90vh;" />
                         break;
                     case File.FileTypeEnum.Text:
-                        <pre>@GetTextFileContent().Result</pre>
+                        <p>@GetTextFileContent().Result</p>
                         break;
                     default:
-                        <p>Filetype @_currentFile?.Extension is already not supported</p>
+                        <p>Filetype "@_currentFile?.Extension" is not supported</p>
                         break;
                 }
             </div>
@@ -222,7 +222,6 @@
                     </div>
                 }
             </div>
-
         </div>
         break;
 }

@@ -12,13 +12,16 @@ function resetPosition() {
     loadZoom();
 }
 function loadZoom() {
-    if (null == photoModal) photoModal = document.getElementById('photoModal');
-    else if (photoModal != document.getElementById('photoModal')) listenerRegistered = false;
+    const ourElement = document.getElementById('photoModal');
+    if (null == photoModal) photoModal = ourElement;
+    else if (photoModal != ourElement) listenerRegistered = false;
     if (!listenerRegistered) {
-        document.getElementById('photoModal').addEventListener('hidden.bs.modal', function (e) {
+        ourElement.addEventListener('hidden.bs.modal', function (e) {
             resetPosition();
+            //console.log("hidden");
         })
         listenerRegistered = true;
+        //console.log("logged");
     }
     var scale = 1,
         scaleStep = 1.4,
@@ -83,22 +86,31 @@ function loadVideo() {
     }
 }
 function closeModal(modalId) {
-    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
-    if (null != modal) modal.hide();
+    var element = document.getElementById(modalId);
+    if (null != element) {
+        var modal = bootstrap.Modal.getOrCreateInstance(element);
+        if (null != modal) modal.hide();
+    }
 }
 function openModal(modalId) {
-    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
-    if (null != modal) modal.show();
+    var element = document.getElementById(modalId);
+    if (null != element) {
+        var modal = bootstrap.Modal.getOrCreateInstance(element);
+        if (null != modal) modal.show();
+    }
 }
 function toggleModal(modalId) {
-    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById(modalId))
-    if (null != modal) {
-        if (modal._isShown) {
-            modal.hide();
-        }
-        else {
-            modal.show();
-            loadZoom();
+    var element = document.getElementById(modalId);
+    if (null != element) {
+        var modal = bootstrap.Modal.getOrCreateInstance(element);
+        if (null != modal) {
+            if (modal._isShown) {
+                modal.hide();
+            }
+            else {
+                modal.show();
+                loadZoom();
+            }
         }
     }
 }
@@ -136,8 +148,9 @@ async function configKeyBindModal() {
         }
     })
 }
+
 window.addEventListener('keydown', function (event) {
-    if (event.key == ' ') {
+    if (event.key == ' ' && document.activeElement.tagName != 'INPUT') {
         event.preventDefault();
     }
     if (isListenForRegisterKey) {
