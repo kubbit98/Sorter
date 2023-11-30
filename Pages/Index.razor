@@ -17,7 +17,7 @@
     case Status.BeforeInit:
         <div class="row mb-3">
             <div class="col">
-                <p>Click to start</p>
+                <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
             </div>
         </div>
         <div class="row mb-3">
@@ -80,7 +80,11 @@
         <div class="row mb-3">
             <div class="col-sm-8">
                 <p>
-                    @_currentFile!.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
+                    @if (null != _currentFile)
+                    {
+                        @_currentFile.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
+                    }
+
                 </p>
             </div>
             @if (!_password!.Equals(string.Empty))
@@ -123,7 +127,7 @@
                     </div>
                     <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
                     <div class="col-sm-4">
-                        @if (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName))
+                        @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
                         {
                             _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
                         }
@@ -245,7 +249,7 @@
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
     private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
-    
+
     private static Regex s_alfanumeralRegex = new Regex(@"^[a-zA-Z0-9]$");
 
     private List<Tuple<int, string>>? _myMediaIndexes;
@@ -363,7 +367,7 @@
         if (_nextFile != null) _currentFile = _nextFile;
         else
         {
-            if (!_myMediaIndexes!.Any(t => t.Item1 == _myMediaCurrentIndex))
+            if (_myMediaIndexes!.Count >= _myMediaCurrentIndex)
             {
                 _currentFile = null;
                 _status = Status.Empty;
@@ -423,18 +427,18 @@
         _myMediaCurrentIndex--;
         try
         {
+            _nextFile = _currentFile;
+            _currentFile = (_previousFile != null) ? _previousFile : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
+            _newFileName = _currentFile.Name;
+            if (_myMediaCurrentIndex > 0) _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
+            else _previousFile = null;
+
             if (_status.Equals(Status.Empty))
             {
                 if (null == _folders) LoadSession();
                 _status = Status.Initialized;
                 await _PSSWriteStatus();
             }
-
-            _nextFile = _currentFile;
-            _currentFile = (_previousFile != null) ? _previousFile : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
-            _newFileName = _currentFile.Name;
-            if (_myMediaCurrentIndex > 0) _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
-            else _previousFile = null;
             ReloadPlayerIfVideo();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();

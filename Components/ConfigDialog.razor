@@ -239,6 +239,8 @@
             _blackList = configOptions.CurrentValue.BlackList.ToList();
             _truePassword = configuration.GetValue<string>("Password");
             _allowRename = configOptions.CurrentValue.AllowRename;
+            if (string.IsNullOrEmpty(_source)) _source = Path.GetFullPath(".");
+            if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");
         });
     }
     private async void Close()

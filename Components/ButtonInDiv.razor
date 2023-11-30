@@ -10,15 +10,15 @@
     [Parameter] public string? Title { get; set; }
     [Parameter] public Action? ButtonOnClickAction { get; set; }
     [Parameter] public EventCallback ButtonOnClickTask { get; set; }
-    private void InvokeParentMethod()
+    private async void InvokeParentMethod()
     {
         if (ButtonOnClickAction != null)
         {
-            ButtonOnClickAction?.Invoke();
+            ButtonOnClickAction.Invoke();
         }
         else
         {
-            ButtonOnClickTask.InvokeAsync();
+            await ButtonOnClickTask.InvokeAsync();
         }
     }
 
