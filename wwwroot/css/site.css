@@ -70,3 +70,8 @@ a, .btn-link {
 .blazored-toast-container {
     z-index: 1100 !important;
 }
+
+#txtcontent {
+    word-wrap: break-word;
+    width: 800px;
+}

@@ -185,7 +185,7 @@
                         <embed src="@_currentFile?.Path" style="width:100%;height:90vh;" />
                         break;
                     case File.FileTypeEnum.Text:
-                        <p>@GetTextFileContent().Result</p>
+                        <p id="txtcontent">@GetTextFileContent().Result</p>
                         break;
                     default:
                         <p>Filetype "@_currentFile?.Extension" is not supported</p>
