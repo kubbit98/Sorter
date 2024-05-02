@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Sorter.Data
 {
