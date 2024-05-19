@@ -75,3 +75,31 @@ a, .btn-link {
     word-wrap: break-word;
     width: 800px;
 }
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-content {
+    cursor: pointer;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    position: absolute;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 4px;
+    z-index: 1;
+    bottom: 125%;
+    left: 220%;
+    margin-left: -300px;
+    opacity: 0;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
