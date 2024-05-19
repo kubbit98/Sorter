@@ -61,10 +61,22 @@ app.UseStaticFiles(new StaticFileOptions()
     RequestPath = new PathString("/tmp")
 });
 
-await app.StartAsync();
-Process.Start(new ProcessStartInfo("http://localhost:5000") { UseShellExecute = true });
+string address = app.Configuration.GetSection("Kestrel").GetSection("Endpoints").GetSection("Http").GetValue<string>("Url");
 
-app.Logger.LogInformation("\nIf your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser\n\nhttp://localhost:5000\n\nTo shutdown the app, just hit ctrl+c or close the window");
+try
+{
+    await app.StartAsync();
+    Process.Start(new ProcessStartInfo(address) { UseShellExecute = true });
 
-await app.WaitForShutdownAsync();
-app.Logger.LogInformation("You can close browser and console window now");
+    app.Logger.LogInformation("\nIf your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser\n\n{address}\n\nTo shutdown the app, just hit ctrl+c or close the window",address);
+
+    await app.WaitForShutdownAsync();
+    app.Logger.LogInformation("You can close browser and console window now");
+
+}
+catch (IOException ex)
+{
+    
+    app.Logger.LogCritical("The port in address {address} is currently in use, in order to run the application you must change the port in url configuration in appsettings.json. To close this window, hit ctrl+c or close the window", address);
+    await app.WaitForShutdownAsync();
+}
