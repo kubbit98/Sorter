@@ -66,9 +66,16 @@ string address = app.Configuration.GetSection("Kestrel").GetSection("Endpoints")
 try
 {
     await app.StartAsync();
-    Process.Start(new ProcessStartInfo(address) { UseShellExecute = true });
+    try
+    {
+        Process.Start(new ProcessStartInfo(address) { UseShellExecute = true });
+    }
+    catch (System.ComponentModel.Win32Exception ex)
+    {
+        //If someone doesn't have a default browser set, this exception may occur
+    }
 
-    app.Logger.LogInformation("\nIf your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser\n\n{address}\n\nTo shutdown the app, just hit ctrl+c or close the window",address);
+    app.Logger.LogInformation("\nIf your browser does not open automatically, click on the link below (sometimes you have to hold down the ctrl key), or copy and paste it in your browser\n\n{address}\n\nTo shutdown the app, just hit ctrl+c or close the window", address);
 
     await app.WaitForShutdownAsync();
     app.Logger.LogInformation("You can close browser and console window now");
@@ -76,7 +83,7 @@ try
 }
 catch (IOException ex)
 {
-    
+
     app.Logger.LogCritical("The port in address {address} is currently in use, in order to run the application you must change the port in url configuration in appsettings.json. To close this window, hit ctrl+c or close the window", address);
     await app.WaitForShutdownAsync();
 }
