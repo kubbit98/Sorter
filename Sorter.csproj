@@ -4,7 +4,7 @@
 		<TargetFramework>net6.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>0.10.5</VersionPrefix>
+		<VersionPrefix>0.10.6</VersionPrefix>
 		<VersionSuffix>beta</VersionSuffix>
 		<Version>$(VersionPrefix)-$(VersionSuffix)</Version>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -28,7 +28,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Blazored.Toast" Version="4.2.1" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
 	</ItemGroup>
 
 	<ItemGroup>
