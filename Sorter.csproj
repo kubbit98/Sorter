@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<VersionPrefix>0.10.6</VersionPrefix>
@@ -28,7 +28,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Blazored.Toast" Version="4.2.1" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
 	</ItemGroup>
 
 	<ItemGroup>
