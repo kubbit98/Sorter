@@ -147,6 +147,8 @@
         </div>
         @*media*@
         <div class="row mb-3">
+            @if (_showSideFiles == true)
+            {   
             <div class="col col-sm-3">
                 @if (null != _previousFile)
                 {
@@ -158,11 +160,12 @@
                         }
                         else
                         {
-                            <p>Previous file is not photo</p>
+                            <p>Previous file is not a photo</p>
                         }
                     </div>
                 }
             </div>
+            }
             <div class="col col-sm-6">
                 @switch (_currentFile?.FileType)
                 {
@@ -192,7 +195,9 @@
                         break;
                 }
             </div>
-            <div class="col col-sm-3">
+            @if (_showSideFiles == true)
+            {
+                <div class="col col-sm-3">
                 @if (null != _nextFile)
                 {
                     <div class="row mb-3">
@@ -203,7 +208,7 @@
                         }
                         else
                         {
-                            <p>Next file is not photo</p>
+                            <p>Next file is not a photo</p>
                         }
                     </div>
                 }
@@ -226,6 +231,8 @@
                     </div>
                 }
             </div>
+            }
+            
         </div>
         break;
 }
@@ -263,6 +270,7 @@
     private string? _password;
     private string _newFileName = string.Empty;
     private bool _allowRename;
+    private bool _showSideFiles = false;
     private Status _status = Status.OnConstructor;
     private FolderDialog _folderDialog = new FolderDialog();
     private ConfigDialog _configDialog = new ConfigDialog();
