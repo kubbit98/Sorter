@@ -38,6 +38,23 @@ a, .btn-link {
     color: red;
 }
 
+html[data-bs-theme="dark"] .blazored-toast {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+
+    html[data-bs-theme="dark"] .blazored-toast .blazored-toast-title {
+        color: #fff !important;
+    }
+
+    html[data-bs-theme="dark"] .blazored-toast .blazored-toast-body {
+        color: #ddd !important;
+    }
+
+    html[data-bs-theme="dark"] .blazored-toast .blazored-toast-progressbar > span{
+        background-image: linear-gradient(rgba(255, 255, 255, 0.5) 0 0);
+    }
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;
@@ -75,6 +92,7 @@ a, .btn-link {
     word-wrap: break-word;
     width: 800px;
 }
+
 .tooltip-container {
     position: relative;
     display: inline-block;
