@@ -45,7 +45,7 @@
     case Status.Initialized:
         <div class="row vh-100 py-3">
             @* Column with all buttons *@
-            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break max-vh-100" id="controlColumn">
+            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break max-vh-97" id="controlColumn">
                 @*name*@
                 <div class="row mb-3">
                     <p>
@@ -96,7 +96,7 @@
                         </div>
                         <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName=@_nameNewFileName ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
                     </div>
-                    <div class="row mb-3" style="transition: height 1s;">
+                    <div class="row mb-3">
                         @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
                         {
                             _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
@@ -124,7 +124,7 @@
                 </div>
             </div>
             @* Column with media*@
-            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9") max-vh-95" style="align-items: center; display: flex;" tabindex="-1" id="mediaDiv">
+            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9") max-vh-97" style="align-items: center; display: flex;" tabindex="-1" id="mediaDiv">
                 @switch (_currentFile?.FileType)
                 {
                     case File.FileTypeEnum.Video:
@@ -137,7 +137,7 @@
                         <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
                              src="@(_currentFile!.DisplayPath)"
                              class="img-fluid mx-auto d-block"
-                             style="max-height: 95vh;" />
+                             style="max-height: 97vh;" />
                         <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
@@ -156,8 +156,8 @@
             @* Column with preview files*@
             @if (_showSideFiles)
             {
-                <div class="col-sm-2 overflow-auto d-flex flex-column max-vh-100" id="previewColumn">
-                    <div class="row mb-auto">
+                <div class="col-sm-2 overflow-auto d-flex flex-column max-vh-97 text-break" id="previewColumn">
+                    <div class="row mb-auto justify-content-end">
                         @if (null != _previousFile)
                         {
                             @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
@@ -173,7 +173,7 @@
                     </div>
                     @if (null != _nextFile)
                     {
-                        <div class="row">
+                        <div class="row justify-content-end">
                             <p class="my-0 py-0 text-end">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
                             @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                             {
