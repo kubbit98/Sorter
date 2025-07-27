@@ -31,6 +31,7 @@
                     </form>
                     <br />
                 }
+
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
                     //source
@@ -136,6 +137,17 @@
                                 <div class="col">
                                     <button class="btn btn-dark btn-sm" @onclick="AddExcludeDestination" data-prevent-keydown>Add</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    //show side panels
+                    <div class="row mb-3">
+                        <div class="col-sm-10 offset-sm-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="showSidePanel" name="showSidePanel" @bind="_showSidePanel" data-prevent-keydown>
+                                <label class="form-check-label" for="showSidePanel">
+                                    Show side panel with previous and next photo preview
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -251,6 +263,7 @@
     private string _newBlack = String.Empty;
     private string _unlockBoxPassword = String.Empty;
     private string _truePassword = String.Empty;
+    private bool _showSidePanel = true;
     private bool _allowRename = true;
 
     protected override async Task OnInitializedAsync()
@@ -269,6 +282,7 @@
             _whiteList = configOptions.CurrentValue.WhiteList.ToList();
             _blackList = configOptions.CurrentValue.BlackList.ToList();
             _truePassword = configuration.GetValue<string>("Password");
+            _showSidePanel = configOptions.CurrentValue.ShowSidePanel;
             _allowRename = configOptions.CurrentValue.AllowRename;
             if (string.IsNullOrEmpty(_source)) _source = Path.GetFullPath(".");
             if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");
@@ -298,6 +312,7 @@
         config.UseWhiteListInsteadOfBlackList = _useWhite;
         config.WhiteList = _whiteList.ToArray();
         config.BlackList = _blackList.ToArray();
+        config.ShowSidePanel = _showSidePanel;
         config.AllowRename = _allowRename;
         try
         {

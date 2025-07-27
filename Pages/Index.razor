@@ -270,7 +270,7 @@
     private string? _password;
     private string _newFileName = string.Empty;
     private bool _allowRename;
-    private bool _showSideFiles = false;
+    private bool _showSideFiles;
     private Status _status = Status.OnConstructor;
     private FolderDialog _folderDialog = new FolderDialog();
     private ConfigDialog _configDialog = new ConfigDialog();
@@ -329,6 +329,7 @@
         _cols = Math.Min(Math.Ceiling(Math.Sqrt(_folders.Length)), BRAJANEK);
         _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
+        _showSideFiles = await FileService.GetShowSidePanel();
     }
     private async void InitSession()
     {
