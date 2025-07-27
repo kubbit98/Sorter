@@ -14,126 +14,121 @@
 @switch (_status)
 {
     case Status.BeforeInit:
-        <h1 id="h1">sorter app</h1>
-        <div class="row mb-3">
-            <div class="col">
-                <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
+        <div class="vh-100 py-3">
+            <h1 id="h1">sorter app</h1>
+            <div class="row mb-3">
+                <div class="col">
+                    <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
+                </div>
             </div>
-        </div>
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
+            <div class="row mb-3">
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
+            </div>
         </div>
         break;
     case Status.Empty:
-        <div class="row mb-3">
-            <div class="col">
-                <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
+        <div class="vh-100 py-3">
+            <div class="row mb-3">
+                <div class="col">
+                    <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
+                </div>
             </div>
-        </div>
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
+            <div class="row mb-3">
+                <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
+            </div>
         </div>
         break;
     case Status.Initialized:
-        @*name and password*@
-        <div class="row mb-3">
-            <div class="col-sm-8">
-                <p>
-                    @if (null != _currentFile)
-                    {
-                        @_currentFile.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
-                    }
-
-                </p>
-            </div>
-            @if (!_password!.Equals(string.Empty))
-            {
-                <label class="col-sm-2" for="password">Password to unlock more function:</label>
-                <div class="col-sm-2">
-                    <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
-                </div>
-            }
-        </div>
-        @*main buttons*@
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickTask="Next" />
-            @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
-            {
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
-            }
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Add new folder modal" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Keybinding configuration" ButtonOnClickTask="KeyBindsModalOnOpen" CustomButtonParameter="_dictKeyBindsDialog" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
-        </div>
-        @*folders*@
-        <div class="container">
-            @*folders*@
-            <div class="row row-cols-@_cols mb-3">
-                @for (int i = 0; i < _folders!.Length; i++)
-                {
-                    var k = i;
-                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async ()=> await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
-                }
-            </div>
-            @*rename*@
-            @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
-            {
+        <div class="row vh-100 py-3">
+            @* Column with all buttons *@
+            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break max-vh-100" id="controlColumn">
+                @*name*@
                 <div class="row mb-3">
-                    <div class="col-sm-6">
-                        <input @ref="_fileNameInput" data-prevent-keydown class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
+                    <p>
+                        @if (null != _currentFile)
+                        {
+                            @_currentFile.OnlyPath
+
+                            <strong>&#32;@_currentFile.Name.@_currentFile.Extension</strong>
+                        }
+                    </p>
+                </div>
+                @*password*@
+                @if (!_password!.Equals(string.Empty))
+                {
+                    <div class="row mb-3">
+                        <label class="col-sm-3" for="password">Password to unlock more function:</label>
+                        <div class="col-sm-3">
+                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
+                        </div>
                     </div>
-                    <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
-                    <div class="col-sm-4">
+                }
+                @*main buttons*@
+                <div class="row mb-3">
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickTask="Next" />
+                    <div class="col d-grid mb-1 dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                            More
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Add new folder" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" /></li>
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Keybinding configuration" ButtonOnClickTask="KeyBindsModalOnOpen" CustomButtonParameter="_dictKeyBindsDialog" /></li>
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" /></li>
+                            @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
+                            {
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
+                            }
+                        </ul>
+                    </div>
+                </div>
+                @*rename file*@
+                @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
+                {
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <input @ref="_fileNameInput" data-prevent-keydown class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
+                        </div>
+                        <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName=@_nameNewFileName ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
+                    </div>
+                    <div class="row mb-3" style="transition: height 1s;">
                         @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
                         {
                             _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                            _nameNewFileName = "Change file name";
                         }
                         else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
                         {
                             _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-                            <p>Illegal name of folder</p>
+                            _nameNewFileName = "Illegal name of file";
                         }
                         else
                         {
+                            _nameNewFileName = "Change file name";
                             _dictNewFileName = null!;
                         }
                     </div>
-
-                </div>
-            }
-        </div>
-        @*media*@
-        <div class="row mb-3">
-            @if (_showSideFiles == true)
-            {   
-            <div class="col col-sm-3">
-                @if (null != _previousFile)
-                {
-                    <div class="row mb-3">
-                        <p>Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
-                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
-                        {
-                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
-                        }
-                        else
-                        {
-                            <p>Previous file is not a photo</p>
-                        }
-                    </div>
                 }
+                @*folders*@
+                <div class="row row-cols-2 mb-3">
+                    @for (int i = 0; i < _folders!.Length; i++)
+                    {
+                        var k = i;
+                        <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
+                    }
+                </div>
             </div>
-            }
-            <div class="col col-sm-6">
+            @* Column with media*@
+            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9") max-vh-95" style="align-items: center; display: flex;" tabindex="-1" id="mediaDiv">
                 @switch (_currentFile?.FileType)
                 {
                     case File.FileTypeEnum.Video:
-                        <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
+                        <video class="img-fluid mx-auto d-block" style="max-height: 95vh;" controls autoplay id="videoTagId">
                             <source src="@_currentFile?.Path">
                             Your browser does not support the video tag.
                         </video>
@@ -142,13 +137,13 @@
                         <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
                              src="@(_currentFile!.DisplayPath)"
                              class="img-fluid mx-auto d-block"
-                             style="max-height: 90vh;" />
+                             style="max-height: 95vh;" />
                         <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
                     case File.FileTypeEnum.PDF:
-                        <embed src="@_currentFile?.Path" style="width:100%;height:90vh;" />
+                        <embed src="@_currentFile?.Path" style="width:100%;height:95vh;" />
                         break;
                     case File.FileTypeEnum.Text:
                         <p id="txtcontent">@GetTextFileContent().Result</p>
@@ -158,27 +153,42 @@
                         break;
                 }
             </div>
-            @if (_showSideFiles == true)
+            @* Column with preview files*@
+            @if (_showSideFiles)
             {
-                <div class="col col-sm-3">
-                @if (null != _nextFile)
-                {
-                    <div class="row mb-3">
-                        <p>Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
-                        @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
+                <div class="col-sm-2 overflow-auto d-flex flex-column max-vh-100" id="previewColumn">
+                    <div class="row mb-auto">
+                        @if (null != _previousFile)
                         {
-                            <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
-                        }
-                        else
-                        {
-                            <p>Next file is not a photo</p>
+                            @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
+                            {
+                                <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
+                            }
+                            else
+                            {
+                                <p class="my-0 py-0 text-end">Previous file is not a photo</p>
+                            }
+                            <p class="my-0 py-0 text-end">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
                         }
                     </div>
-                }
-            </div>
+                    @if (null != _nextFile)
+                    {
+                        <div class="row">
+                            <p class="my-0 py-0 text-end">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
+                            @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
+                            {
+                                <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
+                            }
+                            else
+                            {
+                                <p class="my-0 py-0 text-end">Next file is not a photo</p>
+                            }
+                        </div>
+                    }
+                </div>
             }
-            
         </div>
+
         break;
 }
 
@@ -246,6 +256,7 @@
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
     private Dictionary<string, object> _dictKeyBindsDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#keyBindsModal" } };
+    private string _nameNewFileName = "Change file name";
     private Dictionary<string, object> _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
     //private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } }; //add CustomButtonParameter=_dictPreventKeydown to buttonindiv to prevent key down event, not sure if useful so commented out
 
