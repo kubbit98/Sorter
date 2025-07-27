@@ -10,11 +10,11 @@
 @inject ProtectedSessionStorage ProtectedSessionStore
 
 <PageTitle>sorter app</PageTitle>
-<h1 id="h1">sorter app</h1>
 
 @switch (_status)
 {
     case Status.BeforeInit:
+        <h1 id="h1">sorter app</h1>
         <div class="row mb-3">
             <div class="col">
                 <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
@@ -639,9 +639,9 @@
         {
             await SaveFileName();
             StateHasChanged();
-            await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+            await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
         }
-        else if (e.Key == "Escape") await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+        else if (e.Key == "Escape") await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
     }
     private async Task<string> GetTextFileContent()
     {
