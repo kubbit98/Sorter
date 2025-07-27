@@ -24,25 +24,6 @@
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
-        @if (SHOW_DEBUG_INFO)
-        {
-            // unreachable beacuse of the variable false which is manually set in this file
-            <div class="col col-sm-3">
-                <p>
-                    INDEX @_myMediaCurrentIndex
-                </p>
-                @if (null != _myMediaIndexes)
-                {
-                    foreach (var tuple in _myMediaIndexes)
-                    {
-                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                    }
-                }
-                <p>
-                    status: @_status
-                </p>
-            </div>
-        }
         break;
     case Status.Empty:
         <div class="row mb-3">
@@ -56,24 +37,6 @@
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
             <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
         </div>
-        @if (SHOW_DEBUG_INFO)
-        {
-            <div class="col col-sm-3">
-                <p>
-                    INDEX @_myMediaCurrentIndex
-                </p>
-                @if (null != _myMediaIndexes)
-                {
-                    foreach (var tuple in _myMediaIndexes)
-                    {
-                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                    }
-                }
-                <p>
-                    status: @_status
-                </p>
-            </div>
-        }
         break;
     case Status.Initialized:
         @*name and password*@
@@ -212,24 +175,6 @@
                         }
                     </div>
                 }
-                @if (SHOW_DEBUG_INFO)
-                {
-                    <div class="row mb-3">
-                        <p>
-                            INDEX @_myMediaCurrentIndex
-                        </p>
-                        @if (null != _myMediaIndexes)
-                        {
-                            foreach (var tuple in _myMediaIndexes)
-                            {
-                                <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                            }
-                        }
-                        <p>
-                            status: @_status
-                        </p>
-                    </div>
-                }
             </div>
             }
             
@@ -239,8 +184,28 @@
 
 @if (_status == Status.Initialized)
 {
-    <FolderDialog ExistingFolders="@_folders?.Select(f=>f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
+    <FolderDialog ExistingFolders="@_folders?.Select(f => f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
     <KeyBindsDialog OnChange="@KeyBindsModalClose" ExistingFolders="_folders" @ref=_keyBindsDialog />
+#pragma warning disable CS0162
+    if (SHOW_DEBUG_INFO)
+    {
+        <div class="row mb-3">
+            <p>
+                INDEX @_myMediaCurrentIndex
+            </p>
+            @if (null != _myMediaIndexes)
+            {
+                foreach (var tuple in _myMediaIndexes)
+                {
+                    <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                }
+            }
+            <p>
+                status: @_status
+            </p>
+        </div>
+    }
+#pragma warning restore CS0162
 }
 <ConfigDialog OnChange="@ConfigModalClose" @ref=_configDialog />
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
