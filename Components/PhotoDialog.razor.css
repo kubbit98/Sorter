@@ -1,7 +1,7 @@
 .modal-body {
     overflow: hidden;
     padding: 0;
-    border: 16px solid #fff;
+    border: 6px solid var(--bs-dark);
     border-radius: 0.3rem;
 }
 
@@ -12,13 +12,30 @@
     transform-origin: 0px 0px;
     transform: scale(1) translate(0px, 0px);
     cursor: grab;
-    /*transition: transform 0.2s ease;*/
+/*    transition: transform 0.2s ease;*/
 }
 
     .photo-modal-zoom > img {
         max-height: 90vh;
     }
 
-.carousel-control-prev, .carousel-control-next {
-    width: 5%;
+
+.carousel-control-prev {
+    width: 10%;
+    justify-content: left;
 }
+
+    .carousel-control-prev:hover {
+        background: linear-gradient(to right, var(--bs-dark) 0%, rgba(0,0,0,0) 75%, rgba(0,0,0,0) 100%);
+        opacity: 1 !important;
+    }
+
+.carousel-control-next {
+    width: 10%;
+    justify-content: right;
+}
+
+    .carousel-control-next:hover {
+        background: linear-gradient(to left, var(--bs-dark) 0%, rgba(0,0,0,0) 75%, rgba(0,0,0,0) 100%);
+        opacity: 1 !important;
+    }

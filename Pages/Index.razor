@@ -47,13 +47,60 @@
             @* Column with all buttons *@
             <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break max-vh-97" id="controlColumn">
                 @*name*@
-                <div class="row mb-3">
+                <div class="row mb-3" style="min-height: 100px;">
                     <p>
                         @if (null != _currentFile)
                         {
-                            @_currentFile.OnlyPath
+                            @switch (_fileNameInputStatus)
+                            {
+                                case FileNameInputStatus.Closed:
+                                    @_currentFile.OnlyPath
+                                    <strong>@_currentFile.Name.@_currentFile.Extension</strong>
+                                    @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
+                                    {
+                                        <button class="btn btn-info btn-circle btn-circle-xs ms-1" @onclick=@FileNameInputOpen><i class="bi bi-pencil"></i></button>
+                                    }
+                                    break;
+                                case FileNameInputStatus.Opened:
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            @_currentFile.OnlyPath
+                                        </div>
+                                        @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
+                                        {
+                                            <div class="col-6">
+                                                <input @ref="_fileNameInput" data-prevent-keydown class="form-control @(_isNewFileNameCorrect ? "" : "is-invalid")" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
+                                                <div class="invalid-feedback">Illegal name of file.</div>
+                                            </div>
+                                            <div class="col-6 d-flex align-items-center">
+                                                <button class="btn btn-success btn-circle btn-circle-xs m-1" @onclick=@SaveFileName @attributes=@_dictNewFileName><i class="bi bi-check"></i></button>
+                                                <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                        }
+                                    </div>
 
-                            <strong>&#32;@_currentFile.Name.@_currentFile.Extension</strong>
+                                    @* @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename) {  } *@
+                                    @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
+                                    {
+                                        _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                                        _isNewFileNameCorrect = true;
+                                    }
+                                    else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                                    {
+                                        _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                                        _isNewFileNameCorrect = false;
+                                    }
+                                    else
+                                    {
+                                        _dictNewFileName = null!;
+                                        _isNewFileNameCorrect = true;
+                                    }
+                                    break;
+                            }
                         }
                     </p>
                 </div>
@@ -61,8 +108,8 @@
                 @if (!_password!.Equals(string.Empty))
                 {
                     <div class="row mb-3">
-                        <label class="col-sm-3" for="password">Password to unlock more function:</label>
-                        <div class="col-sm-3">
+                        <label class="col-sm-6" for="password">Password to unlock more function:</label>
+                        <div class="col-sm-6">
                             <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
                         </div>
                     </div>
@@ -87,33 +134,7 @@
                         </ul>
                     </div>
                 </div>
-                @*rename file*@
-                @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
-                {
-                    <div class="row mb-3">
-                        <div class="col-sm-6">
-                            <input @ref="_fileNameInput" data-prevent-keydown class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
-                        </div>
-                        <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName=@_nameNewFileName ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
-                    </div>
-                    <div class="row mb-3">
-                        @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
-                        {
-                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-                            _nameNewFileName = "Change file name";
-                        }
-                        else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
-                        {
-                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-                            _nameNewFileName = "Illegal name of file";
-                        }
-                        else
-                        {
-                            _nameNewFileName = "Change file name";
-                            _dictNewFileName = null!;
-                        }
-                    </div>
-                }
+
                 @*folders*@
                 <div class="row row-cols-2 mb-3">
                     @for (int i = 0; i < _folders!.Length; i++)
@@ -230,7 +251,6 @@
     private const bool SHOW_DEBUG_INFO = false;
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
-    private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
 
     private static Regex s_alfanumeralRegex = new Regex(@"^[a-zA-Z0-9]$");
 
@@ -240,13 +260,14 @@
     private File? _previousFile;
     private File? _nextFile;
     private Folder[]? _folders;
-    private double? _cols;
     private string _unlockBoxPassword = string.Empty;
     private string? _password;
+    private bool _isNewFileNameCorrect = true;
     private string _newFileName = string.Empty;
     private bool _allowRename;
     private bool _showSideFiles;
     private Status _status = Status.OnConstructor;
+    private FileNameInputStatus _fileNameInputStatus = FileNameInputStatus.Closed;
     private FolderDialog _folderDialog = new FolderDialog();
     private ConfigDialog _configDialog = new ConfigDialog();
     private KeyBindsDialog _keyBindsDialog = new KeyBindsDialog();
@@ -256,13 +277,16 @@
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
     private Dictionary<string, object> _dictKeyBindsDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#keyBindsModal" } };
-    private string _nameNewFileName = "Change file name";
     private Dictionary<string, object> _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
     //private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } }; //add CustomButtonParameter=_dictPreventKeydown to buttonindiv to prevent key down event, not sure if useful so commented out
 
     public enum Status
     {
         OnConstructor, BeforeInit, Initialized, Empty,
+    }
+    public enum FileNameInputStatus
+    {
+        Opened, Closed,
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -302,7 +326,6 @@
     private async void LoadSession()
     {
         _folders = await FileService.GetFoldersAsync();
-        _cols = Math.Min(Math.Ceiling(Math.Sqrt(_folders.Length)), BRAJANEK);
         _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
         _showSideFiles = await FileService.GetShowSidePanel();
@@ -480,7 +503,7 @@
                     else if (null != _previousFile && _previousFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
                     await Back();
                 }
-                else if (key == "F2") await _fileNameInput.FocusAsync();
+                else if (key == "F2") await FileNameInputOpen();
                 else if (key == " " && null != _currentFile && _currentFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("toggleModal", "photoModal");
                 else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
                 {
@@ -599,6 +622,21 @@
         return file ?? throw new Exception("File not found");
     }
 
+    private async Task FileNameInputOpen()
+    {
+        _fileNameInputStatus = FileNameInputStatus.Opened;
+        StateHasChanged();
+        await Task.Yield();
+        await _fileNameInput.FocusAsync();
+    }
+    private async Task FileNameInputClose()
+    {
+        await Task.Run(() =>
+        {
+            _fileNameInputStatus = FileNameInputStatus.Closed;
+            _newFileName = _currentFile!.Name;
+        });
+    }
     private async Task SaveFileName()
     {
         if (_currentFile == null) return;
@@ -607,6 +645,7 @@
         if (_currentFile == null) return;
         _myMediaIndexes![_myMediaCurrentIndex] = new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name);
         await _PSSWriteMyMediaIndexes();
+        await FileNameInputClose();
         StateHasChanged();
     }
     private async Task SaveFileNameKeyDown(KeyboardEventArgs e)
@@ -617,7 +656,11 @@
             StateHasChanged();
             await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
         }
-        else if (e.Key == "Escape") await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
+        else if (e.Key == "Escape")
+        {
+            await FileNameInputClose();
+            await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
+        }
     }
     private async Task<string> GetTextFileContent()
     {
