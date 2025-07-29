@@ -136,11 +136,11 @@
                 </div>
 
                 @*folders*@
-                <div class="row row-cols-2 mb-3">
+                <div class="row mb-3">
                     @for (int i = 0; i < _folders!.Length; i++)
                     {
                         var k = i;
-                        <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
+                        <ButtonInDiv DivCssClass="col d-grid my-1 px-1" ButtonCssClass="btn btn-primary overflow-hidden" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
                     }
                 </div>
             </div>
@@ -209,7 +209,6 @@
                 </div>
             }
         </div>
-
         break;
 }
 

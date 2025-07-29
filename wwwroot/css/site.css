@@ -81,7 +81,8 @@ a, .btn-link {
 }
 
     #controlColumn .btn {
-        min-width: 70px;
+        min-width: 80px;
+        max-height: 85px
     }
 
 #previewColumn img {

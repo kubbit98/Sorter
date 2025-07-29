@@ -2,7 +2,7 @@
 
 public class Folder : ICloneable
 {
-    private static readonly int s_maxDisplayNameLength = 42;
+    private static readonly int s_maxDisplayNameLength = 100;
     public Folder(string path, string name)
     {
         Path = path;
