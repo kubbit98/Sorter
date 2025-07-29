@@ -47,22 +47,22 @@ namespace Sorter.Data
     }
     public class DynamicFileProvider : IFileProvider
     {
-        PhysicalFileProvider? PhysicalFileProvider { get; set; }
+        private PhysicalFileProvider? _physicalFileProvider { get; set; }
         protected readonly ILogger _logger;
         public DynamicFileProvider(string root, ILogger logger)
         {
-            PhysicalFileProvider = null;
+            _physicalFileProvider = null;
             if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root)))
-                PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
+                _physicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
-            if (PhysicalFileProvider != null)
+            if (_physicalFileProvider != null)
             {
-                return PhysicalFileProvider.GetDirectoryContents(subpath);
+                return _physicalFileProvider.GetDirectoryContents(subpath);
             }
             else
             {
@@ -74,9 +74,9 @@ namespace Sorter.Data
         {
             try
             {
-                if (PhysicalFileProvider != null)
+                if (_physicalFileProvider != null)
                 {
-                    return PhysicalFileProvider.GetFileInfo(subpath);
+                    return _physicalFileProvider.GetFileInfo(subpath);
                 }
                 else
                 {
@@ -92,9 +92,9 @@ namespace Sorter.Data
 
         public IChangeToken Watch(string filter)
         {
-            if (PhysicalFileProvider != null)
+            if (_physicalFileProvider != null)
             {
-                return PhysicalFileProvider.Watch(filter);
+                return _physicalFileProvider.Watch(filter);
             }
             else
             {
@@ -103,7 +103,7 @@ namespace Sorter.Data
         }
         public void UpdateProvider(string newPath)
         {
-            PhysicalFileProvider = new PhysicalFileProvider(newPath);
+            _physicalFileProvider = new PhysicalFileProvider(newPath);
         }
     }
 }
