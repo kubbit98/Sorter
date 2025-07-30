@@ -3,20 +3,13 @@ using System.Text.Json;
 
 namespace Sorter.Data
 {
-    public class ConfigOptionsService
+    public class ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor, IOptionsMonitor<KeyBindsOptions> keyBindsOptions)
     {
-        private readonly DestinationDFP _destinationDFP;
-        private readonly SourceDFP _sourceDFP;
-        private readonly IOptionsMonitor<ConfigOptions> _configOptionsMonitor;
-        private readonly IOptionsMonitor<KeyBindsOptions> _keyBindsOptions;
+        private readonly DestinationDFP _destinationDFP = destinationDFP;
+        private readonly SourceDFP _sourceDFP = sourceDFP;
+        private readonly IOptionsMonitor<ConfigOptions> _configOptionsMonitor = configOptionsMonitor;
+        private readonly IOptionsMonitor<KeyBindsOptions> _keyBindsOptions = keyBindsOptions;
 
-        public ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor, IOptionsMonitor<KeyBindsOptions> keyBindsOptions)
-        {
-            _destinationDFP = destinationDFP;
-            _sourceDFP = sourceDFP;
-            _configOptionsMonitor = configOptionsMonitor;
-            _keyBindsOptions = keyBindsOptions;
-        }
         public bool CheckPath(string path)
         {
             if (string.IsNullOrEmpty(path)) return false;

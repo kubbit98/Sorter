@@ -13,22 +13,22 @@ namespace Sorter.Data
         private readonly ILogger _logger;
 
         private static readonly int s_maxSizeOfPhotoInPixels = 850;
-        private static readonly string[] s_thumbnailExtensions = { "bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp" };
-        private static readonly string[] s_globalExtensionExclude = { "ds_store" };
+        private static readonly string[] s_thumbnailExtensions = ["bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp"];
+        private static readonly string[] s_globalExtensionExclude = ["ds_store"];
         private static readonly int s_thumbnailsToCreateAhead = 5;
         private static readonly int s_maxLengthOfTextFile = 5000;
 
-        private List<File> files = new();
-        private List<Folder> folders = new();
+        private List<File> files = [];
+        private List<Folder> folders = [];
         private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
 
         private string source = "";
         private string destination = "";
-        private string[] excludeDirsInSource = Array.Empty<string>();
-        private string[] excludeDirsInDestination = Array.Empty<string>();
-        private string[] whiteList = Array.Empty<string>();
-        private string[] blackList = Array.Empty<string>();
+        private string[] excludeDirsInSource = [];
+        private string[] excludeDirsInDestination = [];
+        private string[] whiteList = [];
+        private string[] blackList = [];
         private bool useWhiteListInsteadOfBlackList;
         private readonly string password;
         private bool showSidePanel;
@@ -166,7 +166,7 @@ namespace Sorter.Data
         }
         private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
         {
-            List<Folder> folders = new();
+            List<Folder> folders = [];
             try
             {
                 if (!Directory.Exists(Path.GetFullPath(targetDirectoryPath)))
@@ -186,19 +186,19 @@ namespace Sorter.Data
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError("Error with folder " + fullPathToDirectory + "\n" + e.Message);
+                        _logger.LogError("Error with folder {Path}\n{Error}", fullPathToDirectory, e.Message);
                     }
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError("Error with whole destination folder " + e.Message);
+                _logger.LogError("Error with whole destination folder {Error}", e.Message);
             }
             return folders;
         }
         private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
         {
-            List<File> files = new();
+            List<File> files = [];
             try
             {
                 if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)) || excludeDirsInSource.Contains(Path.GetFullPath(sourceDirectoryPath)))
@@ -222,13 +222,13 @@ namespace Sorter.Data
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError("Error with folder " + fullPath + "\n" + e.Message);
+                        _logger.LogError("Error with folder {Path}\n{Error}", fullPath, e.Message);
                     }
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError("Error with whole source folder " + e.Message);
+                _logger.LogError("Error with whole source folder {Error}", e.Message);
             }
             return files;
         }
@@ -256,13 +256,13 @@ namespace Sorter.Data
                     System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.NameWithExtension));
                     file.PhysicalPath = Path.Combine(destiny, file.NameWithExtension);
                     files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
-                    _logger.LogInformation("File {0} moved to {1}", file.NameWithExtension, destiny);
+                    _logger.LogInformation("File {FileNameExt} moved to {Destination}", file.NameWithExtension, destiny);
                 }
                 else _logger.LogWarning("The file index has changed, you need to reload session");
             }
             catch (Exception e)
             {
-                _logger.LogError("Cannot move file\n" + e.Message);
+                _logger.LogError("Cannot move file {Name}\n{Error}", file.NameWithExtension, e.Message);
             }
         }
         public Task<string> GetTextFileContent(File file)
@@ -278,7 +278,7 @@ namespace Sorter.Data
         public bool CreateFolder(string folderName)
         {
             if (folders.Any(f => f.Name == folderName)) return false;
-            if (folderName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return false;
+            if (folderName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return false;
             string fullPath = Path.Combine(destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
@@ -291,10 +291,10 @@ namespace Sorter.Data
         }
         public void ChangeFileName(int index, string newFileName)
         {
-            if (newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1) return;
+            if (newFileName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return;
             File file = files[index];
             string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
-            _logger.LogInformation("File renamed from " + file.Name + "." + file.Extension + " to " + newFileName + "." + file.Extension);
+            _logger.LogInformation("File renamed from {Name}.{Extension} to {Name}.{Extension}", file.Name, file.Extension, newFileName, file.Extension);
             System.IO.File.Move(file.PhysicalPath, newFullPath);
             files[index].PhysicalPath = newFullPath;
             files[index].Name = newFileName;

@@ -3,17 +3,11 @@ using Microsoft.Extensions.Primitives;
 
 namespace Sorter.Data
 {
-    public class SourceDFP : DynamicFileProvider
+    public class SourceDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
     {
-        public SourceDFP(string root, ILogger logger) : base(root, logger)
-        {
-        }
     }
-    public class DestinationDFP : DynamicFileProvider
+    public class DestinationDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
     {
-        public DestinationDFP(string root, ILogger logger) : base(root, logger)
-        {
-        }
     }
     public class TempDFP : DynamicFileProvider
     {
@@ -27,11 +21,11 @@ namespace Sorter.Data
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                _logger.LogInformation("Creating folder for thumbnails in " + path);
+                _logger.LogInformation("Creating folder for thumbnails in {Path}", path);
             }
             else
             {
-                DirectoryInfo di = new DirectoryInfo(path);
+                DirectoryInfo di = new(path);
                 foreach (FileInfo file in di.EnumerateFiles())
                 {
                     file.Delete();
@@ -40,14 +34,14 @@ namespace Sorter.Data
                 {
                     dir.Delete(true);
                 }
-                _logger.LogInformation("Clearing temporary directory at " + path);
+                _logger.LogInformation("Clearing temporary directory at {Path}", path);
             }
             UpdateProvider(path);
         }
     }
     public class DynamicFileProvider : IFileProvider
     {
-        private PhysicalFileProvider? _physicalFileProvider { get; set; }
+        private PhysicalFileProvider? _physicalFileProvider;
         protected readonly ILogger _logger;
         public DynamicFileProvider(string root, ILogger logger)
         {

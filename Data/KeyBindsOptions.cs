@@ -3,6 +3,6 @@
     public class KeyBindsOptions
     {
         public const string config = "KeyBinds";
-        public Dictionary<string, string> KeyBinds { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> KeyBinds { get; set; } = [];
     }
 }
