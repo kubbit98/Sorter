@@ -262,7 +262,7 @@ namespace Sorter.Data
             }
             catch (Exception e)
             {
-                _logger.LogError("Cannot move file {Name}\n{Error}", file.NameWithExtension, e.Message);
+                _logger.LogError("File {FileNameExt} cannot be moved to {destiny}\n{Error}", file.NameWithExtension, destiny, e.Message);
             }
         }
         public Task<string> GetTextFileContent(File file)

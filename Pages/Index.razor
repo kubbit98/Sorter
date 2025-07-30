@@ -258,6 +258,7 @@
     private File? _currentFile;
     private File? _previousFile;
     private File? _nextFile;
+    private bool _isChangingFile = false;
     private Folder[]? _folders;
     private string _unlockBoxPassword = string.Empty;
     private string? _password;
@@ -367,7 +368,8 @@
 
     private async Task Next()
     {
-        if (_status != Status.Initialized) return;
+        if (_status != Status.Initialized || _isChangingFile) return;
+        _isChangingFile = true;
         _previousFile = _currentFile;
         _myMediaCurrentIndex++;
         await _PSSWriteMyMediaCurrentIndex();
@@ -422,13 +424,16 @@
 
         ReloadPlayerIfVideo();
         StateHasChanged();
+        _isChangingFile = false;
     }
     private async Task Back()
     {
-        if (_status != Status.Initialized && _status != Status.Empty) return;
+        if (_status != Status.Initialized && _status != Status.Empty || _isChangingFile) return;
+        _isChangingFile = true;
         if (_myMediaCurrentIndex <= 0)
         {
             toastService.ShowWarning("No more files");
+            _isChangingFile = false;
             return;
         }
         _myMediaCurrentIndex--;
@@ -449,6 +454,7 @@
             ReloadPlayerIfVideo();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();
+            _isChangingFile = false;
         }
         catch (Exception)
         {
@@ -458,6 +464,7 @@
             _status = Status.BeforeInit;
             await _ResetProtectedSessionStore();
             StateHasChanged();
+            _isChangingFile = false;
         }
     }
     private async void Reset()
@@ -668,7 +675,7 @@
     }
     private async Task MoveFile(string destiny)
     {
-        if (_currentFile == null) return;
+        if (_currentFile == null || _isChangingFile) return;
         var oldFile = _currentFile;
         Task next = Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
