@@ -4,7 +4,7 @@ IF [%name%] == [] (GOTO Prompt) ELSE (GOTO NEXT)
 SET /p "name=Enter name of deploy: "
 
 :Next
-SET dirr=bin\Prod\net6.0\publish
+SET dirr=bin\Prod\net8.0\publish
 
 REM windows 64
 dotnet publish sorter.sln -p:PublishProfile=Win64 -c Release
