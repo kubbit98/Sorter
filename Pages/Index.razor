@@ -45,7 +45,7 @@
     case Status.Initialized:
         <div class="row vh-100 py-3">
             @* Column with all buttons *@
-            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break max-vh-97" id="controlColumn">
+            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break" style="max-height: 97vh; transition: all 0.3s ease;" id="controlColumn">
                 @*name*@
                 <div class="row mb-3" style="min-height: 100px;">
                     <p>
@@ -145,7 +145,7 @@
                 </div>
             </div>
             @* Column with media*@
-            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9") max-vh-97" style="align-items: center; display: flex;" tabindex="-1" id="mediaDiv">
+            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9")" style="max-height: 97vh; align-items: center; display: flex; transition: all 0.3s ease;" tabindex="-1" id="mediaDiv">
                 @switch (_currentFile?.FileType)
                 {
                     case File.FileTypeEnum.Video:
@@ -173,11 +173,14 @@
                         <p>Filetype "@_currentFile?.Extension" is not supported</p>
                         break;
                 }
+                <button type="button" class="btn btn-secondary half-ellipse close position-absolute p-0 top-50 end-0 translate-middle-y"
+                        @onclick="ToggleSidePanel" data-prevent-keydown>
+                    <i class="bi bi-arrow-bar-left @(_showSideFiles ? "side-button-opened" : "side-button-closed")" style="font-size: 1.3rem;"></i>
+                    <span class="visually-hidden">Close</span>
+                </button>
             </div>
             @* Column with preview files*@
-            @if (_showSideFiles)
-            {
-                <div class="col-sm-2 overflow-auto d-flex flex-column max-vh-97 text-break" id="previewColumn">
+            <div class="col-sm-2 overflow-hidden d-flex flex-column @(_showSideFiles ? "" : "collapsed")" style="max-height: 97vh; transition: all 0.3s ease;" id="previewColumn">
                     <div class="row mb-auto justify-content-end">
                         @if (null != _previousFile)
                         {
@@ -187,27 +190,26 @@
                             }
                             else
                             {
-                                <p class="my-0 py-0 text-end">Previous file is not a photo</p>
+                            <p class="my-0 py-0 text-end lh-1">Previous file is not a photo</p>
                             }
-                            <p class="my-0 py-0 text-end">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
+                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
                         }
                     </div>
                     @if (null != _nextFile)
                     {
                         <div class="row justify-content-end">
-                            <p class="my-0 py-0 text-end">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
+                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
                             @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                             {
                                 <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                             }
                             else
                             {
-                                <p class="my-0 py-0 text-end">Next file is not a photo</p>
+                            <p class="my-0 py-0 text-end lh-1">Next file is not a photo</p>
                             }
                         </div>
                     }
                 </div>
-            }
         </div>
         break;
 }
@@ -265,7 +267,7 @@
     private bool _isNewFileNameCorrect = true;
     private string _newFileName = string.Empty;
     private bool _allowRename;
-    private bool _showSideFiles;
+    private bool _showSideFiles = false;
     private Status _status = Status.OnConstructor;
     private FileNameInputStatus _fileNameInputStatus = FileNameInputStatus.Closed;
     private FolderDialog _folderDialog = new FolderDialog();
@@ -328,7 +330,6 @@
         _folders = await FileService.GetFoldersAsync();
         _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
-        _showSideFiles = await FileService.GetShowSidePanel();
     }
     private async void InitSession()
     {
@@ -421,7 +422,6 @@
                 _nextFile = null;
             }
         }
-
         ReloadPlayerIfVideo();
         StateHasChanged();
         _isChangingFile = false;
@@ -597,6 +597,12 @@
             await Task.Delay(LOAD_VIDEO_TIME_DELAY);
             await JS.InvokeVoidAsync("loadVideo");
         }
+    }
+    private async void ToggleSidePanel()
+    {
+        _showSideFiles = !_showSideFiles;
+        await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
+        StateHasChanged();
     }
 
     private async Task<File> GetFileFromFileService(int index, string fileName = "")

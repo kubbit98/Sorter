@@ -11,7 +11,6 @@
         public bool UseWhiteListInsteadOfBlackList { get; set; } = false;
         public string[] WhiteList { get; set; } = [];
         public string[] BlackList { get; set; } = [];
-        public bool ShowSidePanel { get; set; } = true;
         public bool AllowRename { get; set; } = true;
     }
 }

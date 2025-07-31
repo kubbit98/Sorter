@@ -31,7 +31,6 @@ namespace Sorter.Data
         private string[] blackList = [];
         private bool useWhiteListInsteadOfBlackList;
         private readonly string password;
-        private bool showSidePanel;
         private bool allowRename;
         private bool useThumbnails;
         private bool initialized;
@@ -107,11 +106,6 @@ namespace Sorter.Data
         public Task<string> GetPassword()
         {
             return Task.FromResult(password);
-        }
-        public Task<bool> GetShowSidePanel()
-        {
-            showSidePanel = _options.CurrentValue.ShowSidePanel;
-            return Task.FromResult(showSidePanel);
         }
         public Task<bool> GetAllowRename()
         {
