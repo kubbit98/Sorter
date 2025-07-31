@@ -15,7 +15,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">Configuration</h4>
-                <button type="button" class="close" data-bs-dismiss="modal" data-prevent-keydown>&times;</button>
+                <button type="button" class="btn btn-danger btn-circle btn-circle-sm ms-1 close" data-bs-dismiss="modal" data-prevent-keydown><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body">
                 @*password*@
@@ -31,6 +31,7 @@
                     </form>
                     <br />
                 }
+
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
                     //source
@@ -268,7 +269,7 @@
             _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
             _whiteList = configOptions.CurrentValue.WhiteList.ToList();
             _blackList = configOptions.CurrentValue.BlackList.ToList();
-            _truePassword = configuration.GetValue<string>("Password");
+            _truePassword = configuration.GetValue<string>("Password")!;
             _allowRename = configOptions.CurrentValue.AllowRename;
             if (string.IsNullOrEmpty(_source)) _source = Path.GetFullPath(".");
             if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");

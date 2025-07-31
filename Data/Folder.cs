@@ -1,16 +1,10 @@
 ﻿namespace Sorter.Data;
 
-public class Folder : ICloneable
+public class Folder(string path, string name) : ICloneable
 {
-    private static readonly int s_maxDisplayNameLength = 42;
-    public Folder(string path, string name)
-    {
-        Path = path;
-        Name = name;
-    }
-
-    public string Path { get; set; }
-    public string Name { get; set; }
+    private static readonly int s_maxDisplayNameLength = 100;
+    public string Path { get; set; } = path;
+    public string Name { get; set; } = name;
     public char KeyBind { get; set; } = '\0';
     public string DisplayName
     {

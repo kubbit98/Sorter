@@ -10,164 +10,146 @@
 @inject ProtectedSessionStorage ProtectedSessionStore
 
 <PageTitle>sorter app</PageTitle>
-<h1 id="h1">sorter app</h1>
 
 @switch (_status)
 {
     case Status.BeforeInit:
-        <div class="row mb-3">
-            <div class="col">
-                <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
+        <div class="vh-100 py-3">
+            <h1 id="h1">sorter app</h1>
+            <div class="row mb-3">
+                <div class="col">
+                    <p>Initiate a session to get started. If you are launching the application for the first time, you will need to further configure the application.</p>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
             </div>
         </div>
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
-        </div>
-        @if (SHOW_DEBUG_INFO)
-        {
-            // unreachable beacuse of the variable false which is manually set in this file
-            <div class="col col-sm-3">
-                <p>
-                    INDEX @_myMediaCurrentIndex
-                </p>
-                @if (null != _myMediaIndexes)
-                {
-                    foreach (var tuple in _myMediaIndexes)
-                    {
-                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                    }
-                }
-                <p>
-                    status: @_status
-                </p>
-            </div>
-        }
         break;
     case Status.Empty:
-        <div class="row mb-3">
-            <div class="col">
-                <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
-        </div>
-        @if (SHOW_DEBUG_INFO)
-        {
-            <div class="col col-sm-3">
-                <p>
-                    INDEX @_myMediaCurrentIndex
-                </p>
-                @if (null != _myMediaIndexes)
-                {
-                    foreach (var tuple in _myMediaIndexes)
-                    {
-                        <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                    }
-                }
-                <p>
-                    status: @_status
-                </p>
-            </div>
-        }
-        break;
-    case Status.Initialized:
-        @*name and password*@
-        <div class="row mb-3">
-            <div class="col-sm-8">
-                <p>
-                    @if (null != _currentFile)
-                    {
-                        @_currentFile.OnlyPath <strong>@_currentFile.Name.@_currentFile.Extension</strong>
-                    }
-
-                </p>
-            </div>
-            @if (!_password!.Equals(string.Empty))
-            {
-                <label class="col-sm-2" for="password">Password to unlock more function:</label>
-                <div class="col-sm-2">
-                    <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
+        <div class="vh-100 py-3">
+            <div class="row mb-3">
+                <div class="col">
+                    <p>No more files to sort! You can shutdown app, back to previous file, reset server or reconfigure app.</p>
                 </div>
-            }
-        </div>
-        @*main buttons*@
-        <div class="row mb-3">
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickTask="Next" />
-            @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
-            {
+            </div>
+            <div class="row mb-3">
+                <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
-            }
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Add new folder modal" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Keybinding configuration" ButtonOnClickTask="KeyBindsModalOnOpen" CustomButtonParameter="_dictKeyBindsDialog" />
-            <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
-        </div>
-        @*folders*@
-        <div class="container">
-            @*folders*@
-            <div class="row row-cols-@_cols mb-3">
-                @for (int i = 0; i < _folders!.Length; i++)
-                {
-                    var k = i;
-                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-primary" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async ()=> await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
-                }
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
             </div>
-            @*rename*@
-            @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
-            {
-                <div class="row mb-3">
-                    <div class="col-sm-6">
-                        <input @ref="_fileNameInput" data-prevent-keydown class="form-control" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
-                    </div>
-                    <ButtonInDiv DivCssClass="col-sm-2" ButtonCssClass="btn btn-secondary" ButtonName="Save file name" ButtonOnClickTask="SaveFileName" CustomButtonParameter=@_dictNewFileName />
-                    <div class="col-sm-4">
-                        @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
-                        {
-                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-                        }
-                        else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
-                        {
-                            _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
-                            <p>Illegal name of folder</p>
-                        }
-                        else
-                        {
-                            _dictNewFileName = null!;
-                        }
-                    </div>
-
-                </div>
-            }
         </div>
-        @*media*@
-        <div class="row mb-3">
-            <div class="col col-sm-3">
-                @if (null != _previousFile)
+        break;
+    case Status.Initialized:
+        <div class="row vh-100 py-3">
+            @* Column with all buttons *@
+            <div class="@(_showSideFiles ? "col-sm-2" : "col-sm-3") overflow-auto text-break" style="max-height: 97vh; transition: all 0.3s ease;" id="controlColumn">
+                @*name*@
+                <div class="row mb-3" style="min-height: 100px;">
+                    <p>
+                        @if (null != _currentFile)
+                        {
+                            @switch (_fileNameInputStatus)
+                            {
+                                case FileNameInputStatus.Closed:
+                                    @_currentFile.OnlyPath
+                                    <strong>@_currentFile.Name.@_currentFile.Extension</strong>
+                                    @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
+                                    {
+                                        <button class="btn btn-info btn-circle btn-circle-xs ms-1" @onclick=@FileNameInputOpen><i class="bi bi-pencil"></i></button>
+                                    }
+                                    break;
+                                case FileNameInputStatus.Opened:
+                                    <div class="row">
+                                        <div class="col-auto">
+                                            @_currentFile.OnlyPath
+                                        </div>
+                                        @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
+                                        {
+                                            <div class="col-6">
+                                                <input @ref="_fileNameInput" data-prevent-keydown class="form-control @(_isNewFileNameCorrect ? "" : "is-invalid")" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
+                                                <div class="invalid-feedback">Illegal name of file.</div>
+                                            </div>
+                                            <div class="col-6 d-flex align-items-center">
+                                                <button class="btn btn-success btn-circle btn-circle-xs m-1" @onclick=@SaveFileName @attributes=@_dictNewFileName><i class="bi bi-check"></i></button>
+                                                <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                        }
+                                    </div>
+
+                                    @* @if (_password.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename) {  } *@
+                                    @if (null != _currentFile && (string.IsNullOrWhiteSpace(_newFileName) || _currentFile.Name.Equals(_newFileName)))
+                                    {
+                                        _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                                        _isNewFileNameCorrect = true;
+                                    }
+                                    else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                                    {
+                                        _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
+                                        _isNewFileNameCorrect = false;
+                                    }
+                                    else
+                                    {
+                                        _dictNewFileName = null!;
+                                        _isNewFileNameCorrect = true;
+                                    }
+                                    break;
+                            }
+                        }
+                    </p>
+                </div>
+                @*password*@
+                @if (!_password!.Equals(string.Empty))
                 {
                     <div class="row mb-3">
-                        <p>Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
-                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
-                        {
-                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
-                        }
-                        else
-                        {
-                            <p>Previous file is not photo</p>
-                        }
+                        <label class="col-sm-6" for="password">Password to unlock more function:</label>
+                        <div class="col-sm-6">
+                            <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
+                        </div>
                     </div>
                 }
+                @*main buttons*@
+                <div class="row mb-3">
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
+                    <ButtonInDiv DivCssClass="col d-grid mb-1" ButtonCssClass="btn btn-secondary" ButtonName="Next" ButtonOnClickTask="Next" />
+                    <div class="col d-grid mb-1 dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                            More
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Add new folder" ButtonOnClickTask="FolderModalOpen" CustomButtonParameter="_dictFolderDialog" /></li>
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Keybinding configuration" ButtonOnClickTask="KeyBindsModalOnOpen" CustomButtonParameter="_dictKeyBindsDialog" /></li>
+                            <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" /></li>
+                            @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
+                            {
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Reset server" ButtonOnClickAction="Reset" />
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                @*folders*@
+                <div class="row mb-3">
+                    @for (int i = 0; i < _folders!.Length; i++)
+                    {
+                        var k = i;
+                        <ButtonInDiv DivCssClass="col d-grid my-1 px-1" ButtonCssClass="btn btn-primary overflow-hidden" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
+                    }
+                </div>
             </div>
-            <div class="col col-sm-6">
+            @* Column with media*@
+            <div class="@(_showSideFiles ? "col-sm-8" : "col-sm-9")" style="max-height: 97vh; align-items: center; display: flex; transition: all 0.3s ease;" tabindex="-1" id="mediaDiv">
                 @switch (_currentFile?.FileType)
                 {
                     case File.FileTypeEnum.Video:
-                        <video class="img-fluid mx-auto d-block" style="max-height: 90vh;" controls autoplay id="videoTagId">
+                        <video class="img-fluid mx-auto d-block" style="max-height: 95vh;" controls autoplay id="videoTagId">
                             <source src="@_currentFile?.Path">
                             Your browser does not support the video tag.
                         </video>
@@ -176,13 +158,13 @@
                         <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
                              src="@(_currentFile!.DisplayPath)"
                              class="img-fluid mx-auto d-block"
-                             style="max-height: 90vh;" />
+                             style="max-height: 97vh;" />
                         <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
                     case File.FileTypeEnum.PDF:
-                        <embed src="@_currentFile?.Path" style="width:100%;height:90vh;" />
+                        <embed src="@_currentFile?.Path" style="width:100%;height:95vh;" />
                         break;
                     case File.FileTypeEnum.Text:
                         <p id="txtcontent">@GetTextFileContent().Result</p>
@@ -191,38 +173,40 @@
                         <p>Filetype "@_currentFile?.Extension" is not supported</p>
                         break;
                 }
+                <button type="button" class="btn btn-secondary half-ellipse close position-absolute p-0 top-50 end-0 translate-middle-y"
+                        @onclick="ToggleSidePanel" data-prevent-keydown>
+                    <i class="bi bi-arrow-bar-left @(_showSideFiles ? "side-button-opened" : "side-button-closed")" style="font-size: 1.3rem;"></i>
+                    <span class="visually-hidden">Close</span>
+                </button>
             </div>
-            <div class="col col-sm-3">
+            @* Column with preview files*@
+            <div class="col-sm-2 overflow-hidden d-flex flex-column @(_showSideFiles ? "" : "collapsed")" style="max-height: 97vh; transition: all 0.3s ease;" id="previewColumn">
+                <div class="row mb-auto justify-content-end">
+                    @if (null != _previousFile)
+                    {
+                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
+                        {
+                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
+                        }
+                        else
+                        {
+                            <p class="my-0 py-0 text-end lh-1">Previous file is not a photo</p>
+                        }
+                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
+                    }
+                </div>
                 @if (null != _nextFile)
                 {
-                    <div class="row mb-3">
-                        <p>Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
+                    <div class="row justify-content-end">
+                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
                         @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                         {
                             <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
                         else
                         {
-                            <p>Next file is not photo</p>
+                            <p class="my-0 py-0 text-end lh-1">Next file is not a photo</p>
                         }
-                    </div>
-                }
-                @if (SHOW_DEBUG_INFO)
-                {
-                    <div class="row mb-3">
-                        <p>
-                            INDEX @_myMediaCurrentIndex
-                        </p>
-                        @if (null != _myMediaIndexes)
-                        {
-                            foreach (var tuple in _myMediaIndexes)
-                            {
-                                <p>tupla: @tuple.Item1 | @tuple.Item2</p>
-                            }
-                        }
-                        <p>
-                            status: @_status
-                        </p>
                     </div>
                 }
             </div>
@@ -232,8 +216,28 @@
 
 @if (_status == Status.Initialized)
 {
-    <FolderDialog ExistingFolders="@_folders?.Select(f=>f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
+    <FolderDialog ExistingFolders="@_folders?.Select(f => f.Name).ToArray()" OnSaveTask="@FolderModalClose" @ref=_folderDialog />
     <KeyBindsDialog OnChange="@KeyBindsModalClose" ExistingFolders="_folders" @ref=_keyBindsDialog />
+#pragma warning disable CS0162
+    if (SHOW_DEBUG_INFO)
+    {
+        <div class="row mb-3">
+            <p>
+                INDEX @_myMediaCurrentIndex
+            </p>
+            @if (null != _myMediaIndexes)
+            {
+                foreach (var tuple in _myMediaIndexes)
+                {
+                    <p>tupla: @tuple.Item1 | @tuple.Item2</p>
+                }
+            }
+            <p>
+                status: @_status
+            </p>
+        </div>
+    }
+#pragma warning restore CS0162
 }
 <ConfigDialog OnChange="@ConfigModalClose" @ref=_configDialog />
 <BlazoredToasts Position="ToastPosition.BottomRight" IconType="IconType.Material" ShowProgressBar="true"
@@ -248,7 +252,6 @@
     private const bool SHOW_DEBUG_INFO = false;
     private const int LOAD_VIDEO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
-    private const int BRAJANEK = 4; // its MAX_COLUMN_NUMBER but i really need to name this like that. Please, respect this and do not change.
 
     private static Regex s_alfanumeralRegex = new Regex(@"^[a-zA-Z0-9]$");
 
@@ -257,13 +260,16 @@
     private File? _currentFile;
     private File? _previousFile;
     private File? _nextFile;
+    private bool _isChangingFile = false;
     private Folder[]? _folders;
-    private double? _cols;
     private string _unlockBoxPassword = string.Empty;
     private string? _password;
+    private bool _isNewFileNameCorrect = true;
     private string _newFileName = string.Empty;
     private bool _allowRename;
+    private bool _showSideFiles = false;
     private Status _status = Status.OnConstructor;
+    private FileNameInputStatus _fileNameInputStatus = FileNameInputStatus.Closed;
     private FolderDialog _folderDialog = new FolderDialog();
     private ConfigDialog _configDialog = new ConfigDialog();
     private KeyBindsDialog _keyBindsDialog = new KeyBindsDialog();
@@ -279,6 +285,10 @@
     public enum Status
     {
         OnConstructor, BeforeInit, Initialized, Empty,
+    }
+    public enum FileNameInputStatus
+    {
+        Opened, Closed,
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -318,7 +328,6 @@
     private async void LoadSession()
     {
         _folders = await FileService.GetFoldersAsync();
-        _cols = Math.Min(Math.Ceiling(Math.Sqrt(_folders.Length)), BRAJANEK);
         _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
     }
@@ -360,7 +369,8 @@
 
     private async Task Next()
     {
-        if (_status != Status.Initialized) return;
+        if (_status != Status.Initialized || _isChangingFile) return;
+        _isChangingFile = true;
         _previousFile = _currentFile;
         _myMediaCurrentIndex++;
         await _PSSWriteMyMediaCurrentIndex();
@@ -370,6 +380,7 @@
             if (_myMediaIndexes!.Count >= _myMediaCurrentIndex)
             {
                 _currentFile = null;
+                await JS.InvokeVoidAsync("unLoadVideo");
                 _status = Status.Empty;
                 await _PSSWriteStatus();
             }
@@ -412,16 +423,18 @@
                 _nextFile = null;
             }
         }
-
         ReloadPlayerIfVideo();
         StateHasChanged();
+        _isChangingFile = false;
     }
     private async Task Back()
     {
-        if (_status != Status.Initialized && _status != Status.Empty) return;
+        if (_status != Status.Initialized && _status != Status.Empty || _isChangingFile) return;
+        _isChangingFile = true;
         if (_myMediaCurrentIndex <= 0)
         {
             toastService.ShowWarning("No more files");
+            _isChangingFile = false;
             return;
         }
         _myMediaCurrentIndex--;
@@ -442,6 +455,7 @@
             ReloadPlayerIfVideo();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();
+            _isChangingFile = false;
         }
         catch (Exception)
         {
@@ -451,6 +465,7 @@
             _status = Status.BeforeInit;
             await _ResetProtectedSessionStore();
             StateHasChanged();
+            _isChangingFile = false;
         }
     }
     private async void Reset()
@@ -495,7 +510,7 @@
                     else if (null != _previousFile && _previousFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("resetPosition");
                     await Back();
                 }
-                else if (key == "F2") await _fileNameInput.FocusAsync();
+                else if (key == "F2") await FileNameInputOpen();
                 else if (key == " " && null != _currentFile && _currentFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("toggleModal", "photoModal");
                 else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
                 {
@@ -584,6 +599,12 @@
             await JS.InvokeVoidAsync("loadVideo");
         }
     }
+    private async void ToggleSidePanel()
+    {
+        _showSideFiles = !_showSideFiles;
+        await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
+        StateHasChanged();
+    }
 
     private async Task<File> GetFileFromFileService(int index, string fileName = "")
     {
@@ -614,6 +635,21 @@
         return file ?? throw new Exception("File not found");
     }
 
+    private async Task FileNameInputOpen()
+    {
+        _fileNameInputStatus = FileNameInputStatus.Opened;
+        StateHasChanged();
+        await Task.Yield();
+        await _fileNameInput.FocusAsync();
+    }
+    private async Task FileNameInputClose()
+    {
+        await Task.Run(() =>
+        {
+            _fileNameInputStatus = FileNameInputStatus.Closed;
+            _newFileName = _currentFile!.Name;
+        });
+    }
     private async Task SaveFileName()
     {
         if (_currentFile == null) return;
@@ -622,6 +658,7 @@
         if (_currentFile == null) return;
         _myMediaIndexes![_myMediaCurrentIndex] = new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name);
         await _PSSWriteMyMediaIndexes();
+        await FileNameInputClose();
         StateHasChanged();
     }
     private async Task SaveFileNameKeyDown(KeyboardEventArgs e)
@@ -630,9 +667,13 @@
         {
             await SaveFileName();
             StateHasChanged();
-            await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+            await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
         }
-        else if (e.Key == "Escape") await JS.InvokeVoidAsync("setFocusOnElement", "h1");
+        else if (e.Key == "Escape")
+        {
+            await FileNameInputClose();
+            await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
+        }
     }
     private async Task<string> GetTextFileContent()
     {
@@ -641,9 +682,9 @@
     }
     private async Task MoveFile(string destiny)
     {
-        if (_currentFile == null) return;
+        if (_currentFile == null || _isChangingFile) return;
         var oldFile = _currentFile;
-        Task next = Next();
+        await Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
     }

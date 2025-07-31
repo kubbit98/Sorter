@@ -3,17 +3,11 @@ using Microsoft.Extensions.Primitives;
 
 namespace Sorter.Data
 {
-    public class SourceDFP : DynamicFileProvider
+    public class SourceDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
     {
-        public SourceDFP(string root, ILogger logger) : base(root, logger)
-        {
-        }
     }
-    public class DestinationDFP : DynamicFileProvider
+    public class DestinationDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
     {
-        public DestinationDFP(string root, ILogger logger) : base(root, logger)
-        {
-        }
     }
     public class TempDFP : DynamicFileProvider
     {
@@ -27,11 +21,11 @@ namespace Sorter.Data
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                _logger.LogInformation("Creating folder for thumbnails in " + path);
+                _logger.LogInformation("Creating folder for thumbnails in {Path}", path);
             }
             else
             {
-                DirectoryInfo di = new DirectoryInfo(path);
+                DirectoryInfo di = new(path);
                 foreach (FileInfo file in di.EnumerateFiles())
                 {
                     file.Delete();
@@ -40,29 +34,29 @@ namespace Sorter.Data
                 {
                     dir.Delete(true);
                 }
-                _logger.LogInformation("Clearing temporary directory at " + path);
+                _logger.LogInformation("Clearing temporary directory at {Path}", path);
             }
             UpdateProvider(path);
         }
     }
     public class DynamicFileProvider : IFileProvider
     {
-        PhysicalFileProvider? PhysicalFileProvider { get; set; }
+        private PhysicalFileProvider? _physicalFileProvider;
         protected readonly ILogger _logger;
         public DynamicFileProvider(string root, ILogger logger)
         {
-            PhysicalFileProvider = null;
+            _physicalFileProvider = null;
             if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root)))
-                PhysicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
+                _physicalFileProvider = new PhysicalFileProvider(Path.GetFullPath(root));
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
-            if (PhysicalFileProvider != null)
+            if (_physicalFileProvider != null)
             {
-                return PhysicalFileProvider.GetDirectoryContents(subpath);
+                return _physicalFileProvider.GetDirectoryContents(subpath);
             }
             else
             {
@@ -74,9 +68,9 @@ namespace Sorter.Data
         {
             try
             {
-                if (PhysicalFileProvider != null)
+                if (_physicalFileProvider != null)
                 {
-                    return PhysicalFileProvider.GetFileInfo(subpath);
+                    return _physicalFileProvider.GetFileInfo(subpath);
                 }
                 else
                 {
@@ -92,9 +86,9 @@ namespace Sorter.Data
 
         public IChangeToken Watch(string filter)
         {
-            if (PhysicalFileProvider != null)
+            if (_physicalFileProvider != null)
             {
-                return PhysicalFileProvider.Watch(filter);
+                return _physicalFileProvider.Watch(filter);
             }
             else
             {
@@ -103,7 +97,7 @@ namespace Sorter.Data
         }
         public void UpdateProvider(string newPath)
         {
-            PhysicalFileProvider = new PhysicalFileProvider(newPath);
+            _physicalFileProvider = new PhysicalFileProvider(newPath);
         }
     }
 }

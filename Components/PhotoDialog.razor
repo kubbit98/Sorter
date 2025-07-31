@@ -1,9 +1,14 @@
 ﻿@inject IJSRuntime JS
 
 <div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-body carousel-dark carousel slide">
+            <div class="modal-body carousel slide d-flex align-items-center position-relative">
+                <button type="button" class="btn btn-light btn-circle btn-circle-m close position-absolute p-0 mt-2 me-2 top-0 end-0 z-2"
+                        data-bs-dismiss="modal" data-prevent-keydown>
+                    <i class="bi bi-x-lg"></i>
+                    <span class="visually-hidden">Close</span>
+                </button>
                 <div class="photo-modal-zoom align-items-center justify-content-center" id="zoom">
                     @if (Photo != null)
                     {
@@ -13,14 +18,14 @@
                 @if (IsPrevPhoto)
                 {
                     <button class="carousel-control-prev" type="button" @onclick="Back">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <i class="bi bi-chevron-left mx-2" style="font-size: 2.5rem"></i>
                         <span class="visually-hidden">Previous</span>
                     </button>
                 }
                 @if (IsNextPhoto)
                 {
                     <button class="carousel-control-next" type="button" @onclick="Next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <i class="bi bi-chevron-right mx-2" style="font-size: 2.5rem"></i>
                         <span class="visually-hidden">Next</span>
                     </button>
                 }

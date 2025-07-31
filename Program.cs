@@ -4,13 +4,8 @@ using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
-{
-    try { config.AddJsonFile("config.json", optional: true, reloadOnChange: true); }
-    catch (InvalidDataException) { }
-    try { config.AddJsonFile("keybinds.json", optional: true, reloadOnChange: true); }
-    catch (InvalidDataException) { }
-});
+builder.Configuration.AddJsonFile("config.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile("keybinds.json", optional: true, reloadOnChange: true);
 builder.WebHost.UseStaticWebAssets();
 // Add services to the container.
 builder.Services.AddOptions<ConfigOptions>().BindConfiguration(ConfigOptions.config);
