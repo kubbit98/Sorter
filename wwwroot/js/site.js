@@ -79,10 +79,20 @@ function loadZoom() {
     }
 }
 function loadVideo() {
-    var element = document.getElementById("videoTagId");
-    if (null != element) {
-        element.load();
-        element.focus({ focusVisible: true });
+    var video = document.getElementById("videoTagId");
+    if (null != video) {
+        video.load();
+        video.focus({ focusVisible: true });
+    }
+}
+function unLoadVideo() {
+    var video = document.getElementById("videoTagId");
+    if (null != video) {
+        video.pause();
+        while (video.firstChild) {
+            video.removeChild(video.firstChild);
+        }
+        video.load();
     }
 }
 function closeModal(modalId) {

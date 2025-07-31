@@ -181,35 +181,35 @@
             </div>
             @* Column with preview files*@
             <div class="col-sm-2 overflow-hidden d-flex flex-column @(_showSideFiles ? "" : "collapsed")" style="max-height: 97vh; transition: all 0.3s ease;" id="previewColumn">
-                    <div class="row mb-auto justify-content-end">
-                        @if (null != _previousFile)
-                        {
-                            @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
-                            {
-                                <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
-                            }
-                            else
-                            {
-                            <p class="my-0 py-0 text-end lh-1">Previous file is not a photo</p>
-                            }
-                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
-                        }
-                    </div>
-                    @if (null != _nextFile)
+                <div class="row mb-auto justify-content-end">
+                    @if (null != _previousFile)
                     {
-                        <div class="row justify-content-end">
-                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
-                            @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
-                            {
-                                <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
-                            }
-                            else
-                            {
-                            <p class="my-0 py-0 text-end lh-1">Next file is not a photo</p>
-                            }
-                        </div>
+                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
+                        {
+                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
+                        }
+                        else
+                        {
+                            <p class="my-0 py-0 text-end lh-1">Previous file is not a photo</p>
+                        }
+                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
                     }
                 </div>
+                @if (null != _nextFile)
+                {
+                    <div class="row justify-content-end">
+                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
+                        @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
+                        {
+                            <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
+                        }
+                        else
+                        {
+                            <p class="my-0 py-0 text-end lh-1">Next file is not a photo</p>
+                        }
+                    </div>
+                }
+            </div>
         </div>
         break;
 }
@@ -380,6 +380,7 @@
             if (_myMediaIndexes!.Count >= _myMediaCurrentIndex)
             {
                 _currentFile = null;
+                await JS.InvokeVoidAsync("unLoadVideo");
                 _status = Status.Empty;
                 await _PSSWriteStatus();
             }
@@ -683,7 +684,7 @@
     {
         if (_currentFile == null || _isChangingFile) return;
         var oldFile = _currentFile;
-        Task next = Next();
+        await Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
         FileService.MoveFile(oldFile, destiny);
     }
