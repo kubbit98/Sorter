@@ -12,7 +12,7 @@ As of version 0.10, the application also has support for keyboard shortcuts. Onc
 ## Presentation
 You can watch the presentation here:
 
-[![Watch the presentation](https://img.youtube.com/vi/h57BWJZT7WI/hqdefault.jpg)](https://youtu.be/h57BWJZT7WI)
+[![Watch the presentation](https://img.youtube.com/vi/D4gXkqrmgU8/hqdefault.jpg)](https://youtu.be/D4gXkqrmgU8)
 
 ## Installation
 
