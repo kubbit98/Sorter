@@ -163,6 +163,12 @@
                                      IsPrevPhoto="@(_previousFile?.FileType==File.FileTypeEnum.Photo)"
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
+                    case File.FileTypeEnum.Audio:
+                        <audio class="mx-auto w-75" style="max-height: 95vh;" controls autoplay id="audioTagId">
+                            <source src="@_currentFile?.Path">
+                            Your browser does not support the audio tag.
+                        </audio>
+                        break;
                     case File.FileTypeEnum.PDF:
                         <embed src="@_currentFile?.Path" style="width:100%;height:95vh;" />
                         break;
@@ -250,7 +256,7 @@
     private string _storagePrefix = string.Empty;
 
     private const bool SHOW_DEBUG_INFO = false;
-    private const int LOAD_VIDEO_TIME_DELAY = 100;
+    private const int LOAD_VIDEO_OR_AUDIO_TIME_DELAY = 100;
     private const int MOVE_FILE_TIME_DELAY = 500;
 
     private static Regex s_alfanumeralRegex = new Regex(@"^[a-zA-Z0-9]$");
@@ -423,7 +429,7 @@
                 _nextFile = null;
             }
         }
-        ReloadPlayerIfVideo();
+        ReloadPlayerIfVideoOrAudio();
         StateHasChanged();
         _isChangingFile = false;
     }
@@ -452,7 +458,7 @@
                 _status = Status.Initialized;
                 await _PSSWriteStatus();
             }
-            ReloadPlayerIfVideo();
+            ReloadPlayerIfVideoOrAudio();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();
             _isChangingFile = false;
@@ -479,7 +485,7 @@
         _storagePrefix = await FileService.GetStoragePrefix();
         _previousFile = _currentFile = _nextFile = null;
         InitSession();
-        ReloadPlayerIfVideo();
+        ReloadPlayerIfVideoOrAudio();
         StateHasChanged();
     }
     private async void ShutdownApp()
@@ -511,8 +517,22 @@
                     await Back();
                 }
                 else if (key == "F2") await FileNameInputOpen();
-                else if (key == " " && null != _currentFile && _currentFile.FileType == File.FileTypeEnum.Photo) await JS.InvokeVoidAsync("toggleModal", "photoModal");
-                else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
+                else if (key == " " && null != _currentFile)
+                {
+                    switch (_currentFile.FileType)
+                    {
+                        case File.FileTypeEnum.Photo:
+                            await JS.InvokeVoidAsync("toggleModal", "photoModal");
+                            break;
+                        case File.FileTypeEnum.Video:
+                            await JS.InvokeVoidAsync("pauseOrPlayVideo");
+                            break;
+                        case File.FileTypeEnum.Audio:
+                            await JS.InvokeVoidAsync("pauseOrPlayAudio");
+                            break;
+                    }
+                } 
+            else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
                 {
                     var folder = _folders.Where(f => f.KeyBind == key.First()).FirstOrDefault();
                     if (null != folder)
@@ -591,12 +611,17 @@
         }
     }
 
-    private async void ReloadPlayerIfVideo()
+    private async void ReloadPlayerIfVideoOrAudio()
     {
         if (File.FileTypeEnum.Video == _currentFile?.FileType)
         {
-            await Task.Delay(LOAD_VIDEO_TIME_DELAY);
+            await Task.Delay(LOAD_VIDEO_OR_AUDIO_TIME_DELAY);
             await JS.InvokeVoidAsync("loadVideo");
+        }
+        else if (File.FileTypeEnum.Audio == _currentFile?.FileType)
+        {
+            await Task.Delay(LOAD_VIDEO_OR_AUDIO_TIME_DELAY);
+            await JS.InvokeVoidAsync("loadAudio");
         }
     }
     private async void ToggleSidePanel()
