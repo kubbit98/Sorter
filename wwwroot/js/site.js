@@ -82,7 +82,24 @@ function loadVideo() {
     var video = document.getElementById("videoTagId");
     if (null != video) {
         video.load();
-        video.focus({ focusVisible: true });
+    }
+}
+function loadAudio() {
+    var audio = document.getElementById("audioTagId");
+    if (null != audio) {
+        audio.load();
+    }
+}
+function pauseOrPlayVideo() {
+    var video = document.getElementById("videoTagId");
+    if (null != video) {
+        video.paused ? video.play() : video.pause();
+    }
+}
+function pauseOrPlayAudio() {
+    var audio = document.getElementById("audioTagId");
+    if (null != audio) {
+        audio.paused ? audio.play() : audio.pause();
     }
 }
 function unLoadVideo() {
@@ -162,6 +179,7 @@ async function configKeyBindModal() {
 window.addEventListener('keydown', function (event) {
     if (event.key == ' ' && document.activeElement.tagName != 'INPUT') {
         event.preventDefault();
+        event.stopPropagation();
     }
     if (isListenForRegisterKey) {
         if (event.key == 'Shift') {
@@ -177,4 +195,10 @@ window.addEventListener('keydown', function (event) {
     else if (!document.activeElement.hasAttribute('data-prevent-keydown')) {
         dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, isListenForRegisterKey, '');
     }
-});
+}, true);
+window.addEventListener('keyup', function (event) {
+    if (event.key == ' ' && (document.activeElement.tagName == 'AUDIO' || document.activeElement.tagName == 'VIDEO')) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}, true);

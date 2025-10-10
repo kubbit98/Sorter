@@ -9,6 +9,13 @@ The application has been tested on Windows 11, Linux (Fedora 38) and macOS (Sono
 
 As of version 0.10, the application also has support for keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
 
+## Supported media types
+- Photos (e.g. jpg, gif, png)
+- Videos (e.g. mp4, webm, avi)
+- Audio recordings (e.g. mp3, wav)
+- Text documents (e.g. txt, log)
+- PDF documents
+
 ## Presentation
 You can watch the presentation here:
 
