@@ -531,8 +531,8 @@
                             await JS.InvokeVoidAsync("pauseOrPlayAudio");
                             break;
                     }
-                } 
-            else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
+                }
+                else if (key.Length == 1 && s_alfanumeralRegex.IsMatch(key) && null != _folders)
                 {
                     var folder = _folders.Where(f => f.KeyBind == key.First()).FirstOrDefault();
                     if (null != folder)
@@ -678,7 +678,20 @@
     private async Task SaveFileName()
     {
         if (_currentFile == null) return;
-        FileService.ChangeFileName(_currentFile.FIndex!.Value, _newFileName);
+        try
+        {
+            FileService.ChangeFileName(_currentFile.FIndex!.Value, _newFileName);
+        }
+        catch (InvalidOperationException e)
+        {
+            toastService.ShowWarning("Can't rename file; a file with that name already exists.");
+            return;
+        }
+        catch (Exception e)
+        {
+            toastService.ShowError("Something goes wrong, check logs in console");
+            return;
+        }
         _currentFile = await GetFileFromFileService(_currentFile!.FIndex!.Value);
         if (_currentFile == null) return;
         _myMediaIndexes![_myMediaCurrentIndex] = new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name);
@@ -708,10 +721,22 @@
     private async Task MoveFile(string destiny)
     {
         if (_currentFile == null || _isChangingFile) return;
+        if (!await FileService.IsDestinationAvailable(_currentFile, destiny))
+        {
+            toastService.ShowWarning("Can't move file; a file with that name already exists in destination.");
+            return;
+        }
         var oldFile = _currentFile;
         await Next();
         await Task.Delay(MOVE_FILE_TIME_DELAY);
-        FileService.MoveFile(oldFile, destiny);
+        try
+        {
+            FileService.MoveFile(oldFile, destiny);
+        }
+        catch (Exception e)
+        {
+            toastService.ShowError("Something goes wrong, check logs in console");
+        }
     }
 
     private async Task RegisterKeyInFolder(char key, string path)

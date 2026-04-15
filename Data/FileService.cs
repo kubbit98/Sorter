@@ -241,14 +241,19 @@ namespace Sorter.Data
                 }
             }
         }
+        public Task<bool> IsDestinationAvailable(File file, string destiny)
+        {
+            return Task.FromResult(!System.IO.File.Exists(Path.Combine(destiny, file.NameWithExtension)));
+        }
         public void MoveFile(File file, string destiny)
         {
+            string newFullPath = Path.Combine(destiny, file.NameWithExtension);
             try
             {
                 if (files[file!.FIndex!.Value].Name == file.Name)
                 {
-                    System.IO.File.Move(file.PhysicalPath, Path.Combine(destiny, file.NameWithExtension));
-                    file.PhysicalPath = Path.Combine(destiny, file.NameWithExtension);
+                    System.IO.File.Move(file.PhysicalPath, newFullPath);
+                    file.PhysicalPath = newFullPath;
                     files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
                     _logger.LogInformation("File {FileNameExt} moved to {Destination}", file.NameWithExtension, destiny);
                 }
@@ -257,6 +262,7 @@ namespace Sorter.Data
             catch (Exception e)
             {
                 _logger.LogError("File {FileNameExt} cannot be moved to {destiny}\n{Error}", file.NameWithExtension, destiny, e.Message);
+                throw;
             }
         }
         public Task<string> GetTextFileContent(File file)
@@ -288,13 +294,22 @@ namespace Sorter.Data
             if (newFileName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return;
             File file = files[index];
             string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
-            _logger.LogInformation("File renamed from {Name}.{Extension} to {Name}.{Extension}", file.Name, file.Extension, newFileName, file.Extension);
-            System.IO.File.Move(file.PhysicalPath, newFullPath);
-            files[index].PhysicalPath = newFullPath;
-            files[index].Name = newFileName;
-            files[index].Path = newFullPath;
-            if (files[index].Path.Contains(source)) files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, files[index].PhysicalPath));
-            else if (files[index].Path.Contains(destination)) files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, files[index].PhysicalPath));
+            if (System.IO.File.Exists(newFullPath)) throw new InvalidOperationException("File with that name exists");
+            try
+            {
+                System.IO.File.Move(file.PhysicalPath, newFullPath);
+                _logger.LogInformation("File renamed from {FileNameExt} to {Name}.{Extension}", file.NameWithExtension, newFileName, file.Extension);
+                files[index].PhysicalPath = newFullPath;
+                files[index].Name = newFileName;
+                files[index].Path = newFullPath;
+                if (files[index].Path.Contains(source)) files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, files[index].PhysicalPath));
+                else if (files[index].Path.Contains(destination)) files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, files[index].PhysicalPath));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("File {FileNameExt} cannot be renamed to {NewFileName}\n{Error}", file.NameWithExtension, newFileName, e.Message);
+                throw;
+            }
         }
         public void CreateThumbnail(File file)
         {
