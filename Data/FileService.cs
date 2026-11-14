@@ -330,30 +330,38 @@ namespace Sorter.Data
                     return;
                 }
                 file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
-                using Image image = file.Extension == "heic"
-                    ? Image.Load(s_heifDecoderOptions, file.PhysicalPath)
-                    : Image.Load(file.PhysicalPath);
-                double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
-                double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
-                double ratio = Math.Min(ratioWidth, ratioHeight);
-                if (ratio < 1 || file.Extension == "heic")
+                try
                 {
-                    string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
-                    do
+                    using Image image = file.Extension == "heic"
+                        ? Image.Load(s_heifDecoderOptions, file.PhysicalPath)
+                        : Image.Load(file.PhysicalPath);
+                    double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
+                    double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
+                    double ratio = Math.Min(ratioWidth, ratioHeight);
+                    if (ratio < 1 || file.Extension == "heic")
                     {
-                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension == "heic" ? "jpg" : file.Extension));
-                    } while (System.IO.File.Exists(temporaryThumbnailPath));
-                    if (ratio < 1) image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
-                    do
+                        string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
+                        do
+                        {
+                            temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension == "heic" ? "jpg" : file.Extension));
+                        } while (System.IO.File.Exists(temporaryThumbnailPath));
+                        if (ratio < 1) image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
+                        do
+                        {
+                            if (file.Extension == "heic") image.Save(temporaryThumbnailPath, new JpegEncoder());
+                            else image.Save(temporaryThumbnailPath);
+                        } while (!System.IO.File.Exists(temporaryThumbnailPath));
+                        file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
+                        file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                    }
+                    else
                     {
-                        if (file.Extension == "heic") image.Save(temporaryThumbnailPath, new JpegEncoder());
-                        else image.Save(temporaryThumbnailPath);
-                    } while (!System.IO.File.Exists(temporaryThumbnailPath));
-                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
-                    file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                        file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+                    }
                 }
-                else
+                catch (Exception e)
                 {
+                    _logger.LogError(e, "Thumbnail cannot be created for {FilePath}", file.PhysicalPath);
                     file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
                 }
             }

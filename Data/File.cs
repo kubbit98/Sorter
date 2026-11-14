@@ -86,6 +86,10 @@ public class File : ICloneable
     public ThumbnailEnum IsThumbnailExist { get; set; }
     public object Clone()
     {
-        return new File(PhysicalPath, Name, Extension, IsThumbnailExist);
+        File clone = new(PhysicalPath, Name, Extension, IsThumbnailExist)
+        {
+            ThumbnailPath = ThumbnailPath
+        };
+        return clone;
     }
 }
