@@ -280,7 +280,6 @@
     }
     private async void Save()
     {
-        var config = configOptions.CurrentValue;
         if (!ConfigOptionsService.CheckPath(_source))
         {
             toastService.ShowError("Source path is invalid");
@@ -291,14 +290,18 @@
             toastService.ShowError("Destination path is invalid");
             return;
         }
-        config.Source = _source;
-        config.ExcludeDirsSource = _excludeSourceList.ToArray();
-        config.Destination = _destination;
-        config.ExcludeDirsDestination = _excludeDestinationList.ToArray();
-        config.UseWhiteListInsteadOfBlackList = _useWhite;
-        config.WhiteList = _whiteList.ToArray();
-        config.BlackList = _blackList.ToArray();
-        config.AllowRename = _allowRename;
+        // a new object: CurrentValue is shared by the whole app and must keep the old values if saving fails
+        var config = new ConfigOptions
+        {
+            Source = _source,
+            ExcludeDirsSource = _excludeSourceList.ToArray(),
+            Destination = _destination,
+            ExcludeDirsDestination = _excludeDestinationList.ToArray(),
+            UseWhiteListInsteadOfBlackList = _useWhite,
+            WhiteList = _whiteList.ToArray(),
+            BlackList = _blackList.ToArray(),
+            AllowRename = _allowRename
+        };
         try
         {
             ConfigOptionsService.SaveOptions(config);
