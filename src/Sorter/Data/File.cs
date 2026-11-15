@@ -3,7 +3,7 @@
 public class File : ICloneable
 {
     private static readonly string[] s_videoExtensions = ["flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r"]; //not sure if all of them works
-    private static readonly string[] s_photoExtensions = ["gif", "jpeg", "jpg", "jfif", "jpe", "png", "webp", "apng", "avif", "heic", "heif", "hif", "bmp", "svg"];
+    private static readonly string[] s_photoExtensions = ["gif", "jpeg", "jpg", "jfif", "jpe", "png", "webp", "apng", "avif", "heic", "heif", "hif", "bmp", "svg", "tiff", "tif"];
     private static readonly string[] s_audioExtensions = ["mp3", "wav", "ogg"]; //supported by <audio> tag
     private static readonly string[] s_textExtensions = ["txt", "csv", "log", "md", "html", "js", "css"];
     private static readonly string[] s_pdfExtensions = ["pdf"];

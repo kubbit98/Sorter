@@ -43,6 +43,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
     [InlineData("jfif", true)]
     [InlineData("jpe", true)]
     [InlineData("svg", false)]
+    [InlineData("tif", true)]
     [InlineData("avif", false)]
     [InlineData("apng", false)]
     [InlineData("mp4", false)]
@@ -247,6 +248,35 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         Assert.Equal(0, TestImages.AlphaAt(result.ConvertedPath!, 0, 0));
         Assert.Equal(255, TestImages.AlphaAt(result.ConvertedPath!, 50, 50));
+    }
+
+    [Theory]
+    [InlineData("scan.tiff", "tiff")]
+    [InlineData("SCAN.TIF", "TIF")]
+    public void Tiff_IsConvertedToPngWithThumbnail(string fileName, string extension)
+    {
+        string path = TestImages.Create(_input.Combine(fileName), 2000, 1000);
+
+        var result = _generator.Generate(path, extension);
+
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("PNG", converted.Format);
+        Assert.Equal(2000, converted.Width);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal("PNG", thumbnail.Format);
+        Assert.Equal(850, thumbnail.Width);
+    }
+
+    [Fact]
+    public void MultiPageTiff_IsConvertedToSinglePng()
+    {
+        string path = TestImages.CreateMultiPageTiff(_input.Combine("pages.tiff"), 640, 480, pages: 3);
+
+        var result = _generator.Generate(path, "tiff");
+
+        // PNG has no pages, ImageMagick would otherwise write one file per page
+        Assert.Equal(1, TestImages.Identify(result.ConvertedPath!).Frames);
+        Assert.Single(Directory.GetFiles(_output.Path));
     }
 
     [Theory]

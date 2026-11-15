@@ -118,6 +118,14 @@ internal static class TestImages
         return path;
     }
 
+    public static string CreateMultiPageTiff(string path, int width, int height, int pages)
+    {
+        using var images = new MagickImageCollection();
+        for (int i = 0; i < pages; i++) images.Add(Solid(width, height, (byte)(i * 80), 0, 0));
+        images.Write(path, MagickFormat.Tiff);
+        return path;
+    }
+
     public static ImageFileInfo Identify(string path)
     {
         using var images = new MagickImageCollection(path);
@@ -149,6 +157,7 @@ internal static class TestImages
         "png" => MagickFormat.Png,
         "gif" => MagickFormat.Gif,
         "bmp" => MagickFormat.Bmp,
+        "tiff" or "tif" => MagickFormat.Tiff,
         var other => throw new ArgumentException($"No test format for '{other}'"),
     };
 }

@@ -7,7 +7,7 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
 {
     public const int DefaultMaxSize = 850;
 
-    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "jfif", "jpe", "pbm", "png", "tiff", "tga", "webp", "heic", "heif", "hif"];
+    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "jfif", "jpe", "pbm", "png", "tiff", "tif", "tga", "webp", "heic", "heif", "hif"];
     // .hif is what Canon, Fujifilm and Sony cameras use for HEIF photos
     private static readonly string[] s_heifExtensions = ["heic", "heif", "hif"];
     // formats browsers can't display reliably are always converted
@@ -20,6 +20,9 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
         // browsers render only common BMP variants (no RLE compression, alpha or unusual bit depths),
         // PNG is lossless and keeps transparency
         ["bmp"] = ("png", MagickFormat.Png),
+        // only Safari renders TIFF; PNG keeps scans and edited photos lossless, only the first page is shown
+        ["tiff"] = ("png", MagickFormat.Png),
+        ["tif"] = ("png", MagickFormat.Png),
     };
 
     // ImageMagick detects the format from the content and supports far more formats than needed,
