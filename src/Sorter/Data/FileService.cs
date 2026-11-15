@@ -189,10 +189,9 @@ namespace Sorter.Data
             file.PhysicalPath = newPath;
             lock (_stateLock) currentFiles[index].PhysicalPath = newPath;
         }
-        public Task<string> GetTextFileContent(File file)
+        public string GetTextFileContent(File file)
         {
-            if (file == null) throw new Exception("No file");
-            return Task.FromResult(_fileOperations.ReadTextPreview(file.PhysicalPath));
+            return _fileOperations.ReadTextPreview(file.PhysicalPath);
         }
         public bool CreateFolder(string folderName)
         {

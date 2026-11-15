@@ -173,7 +173,7 @@
                         <embed src="@_currentFile?.Path" style="width:100%;height:95vh;" />
                         break;
                     case File.FileTypeEnum.Text:
-                        <p id="txtcontent">@GetTextFileContent().Result</p>
+                        <p id="txtcontent">@GetTextPreview()</p>
                         break;
                     default:
                         <p>Filetype "@_currentFile?.Extension" is not supported</p>
@@ -281,6 +281,8 @@
     private KeyBindsDialog _keyBindsDialog = new KeyBindsDialog();
     private PhotoDialog _photoDialog = new PhotoDialog();
     private ElementReference _fileNameInput;
+    private string? _textPreviewPath;
+    private string _textPreview = string.Empty;
 
     private Dictionary<string, object> _dictFolderDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#folderModal" } };
     private Dictionary<string, object> _dictConfigDialog = new Dictionary<string, object> { { "data-bs-toggle", "modal" }, { "data-bs-target", "#configModal" } };
@@ -716,10 +718,24 @@
             await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
         }
     }
-    private async Task<string> GetTextFileContent()
+    // read once per file instead of on every render (e.g. each key press in the rename field),
+    // a file that can't be read (moved by another session, locked) mustn't break the page
+    private string GetTextPreview()
     {
-        if (_currentFile == null) return "";
-        return await FileService.GetTextFileContent(_currentFile);
+        if (_currentFile == null) return string.Empty;
+        if (_textPreviewPath != _currentFile.PhysicalPath)
+        {
+            _textPreviewPath = _currentFile.PhysicalPath;
+            try
+            {
+                _textPreview = FileService.GetTextFileContent(_currentFile);
+            }
+            catch (Exception e)
+            {
+                _textPreview = $"The file can't be read: {e.Message}";
+            }
+        }
+        return _textPreview;
     }
     private async Task MoveFile(string destiny)
     {

@@ -267,7 +267,7 @@ public class FileServiceTests : IDisposable
         CreateSourceFile("long.txt", new string('x', 6000));
         var service = await CreateInitializedServiceAsync();
 
-        string content = await service.GetTextFileContent(service.GetFileAtIndex(0)!);
+        string content = service.GetTextFileContent(service.GetFileAtIndex(0)!);
 
         Assert.Equal(new string('x', 5000) + "[...]", content);
     }
