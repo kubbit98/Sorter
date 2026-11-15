@@ -158,13 +158,27 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
     {
         var configFiles = ConfigurationFiles.Default;
         configFiles.Policy.Data = SecurityPolicy;
-        string configDirectory = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "sorter-imagemagick")).FullName;
+        // ImageMagick doesn't overwrite existing configuration files, so a fixed folder would keep an outdated
+        // policy after an update, and in a shared temp folder another user could plant a permissive one;
+        // a new private folder per process avoids both
+        string configDirectory = Directory.CreateTempSubdirectory("sorter-imagemagick-").FullName;
         MagickNET.Initialize(configFiles, configDirectory);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => DeleteQuietly(configDirectory);
         // hard limits against decompression bombs; there's deliberately no Time limit, it counts from the process start
         ResourceLimits.Width = 50_000;
         ResourceLimits.Height = 50_000;
         ResourceLimits.ListLength = 1_000;
         ResourceLimits.Disk = 4UL * 1024 * 1024 * 1024;
         return true;
+    }
+
+    private static void DeleteQuietly(string directory)
+    {
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 }
