@@ -13,8 +13,8 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Keybinding configuration</h4>
-                <button type="button" class="btn btn-danger btn-circle btn-circle-sm ms-1 close" data-bs-dismiss="modal" data-prevent-keydown><i class="bi bi-x-lg"></i></button>
+                <h4 class="modal-title" id="keyBindsLabel">Keybinding configuration</h4>
+                <button type="button" class="btn btn-danger btn-circle btn-circle-sm ms-1 close" data-bs-dismiss="modal" data-prevent-keydown aria-label="Close"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
                 @*password*@
@@ -22,9 +22,9 @@
                 {
                     <form class="form">
                         <div class="form-group row">
-                            <label for="password" class="col-sm-2 col-form-label">Password</label>
+                            <label for="keyBindsPassword" class="col-sm-2 col-form-label">Password</label>
                             <div class="col-sm-10">
-                                <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here" data-prevent-keydown>
+                                <input class="form-control" type="password" id="keyBindsPassword" name="keyBindsPassword" @bind="_unlockBoxPassword" @bind:event="oninput" placeholder="Type password here" data-prevent-keydown>
                             </div>
                         </div>
                     </form>

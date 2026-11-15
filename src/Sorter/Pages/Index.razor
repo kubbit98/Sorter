@@ -58,7 +58,7 @@
                                     <strong>@_currentFile.Name.@_currentFile.Extension</strong>
                                     @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
                                     {
-                                        <button class="btn btn-info btn-circle btn-circle-xs ms-1" @onclick=@FileNameInputOpen><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-info btn-circle btn-circle-xs ms-1" @onclick=@FileNameInputOpen aria-label="Rename file"><i class="bi bi-pencil" aria-hidden="true"></i></button>
                                     }
                                     break;
                                 case FileNameInputStatus.Opened:
@@ -69,17 +69,17 @@
                                         @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
                                         {
                                             <div class="col-6">
-                                                <input @ref="_fileNameInput" data-prevent-keydown class="form-control @(_isNewFileNameCorrect ? "" : "is-invalid")" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
+                                                <input @ref="_fileNameInput" data-prevent-keydown aria-label="New file name" class="form-control @(_isNewFileNameCorrect ? "" : "is-invalid")" type="text" id="fileName" name="fileName" @bind="_newFileName" @bind:event="oninput" @onkeyup="StateHasChanged" @onkeydown="SaveFileNameKeyDown">
                                                 <div class="invalid-feedback">Illegal name of file.</div>
                                             </div>
                                             <div class="col-6 d-flex align-items-center">
-                                                <button class="btn btn-success btn-circle btn-circle-xs m-1" @onclick=@SaveFileName @attributes=@_dictNewFileName><i class="bi bi-check"></i></button>
-                                                <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                                <button class="btn btn-success btn-circle btn-circle-xs m-1" @onclick=@SaveFileName @attributes=@_dictNewFileName aria-label="Save new name"><i class="bi bi-check" aria-hidden="true"></i></button>
+                                                <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose aria-label="Cancel renaming"><i class="bi bi-ban" aria-hidden="true"></i></button>
                                             </div>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose><i class="bi bi-ban"></i></button>
+                                            <button class="btn btn-danger btn-circle btn-circle-xs m-1" @onclick=@FileNameInputClose aria-label="Cancel renaming"><i class="bi bi-ban" aria-hidden="true"></i></button>
                                         }
                                     </div>
 
@@ -108,7 +108,7 @@
                 @if (!_password!.Equals(string.Empty))
                 {
                     <div class="row mb-3">
-                        <label class="col-sm-6" for="password">Password to unlock more function:</label>
+                        <label class="col-sm-6" for="passwordToUnlock">Password to unlock more function:</label>
                         <div class="col-sm-6">
                             <input class="form-control" type="password" id="passwordToUnlock" name="passwordToUnlock" @bind="_unlockBoxPassword" @bind:event="oninput" data-prevent-keydown>
                         </div>
@@ -149,7 +149,7 @@
                 @switch (_currentFile?.FileType)
                 {
                     case File.FileTypeEnum.Video:
-                        <video class="img-fluid mx-auto d-block" style="max-height: 95vh;" controls autoplay id="videoTagId">
+                        <video class="img-fluid mx-auto d-block" style="max-height: 95vh;" controls autoplay id="videoTagId" aria-label="@_currentFile?.NameWithExtension">
                             <source src="@_currentFile?.Path">
                             Your browser does not support the video tag.
                         </video>
@@ -164,13 +164,13 @@
                                      IsNextPhoto="@(_nextFile?.FileType==File.FileTypeEnum.Photo)" />
                         break;
                     case File.FileTypeEnum.Audio:
-                        <audio class="mx-auto w-75" style="max-height: 95vh;" controls autoplay id="audioTagId">
+                        <audio class="mx-auto w-75" style="max-height: 95vh;" controls autoplay id="audioTagId" aria-label="@_currentFile?.NameWithExtension">
                             <source src="@_currentFile?.Path">
                             Your browser does not support the audio tag.
                         </audio>
                         break;
                     case File.FileTypeEnum.PDF:
-                        <embed src="@_currentFile?.Path" style="width:100%;height:95vh;" />
+                        <embed src="@_currentFile?.Path" title="@_currentFile?.NameWithExtension" style="width:100%;height:95vh;" />
                         break;
                     case File.FileTypeEnum.Text:
                         <p id="txtcontent">@GetTextPreview()</p>
@@ -180,9 +180,9 @@
                         break;
                 }
                 <button type="button" class="btn btn-secondary half-ellipse close position-absolute p-0 top-50 end-0 translate-middle-y"
-                        @onclick="ToggleSidePanel" data-prevent-keydown>
-                    <i class="bi bi-arrow-bar-left @(_showSideFiles ? "side-button-opened" : "side-button-closed")" style="font-size: 1.3rem;"></i>
-                    <span class="visually-hidden">Close</span>
+                        @onclick="ToggleSidePanel" data-prevent-keydown aria-controls="previewColumn" aria-expanded="@(_showSideFiles ? "true" : "false")">
+                    <i class="bi bi-arrow-bar-left @(_showSideFiles ? "side-button-opened" : "side-button-closed")" style="font-size: 1.3rem;" aria-hidden="true"></i>
+                    <span class="visually-hidden">Toggle preview panel</span>
                 </button>
             </div>
             @* Column with preview files*@
