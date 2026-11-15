@@ -36,7 +36,7 @@ public class FileOperations(ILogger<FileOperations> logger)
     /// <exception cref="InvalidOperationException">Another file already has that name.</exception>
     public string? Rename(string physicalPath, string newName, string extension)
     {
-        if (!IsValidName(newName)) return null;
+        if (!IsValidFileName(newName)) return null;
         string newPath = Path.Combine(Path.GetDirectoryName(physicalPath)!, CombineFileName(newName, extension));
         if (string.Equals(newPath, physicalPath, StringComparison.Ordinal)) return physicalPath;
         // on Windows a change of letter case only is still the same file
@@ -58,7 +58,7 @@ public class FileOperations(ILogger<FileOperations> logger)
     /// <summary>Creates the folder (or uses an existing one) and returns its path, or null when the name isn't valid.</summary>
     public string? CreateFolder(string parentDirectory, string folderName)
     {
-        if (!IsValidName(folderName)) return null;
+        if (!IsValidFileName(folderName)) return null;
         string path = Path.Combine(parentDirectory, folderName);
         Directory.CreateDirectory(path);
         return path;
@@ -76,7 +76,10 @@ public class FileOperations(ILogger<FileOperations> logger)
             : new string(buffer, 0, read);
     }
 
-    // "." and ".." would point at the parent directory instead of creating anything
-    private static bool IsValidName(string name) =>
+    /// <summary>
+    /// Whether the name can be used for a file or folder; the UI validates with the same rule.
+    /// "." and ".." would point at the current or parent directory instead.
+    /// </summary>
+    public static bool IsValidFileName(string? name) =>
         !string.IsNullOrWhiteSpace(name) && name != "." && name != ".." && name.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
 }

@@ -26,6 +26,22 @@ public class FileOperationsTests : IDisposable
         Assert.Equal(expected, FileOperations.CombineFileName(name, extension));
     }
 
+    [Theory]
+    [InlineData("holiday", true)]
+    [InlineData("zdjęcie z wakacji #1", true)]
+    [InlineData(".hidden", true)]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(".", false)]
+    [InlineData("..", false)]
+    [InlineData("a/b", false)]
+    [InlineData("a\0b", false)]
+    public void IsValidFileName_RejectsNamesThatDontNameAFile(string? name, bool expected)
+    {
+        Assert.Equal(expected, FileOperations.IsValidFileName(name));
+    }
+
     [Fact]
     public void IsNameFree_ChecksTargetDirectory()
     {

@@ -89,7 +89,7 @@
                                         _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
                                         _isNewFileNameCorrect = true;
                                     }
-                                    else if (_newFileName.IndexOfAny(Path.GetInvalidFileNameChars().ToArray()) != -1)
+                                    else if (!FileOperations.IsValidFileName(_newFileName))
                                     {
                                         _dictNewFileName = new Dictionary<string, object> { { "disabled", "" } };
                                         _isNewFileNameCorrect = false;
@@ -722,6 +722,8 @@
     {
         if (e.Key == "Enter")
         {
+            // Enter mustn't bypass the disabled save button
+            if (!_isNewFileNameCorrect) return;
             await SaveFileName();
             StateHasChanged();
             await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
