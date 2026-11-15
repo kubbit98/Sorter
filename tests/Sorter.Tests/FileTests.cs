@@ -27,6 +27,9 @@ public class FileTests
     [InlineData("BMP", SorterFile.FileTypeEnum.Photo)]
     [InlineData("tiff", SorterFile.FileTypeEnum.Photo)]
     [InlineData("TIF", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("dng", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("CR3", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("nef", SorterFile.FileTypeEnum.Photo)]
     [InlineData("mkv", SorterFile.FileTypeEnum.NotSupported)]
     [InlineData("", SorterFile.FileTypeEnum.NotSupported)]
     public void FileType_IsDetectedFromExtensionIgnoringCase(string extension, SorterFile.FileTypeEnum expected)

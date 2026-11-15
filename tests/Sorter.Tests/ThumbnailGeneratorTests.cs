@@ -44,6 +44,10 @@ public abstract class ThumbnailGeneratorTests : IDisposable
     [InlineData("jpe", true)]
     [InlineData("svg", false)]
     [InlineData("tif", true)]
+    [InlineData("dng", true)]
+    [InlineData("CR2", true)]
+    [InlineData("nef", true)]
+    [InlineData("arw", true)]
     [InlineData("avif", false)]
     [InlineData("apng", false)]
     [InlineData("mp4", false)]
@@ -268,6 +272,20 @@ public abstract class ThumbnailGeneratorTests : IDisposable
     }
 
     [Fact]
+    public void TiffWithOrientation_IsConvertedUpright()
+    {
+        string path = TestImages.Create(_input.Combine("portrait.tiff"), 2000, 1000, exifOrientation: 6);
+
+        var result = _generator.Generate(path, "tiff");
+
+        // PNG has no orientation browsers would apply, the rotation has to be in the pixels
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal(1000, converted.Width);
+        Assert.Equal(2000, converted.Height);
+        Assert.Equal(425, TestImages.Identify(result.ThumbnailPath!).Width);
+    }
+
+    [Fact]
     public void MultiPageTiff_IsConvertedToSinglePng()
     {
         string path = TestImages.CreateMultiPageTiff(_input.Combine("pages.tiff"), 640, 480, pages: 3);
@@ -279,9 +297,36 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         Assert.Single(Directory.GetFiles(_output.Path));
     }
 
+    [Fact]
+    public void RawFile_IsDevelopedToJpgWithThumbnail()
+    {
+        var result = _generator.Generate(TestImages.TestDataPath("landscape_900x300.dng"), "dng");
+
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("JPEG", converted.Format);
+        Assert.Equal(900, converted.Width);
+        Assert.Equal(300, converted.Height);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal(850, thumbnail.Width);
+        Assert.Equal(283, thumbnail.Height);
+    }
+
+    [Fact]
+    public void RawFileWithOrientation_IsConvertedUprightWithoutOrientationTag()
+    {
+        var result = _generator.Generate(TestImages.TestDataPath("portrait_300x900_orientation6.dng"), "dng");
+
+        // libraw applies the rotation, a tag left in the JPG would make browsers rotate it again
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal(300, converted.Width);
+        Assert.Equal(900, converted.Height);
+        Assert.True(converted.Orientation is null or 1, $"Unexpected EXIF orientation {converted.Orientation}");
+    }
+
     [Theory]
     [InlineData("broken.jpg", "jpg")]
     [InlineData("broken.heic", "heic")]
+    [InlineData("broken.dng", "dng")]
     public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension)
     {
         string path = _input.CreateFile(fileName, "This is not an image.");

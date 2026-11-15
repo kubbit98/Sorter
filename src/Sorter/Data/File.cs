@@ -4,6 +4,8 @@ public class File : ICloneable
 {
     private static readonly string[] s_videoExtensions = ["flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r"]; //not sure if all of them works
     private static readonly string[] s_photoExtensions = ["gif", "jpeg", "jpg", "jfif", "jpe", "png", "webp", "apng", "avif", "heic", "heif", "hif", "bmp", "svg", "tiff", "tif"];
+    // camera RAW files, shown as a JPG conversion
+    private static readonly string[] s_rawPhotoExtensions = ["dng", "cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "orf", "rw2", "raf", "pef", "srw", "rwl", "3fr", "iiq", "x3f", "kdc", "dcr", "mrw", "erf", "mef", "mos"];
     private static readonly string[] s_audioExtensions = ["mp3", "wav", "ogg"]; //supported by <audio> tag
     private static readonly string[] s_textExtensions = ["txt", "csv", "log", "md", "html", "js", "css"];
     private static readonly string[] s_pdfExtensions = ["pdf"];
@@ -84,7 +86,7 @@ public class File : ICloneable
     {
         get
         {
-            if (s_photoExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Photo;
+            if (s_photoExtensions.Contains(Extension.ToLower()) || s_rawPhotoExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Photo;
             else if (s_videoExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Video;
             else if (s_audioExtensions.Contains(Extension.ToLower())) return FileTypeEnum.Audio;
             else if (s_pdfExtensions.Contains(Extension.ToLower())) return FileTypeEnum.PDF;

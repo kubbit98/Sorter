@@ -7,15 +7,17 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
 {
     public const int DefaultMaxSize = 850;
 
-    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "jfif", "jpe", "pbm", "png", "tiff", "tif", "tga", "webp", "heic", "heif", "hif"];
-    // .hif is what Canon, Fujifilm and Sony cameras use for HEIF photos
-    private static readonly string[] s_heifExtensions = ["heic", "heif", "hif"];
+    private static readonly string[] s_rawExtensions = ["dng", "cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "orf", "rw2", "raf", "pef", "srw", "rwl", "3fr", "iiq", "x3f", "kdc", "dcr", "mrw", "erf", "mef", "mos"];
+    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "jfif", "jpe", "pbm", "png", "tiff", "tif", "tga", "webp", "heic", "heif", "hif", .. s_rawExtensions];
     // formats browsers can't display reliably are always converted
-    private static readonly Dictionary<string, (string Extension, MagickFormat Format)> s_conversions = new()
+    private static readonly Dictionary<string, (string Extension, MagickFormat Format)> s_conversions = new(
+        // camera RAW files are developed by libraw and shown as a JPG
+        s_rawExtensions.Select(e => KeyValuePair.Create(e, ("jpg", MagickFormat.Jpeg))))
     {
         // only Safari renders HEIF
         ["heic"] = ("jpg", MagickFormat.Jpeg),
         ["heif"] = ("jpg", MagickFormat.Jpeg),
+        // .hif is what Canon, Fujifilm and Sony cameras use for HEIF photos
         ["hif"] = ("jpg", MagickFormat.Jpeg),
         // browsers render only common BMP variants (no RLE compression, alpha or unusual bit depths),
         // PNG is lossless and keeps transparency
@@ -33,6 +35,7 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
           <policy domain="path" rights="none" pattern="@*" />
           <policy domain="coder" rights="none" pattern="*" />
           <policy domain="coder" rights="read|write" pattern="{JPEG,JPG,JPE,JFIF,PJPEG,PNG,PNG8,PNG24,PNG32,PNG48,PNG64,GIF,GIF87,WEBP,BMP,BMP2,BMP3,TIFF,TIF,TIFF64,TGA,PBM,PGM,PPM,PNM,PAM,HEIC,HEIF,AVIF}" />
+          <policy domain="coder" rights="read" pattern="{DNG,CR2,CR3,CRW,NEF,NRW,ARW,SRF,SR2,ORF,RW2,RAF,PEF,SRW,RWL,3FR,IIQ,X3F,KDC,DCR,MRW,ERF,MEF,MOS}" />
         </policymap>
         """;
     private static readonly Lazy<bool> s_initialization = new(InitializeImageMagick);
@@ -64,8 +67,14 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
         string outputExtension = convert ? conversion.Extension : ExtensionOf(images[0].Format, normalizedExtension);
         // only GIF and WebP keep animation, other formats would be written as one file per frame
         if (outputFormat is not (MagickFormat.Gif or MagickFormat.WebP)) KeepFirstFrameOnly(images);
-        // libheif already applies the rotation, a kept orientation tag would make browsers rotate it again
-        if (s_heifExtensions.Contains(normalizedExtension)) ResetOrientationTag(images);
+        // a converted file is shown as is, so the rotation goes into the pixels: libraw and TIFF only report it
+        // (a portrait RAW photo would show sideways), libheif already applies it but keeps the EXIF tag,
+        // which would make browsers rotate the result again
+        if (convert)
+        {
+            foreach (var image in images) image.AutoOrient();
+            ResetOrientationTag(images);
+        }
 
         string? convertedPath = convert ? Save(images, outputExtension, outputFormat) : null;
         double ratio = Math.Min(_maxSize / (double)images[0].Width, _maxSize / (double)images[0].Height);
@@ -85,6 +94,11 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
             return new MagickImageCollection(physicalPath);
         }
         catch (MagickCorruptImageErrorException e)
+        {
+            throw new InvalidImageFileException(ShortMessage(e), e);
+        }
+        // e.g. libraw reports damaged RAW files as coder errors
+        catch (MagickCoderErrorException e)
         {
             throw new InvalidImageFileException(ShortMessage(e), e);
         }
