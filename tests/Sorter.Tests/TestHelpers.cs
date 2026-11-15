@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
@@ -10,6 +11,24 @@ internal sealed class TestOptionsMonitor<T>(T value) : IOptionsMonitor<T>
     public T CurrentValue { get; set; } = value;
     public T Get(string? name) => CurrentValue;
     public IDisposable? OnChange(Action<T, string?> listener) => null;
+}
+
+internal sealed class ListLogger<T> : ILogger<T>
+{
+    private readonly List<(LogLevel Level, string Message, Exception? Exception)> _entries = [];
+
+    public IReadOnlyList<(LogLevel Level, string Message, Exception? Exception)> Entries
+    {
+        get { lock (_entries) return [.. _entries]; }
+    }
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        lock (_entries) _entries.Add((logLevel, formatter(state, exception), exception));
+    }
 }
 
 internal sealed class TempDirectory : IDisposable

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sorter.Data;
 using SorterFile = Sorter.Data.File;
@@ -11,6 +12,7 @@ public class FileServiceTests : IDisposable
     private readonly string _source;
     private readonly string _destination;
     private readonly FakeThumbnailGenerator _thumbnailGenerator = new();
+    private readonly ListLogger<FileService> _logger = new();
 
     public FileServiceTests()
     {
@@ -35,7 +37,7 @@ public class FileServiceTests : IDisposable
             optionsMonitor,
             keyBindsMonitor);
         return new FileService(configuration, optionsMonitor, keyBindsMonitor, configOptionsService,
-            NullLogger<FileService>.Instance, _thumbnailGenerator);
+            _logger, _thumbnailGenerator);
     }
 
     private async Task<FileService> CreateInitializedServiceAsync(Action<ConfigOptions>? configure = null)
@@ -290,14 +292,32 @@ public class FileServiceTests : IDisposable
     }
 
     [Fact]
-    public void CreateThumbnail_HandlesGeneratorErrors()
+    public void CreateThumbnail_LogsBrokenImageAsShortWarning()
     {
-        _thumbnailGenerator.Exception = new InvalidDataException("broken");
+        _thumbnailGenerator.Exception = new InvalidImageFileException("unrecognized image format", new Exception("details"));
         var file = new SorterFile("/x/a.jpg", "a", "jpg");
 
         CreateService().CreateThumbnail(file);
 
         Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
+        var entry = Assert.Single(_logger.Entries);
+        Assert.Equal(LogLevel.Warning, entry.Level);
+        Assert.Equal("Thumbnail cannot be created for /x/a.jpg: unrecognized image format", entry.Message);
+        Assert.Null(entry.Exception);
+    }
+
+    [Fact]
+    public void CreateThumbnail_LogsUnexpectedErrorWithException()
+    {
+        _thumbnailGenerator.Exception = new InvalidOperationException("unexpected");
+        var file = new SorterFile("/x/a.jpg", "a", "jpg");
+
+        CreateService().CreateThumbnail(file);
+
+        Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
+        var entry = Assert.Single(_logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(_thumbnailGenerator.Exception, entry.Exception);
     }
 
     [Fact]

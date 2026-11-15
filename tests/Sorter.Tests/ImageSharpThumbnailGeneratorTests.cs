@@ -157,10 +157,22 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
     [Theory]
     [InlineData("broken.jpg", "jpg")]
     [InlineData("broken.heic", "heic")]
-    public void FileWithInvalidContent_Throws(string fileName, string extension)
+    public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension)
     {
         string path = _input.CreateFile(fileName, "This is not an image.");
 
-        Assert.ThrowsAny<Exception>(() => _generator.Generate(path, extension));
+        var exception = Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, extension));
+        Assert.Equal("unrecognized image format", exception.Message);
+    }
+
+    [Fact]
+    public void TruncatedHeic_ThrowsInvalidImageFileException()
+    {
+        byte[] content = System.IO.File.ReadAllBytes(TestImages.TestDataPath("portrait_1200x1600_irot_exif6.heic"));
+        string path = _input.Combine("truncated.heic");
+        System.IO.File.WriteAllBytes(path, content[..(content.Length / 2)]);
+
+        var exception = Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, "heic"));
+        Assert.StartsWith("Invalid input", exception.Message);
     }
 }
