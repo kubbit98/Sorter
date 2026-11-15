@@ -2,6 +2,14 @@
 
 namespace Sorter.Data
 {
+    /// <summary>
+    /// Session state shared by all browser sessions (the service is a singleton). All fields below
+    /// _stateLock are read and written only under it; slow disk work runs outside the lock, so one
+    /// session moving a large file doesn't block the others. The file list is never modified after
+    /// a scan, only replaced, so a reference taken under the lock can be read outside of it.
+    /// Thumbnail fields of the files are written by ThumbnailScheduler without the lock, single
+    /// reference writes can't be torn.
+    /// </summary>
     public class FileService
     {
         private readonly IConfiguration _configuration;
@@ -12,20 +20,20 @@ namespace Sorter.Data
         private readonly ThumbnailScheduler _thumbnailScheduler;
         private readonly FileScanner _fileScanner;
         private readonly FileOperations _fileOperations;
+        private readonly string password;
 
         // the first file is shown right after initialization, a stuck decoder mustn't block the session though
         private static readonly TimeSpan s_firstThumbnailTimeout = TimeSpan.FromSeconds(30);
-        // two sessions initializing at once would replace each other's file list halfway
+        // initialization awaits, so it can't hold _stateLock; this keeps two of them from running at once
         private readonly SemaphoreSlim _initializationLock = new(1, 1);
 
-        private List<File> files = [];
+        private readonly object _stateLock = new();
+        private IReadOnlyList<File> files = [];
         private List<Folder> folders = [];
         private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
-
         private SorterSettings settings = SorterSettings.Empty;
         private MediaUrlBuilder urlBuilder = MediaUrlBuilder.Empty;
-        private readonly string password;
         private bool initialized;
 
         public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, ThumbnailScheduler thumbnailScheduler, FileScanner fileScanner, FileOperations fileOperations)
@@ -40,29 +48,45 @@ namespace Sorter.Data
             _logger = logger;
             password = _configuration.GetValue<string>("Password") ?? string.Empty;
             sessionStoragePrefix = Path.GetRandomFileName();
-            initialized = false;
         }
         public async Task<bool> InitializeFiles(bool reInit)
         {
             await _initializationLock.WaitAsync();
             try
             {
-                if (initialized && !reInit) return true;
+                lock (_stateLock)
+                {
+                    if (initialized && !reInit) return true;
+                }
                 // config.json is reloaded asynchronously after the configuration dialog saves it
                 while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) await Task.Delay(100);
                 if (!SorterSettings.TryCreate(_options.CurrentValue, _configuration, out var newSettings)) return false;
-                settings = newSettings;
-                urlBuilder = new MediaUrlBuilder(settings.Source, settings.Destination);
-                _thumbnailScheduler.Reset();
-                LoadFilesAndFolders();
-                indexOfLastProcessingFile = -1;
-                if (settings.UseThumbnails && files.Count > 0)
+
+                // scanning reads the disk, other sessions keep using the previous lists until the swap below
+                var newFiles = _fileScanner.ScanFiles(newSettings.Source, newSettings.ExcludedSourceDirectories, newSettings.Filter);
+                var newFolders = _fileScanner.ScanFolders(newSettings.Destination, newSettings.ExcludedDestinationDirectories);
+                lock (_stateLock)
                 {
-                    _thumbnailScheduler.ScheduleAhead(files, 0);
-                    await Task.WhenAny(_thumbnailScheduler.Schedule(files[0]), Task.Delay(s_firstThumbnailTimeout));
+                    settings = newSettings;
+                    urlBuilder = new MediaUrlBuilder(newSettings.Source, newSettings.Destination);
+                    files = newFiles;
+                    folders = newFolders;
+                    indexOfLastProcessingFile = -1;
+                    AssignKeyBinds();
                 }
-                initialized = true;
-                if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
+
+                _thumbnailScheduler.Reset();
+                if (newSettings.UseThumbnails && newFiles.Count > 0)
+                {
+                    _thumbnailScheduler.ScheduleAhead(newFiles, 0);
+                    await Task.WhenAny(_thumbnailScheduler.Schedule(newFiles[0]), Task.Delay(s_firstThumbnailTimeout));
+                }
+
+                lock (_stateLock)
+                {
+                    initialized = true;
+                    if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
+                }
                 return true;
             }
             finally
@@ -72,7 +96,7 @@ namespace Sorter.Data
         }
         public Task<string> GetStoragePrefix()
         {
-            return Task.FromResult(sessionStoragePrefix);
+            lock (_stateLock) return Task.FromResult(sessionStoragePrefix);
         }
         public Task<string> GetPassword()
         {
@@ -85,28 +109,36 @@ namespace Sorter.Data
         }
         public Task<Folder[]> GetFoldersAsync()
         {
-            return Task.FromResult(folders.ToArray());
+            lock (_stateLock) return Task.FromResult(folders.ToArray());
         }
+        /// <summary>
+        /// Hands out the next file not yet shown in any session, so sessions split the files between them.
+        /// </summary>
         public int? GetNextIndex()
         {
-            if (indexOfLastProcessingFile < files.Count - 1)
+            int index;
+            IReadOnlyList<File> currentFiles;
+            bool useThumbnails;
+            lock (_stateLock)
             {
-                indexOfLastProcessingFile++;
-                if (settings.UseThumbnails) _thumbnailScheduler.ScheduleAhead(files, indexOfLastProcessingFile);
-                return indexOfLastProcessingFile;
+                if (indexOfLastProcessingFile >= files.Count - 1) return null;
+                index = ++indexOfLastProcessingFile;
+                currentFiles = files;
+                useThumbnails = settings.UseThumbnails;
             }
-            return null;
+            if (useThumbnails) _thumbnailScheduler.ScheduleAhead(currentFiles, index);
+            return index;
         }
         public File? GetFileAtIndex(int index)
         {
-            if (index < files.Count && index >= 0)
+            lock (_stateLock)
             {
+                if (index < 0 || index >= files.Count) return null;
                 File file = (File)files[index].Clone();
                 file.Path = urlBuilder.GetUrl(file.PhysicalPath);
                 file.FIndex = index;
                 return file;
             }
-            return null;
         }
         public File? GetFileAtIndex(int index, string name)
         {
@@ -115,13 +147,12 @@ namespace Sorter.Data
             if (!file.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
             return file;
         }
-        private void LoadFilesAndFolders()
-        {
-            files = _fileScanner.ScanFiles(settings.Source, settings.ExcludedSourceDirectories, settings.Filter);
-            folders = _fileScanner.ScanFolders(settings.Destination, settings.ExcludedDestinationDirectories);
-            AppendDirectoriesWithKeyBinds();
-        }
         public void AppendDirectoriesWithKeyBinds()
+        {
+            lock (_stateLock) AssignKeyBinds();
+        }
+        // callers hold _stateLock
+        private void AssignKeyBinds()
         {
             var dict = _keyOptions.CurrentValue.KeyBinds;
             foreach (var folder in folders)
@@ -142,13 +173,21 @@ namespace Sorter.Data
         }
         public void MoveFile(File file, string destiny)
         {
-            if (files[file.FIndex!.Value].Name != file.Name)
+            int index = file.FIndex!.Value;
+            IReadOnlyList<File> currentFiles;
+            lock (_stateLock)
             {
-                _logger.LogWarning("The file index has changed, you need to reload session");
-                return;
+                currentFiles = files;
+                if (currentFiles[index].Name != file.Name)
+                {
+                    _logger.LogWarning("The file index has changed, you need to reload session");
+                    return;
+                }
             }
-            file.PhysicalPath = _fileOperations.Move(file.PhysicalPath, destiny);
-            files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
+            // moving to another disk copies the whole file, which mustn't block other sessions
+            string newPath = _fileOperations.Move(file.PhysicalPath, destiny);
+            file.PhysicalPath = newPath;
+            lock (_stateLock) currentFiles[index].PhysicalPath = newPath;
         }
         public Task<string> GetTextFileContent(File file)
         {
@@ -157,20 +196,38 @@ namespace Sorter.Data
         }
         public bool CreateFolder(string folderName)
         {
-            if (folders.Any(f => f.Name == folderName)) return false;
-            string? fullPath = _fileOperations.CreateFolder(settings.Destination, folderName);
-            if (fullPath == null) return false;
-            folders.Add(new Folder(fullPath, Path.GetFileName(fullPath)));
-            return true;
+            // creating a directory is quick, holding the lock keeps the duplicate check and adding atomic
+            lock (_stateLock)
+            {
+                if (folders.Any(f => f.Name == folderName)) return false;
+                string? fullPath = _fileOperations.CreateFolder(settings.Destination, folderName);
+                if (fullPath == null) return false;
+                folders.Add(new Folder(fullPath, Path.GetFileName(fullPath)));
+                return true;
+            }
         }
         public void ChangeFileName(int index, string newFileName)
         {
-            File file = files[index];
-            string? newFullPath = _fileOperations.Rename(file.PhysicalPath, newFileName, file.Extension);
+            File file;
+            string physicalPath;
+            string extension;
+            MediaUrlBuilder currentUrlBuilder;
+            lock (_stateLock)
+            {
+                file = files[index];
+                physicalPath = file.PhysicalPath;
+                extension = file.Extension;
+                currentUrlBuilder = urlBuilder;
+            }
+            string? newFullPath = _fileOperations.Rename(physicalPath, newFileName, extension);
             if (newFullPath == null) return;
-            file.PhysicalPath = newFullPath;
-            file.Name = newFileName;
-            file.Path = urlBuilder.GetUrl(newFullPath);
+            // all fields at once, so GetFileAtIndex never copies a half renamed file
+            lock (_stateLock)
+            {
+                file.PhysicalPath = newFullPath;
+                file.Name = newFileName;
+                file.Path = currentUrlBuilder.GetUrl(newFullPath);
+            }
         }
     }
 }

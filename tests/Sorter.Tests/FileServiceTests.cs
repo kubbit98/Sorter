@@ -358,4 +358,73 @@ public class FileServiceTests : IDisposable
     {
         for (int i = 0; i < 100 && !condition(); i++) await Task.Delay(20);
     }
+
+    [Fact]
+    public async Task GetNextIndex_FromManySessionsAtOnce_HandsOutEachFileOnce()
+    {
+        const int fileCount = 300;
+        for (int i = 0; i < fileCount; i++) CreateSourceFile($"{i:D3}.txt");
+        var service = await CreateInitializedServiceAsync();
+
+        for (int round = 0; round < 20; round++)
+        {
+            Assert.True(await service.InitializeFiles(true));
+            var indexes = new System.Collections.Concurrent.ConcurrentBag<int?>();
+            using var start = new Barrier(8);
+
+            // 8 sessions asking at the same moment, together more often than there are files
+            await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
+            {
+                start.SignalAndWait();
+                for (int i = 0; i < fileCount / 4; i++) indexes.Add(service.GetNextIndex());
+            })));
+
+            var handedOut = indexes.Where(i => i != null).Select(i => i!.Value).ToList();
+            Assert.Equal(Enumerable.Range(0, fileCount), handedOut.Order());
+        }
+    }
+
+    [Fact]
+    public async Task CreateFolder_FromManySessionsAtOnce_CreatesTheFolderOnce()
+    {
+        var service = await CreateInitializedServiceAsync();
+
+        for (int round = 0; round < 50; round++)
+        {
+            string name = $"New{round}";
+            using var start = new Barrier(8);
+            var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
+            {
+                start.SignalAndWait();
+                return service.CreateFolder(name);
+            })));
+
+            Assert.Single(results, created => created);
+        }
+        Assert.Equal(50, (await service.GetFoldersAsync()).Length);
+    }
+
+    [Fact]
+    public async Task GetFileAtIndex_DuringRenames_NeverSeesHalfUpdatedFile()
+    {
+        CreateSourceFile("a.txt");
+        var service = await CreateInitializedServiceAsync();
+        using var cancellation = new CancellationTokenSource();
+
+        var reader = Task.Run(() =>
+        {
+            int checks = 0;
+            while (!cancellation.IsCancellationRequested)
+            {
+                var file = service.GetFileAtIndex(0)!;
+                Assert.Equal(file.NameWithExtension, Path.GetFileName(file.PhysicalPath));
+                checks++;
+            }
+            return checks;
+        });
+        for (int i = 0; i < 200; i++) service.ChangeFileName(0, i % 2 == 0 ? "b" : "a");
+        cancellation.Cancel();
+
+        Assert.True(await reader > 0);
+    }
 }
