@@ -1,4 +1,5 @@
 using Blazored.Toast;
+using Microsoft.AspNetCore.StaticFiles;
 using Sorter.Data;
 using System.Diagnostics;
 
@@ -40,20 +41,32 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 
+// supported extensions missing from the default mappings, without them static files middleware returns 404
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".apng"] = "image/apng";
+contentTypeProvider.Mappings[".avif"] = "image/avif";
+contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
+contentTypeProvider.Mappings[".m4p"] = "audio/mp4";
+contentTypeProvider.Mappings[".m4b"] = "audio/mp4";
+contentTypeProvider.Mappings[".m4r"] = "audio/mp4";
+
 app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<SourceDFP>(),
-    RequestPath = new PathString("/src")
+    RequestPath = new PathString("/src"),
+    ContentTypeProvider = contentTypeProvider
 })
 .UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<DestinationDFP>(),
-    RequestPath = new PathString("/dest")
+    RequestPath = new PathString("/dest"),
+    ContentTypeProvider = contentTypeProvider
 })
 .UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<TempDFP>(),
-    RequestPath = new PathString("/tmp")
+    RequestPath = new PathString("/tmp"),
+    ContentTypeProvider = contentTypeProvider
 });
 
 string address = app.Configuration.GetSection("Kestrel").GetSection("Endpoints").GetSection("Http").GetValue<string>("Url");

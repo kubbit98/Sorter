@@ -137,13 +137,25 @@ namespace Sorter.Data
             if (index < files.Count && index >= 0)
             {
                 File file = (File)files[index].Clone();
-                file.Path = file.PhysicalPath;
-                if (file.Path.Contains(source)) file.Path = string.Concat("/src/", Path.GetRelativePath(source, file.PhysicalPath));
-                else if (file.Path.Contains(destination)) file.Path = string.Concat("/dest/", Path.GetRelativePath(destination, file.PhysicalPath));
+                file.Path = GetUrlPath(file.PhysicalPath);
                 file.FIndex = index;
                 return file;
             }
             return null;
+        }
+        private string GetUrlPath(string physicalPath)
+        {
+            if (physicalPath.Contains(source)) return BuildUrl("/src/", source, physicalPath);
+            if (physicalPath.Contains(destination)) return BuildUrl("/dest/", destination, physicalPath);
+            return physicalPath;
+        }
+        private static string BuildUrl(string prefix, string root, string physicalPath)
+        {
+            // characters like '#', '%' or '?' in file names break the URL unless escaped
+            var segments = Path.GetRelativePath(root, physicalPath)
+                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar])
+                .Select(Uri.EscapeDataString);
+            return string.Concat(prefix, string.Join('/', segments));
         }
         public File? GetFileAtIndex(int index, string name)
         {
@@ -202,11 +214,13 @@ namespace Sorter.Data
                 foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath).OrderBy(f => f))
                 {
                     var fileName = Path.GetFileNameWithoutExtension(fullPathToFile);
-                    var fileExtension = Path.GetExtension(fullPathToFile).Replace(".", "").ToLower();
+                    var originalExtension = Path.GetExtension(fullPathToFile).Replace(".", "");
+                    var fileExtension = originalExtension.ToLower();
                     if (s_globalExtensionExclude.Contains(fileExtension)) continue;
                     if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
                         || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
-                    files.Add(new File(fullPathToFile, fileName, fileExtension));
+                    // original case is kept, because the extension is used to rebuild the file name on move/rename
+                    files.Add(new File(fullPathToFile, fileName, originalExtension));
                 }
                 foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath).OrderBy(f => f))
                 {
@@ -301,9 +315,7 @@ namespace Sorter.Data
                 _logger.LogInformation("File renamed from {FileNameExt} to {Name}.{Extension}", file.NameWithExtension, newFileName, file.Extension);
                 files[index].PhysicalPath = newFullPath;
                 files[index].Name = newFileName;
-                files[index].Path = newFullPath;
-                if (files[index].Path.Contains(source)) files[index].Path = string.Concat("/src/", Path.GetRelativePath(source, files[index].PhysicalPath));
-                else if (files[index].Path.Contains(destination)) files[index].Path = string.Concat("/dest/", Path.GetRelativePath(destination, files[index].PhysicalPath));
+                files[index].Path = GetUrlPath(newFullPath);
             }
             catch (Exception e)
             {
@@ -316,7 +328,7 @@ namespace Sorter.Data
             //System.Diagnostics.Stopwatch stopWatch = System.Diagnostics.Stopwatch.StartNew();
             if (file.IsThumbnailExist == File.ThumbnailEnum.Unknown)
             {
-                if (!s_thumbnailExtensions.Contains(file.Extension))
+                if (!s_thumbnailExtensions.Contains(file.Extension.ToLower()))
                 {
                     file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
                     return;
@@ -331,7 +343,7 @@ namespace Sorter.Data
                     string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
                     do
                     {
-                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
+                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension.ToLower()));
                     } while (System.IO.File.Exists(temporaryThumbnailPath));
                     image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
                     do
