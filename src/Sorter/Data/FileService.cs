@@ -22,6 +22,7 @@ namespace Sorter.Data
 
         private string source = "";
         private string destination = "";
+        private MediaUrlBuilder urlBuilder = MediaUrlBuilder.Empty;
         private string[] excludeDirsInSource = [];
         private string[] excludeDirsInDestination = [];
         private string[] whiteList = [];
@@ -81,6 +82,7 @@ namespace Sorter.Data
                 source = Path.GetFullPath(_options.CurrentValue.Source);
                 excludeDirsInSource = Array.ConvertAll(_options.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir));
                 destination = Path.GetFullPath(_options.CurrentValue.Destination);
+                urlBuilder = new MediaUrlBuilder(source, destination);
                 excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir));
                 whiteList = _options.CurrentValue.WhiteList;
                 blackList = _options.CurrentValue.BlackList;
@@ -135,25 +137,11 @@ namespace Sorter.Data
             if (index < files.Count && index >= 0)
             {
                 File file = (File)files[index].Clone();
-                file.Path = GetUrlPath(file.PhysicalPath);
+                file.Path = urlBuilder.GetUrl(file.PhysicalPath);
                 file.FIndex = index;
                 return file;
             }
             return null;
-        }
-        private string GetUrlPath(string physicalPath)
-        {
-            if (physicalPath.Contains(source)) return BuildUrl("/src/", source, physicalPath);
-            if (physicalPath.Contains(destination)) return BuildUrl("/dest/", destination, physicalPath);
-            return physicalPath;
-        }
-        private static string BuildUrl(string prefix, string root, string physicalPath)
-        {
-            // characters like '#', '%' or '?' in file names break the URL unless escaped
-            var segments = Path.GetRelativePath(root, physicalPath)
-                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar])
-                .Select(Uri.EscapeDataString);
-            return string.Concat(prefix, string.Join('/', segments));
         }
         public File? GetFileAtIndex(int index, string name)
         {
@@ -313,7 +301,7 @@ namespace Sorter.Data
                 _logger.LogInformation("File renamed from {FileNameExt} to {Name}.{Extension}", file.NameWithExtension, newFileName, file.Extension);
                 files[index].PhysicalPath = newFullPath;
                 files[index].Name = newFileName;
-                files[index].Path = GetUrlPath(newFullPath);
+                files[index].Path = urlBuilder.GetUrl(newFullPath);
             }
             catch (Exception e)
             {
@@ -333,8 +321,8 @@ namespace Sorter.Data
             try
             {
                 ThumbnailResult result = _thumbnailGenerator.Generate(file.PhysicalPath, file.Extension);
-                if (result.ConvertedPath != null) file.ConvertedPath = GetTempUrl(result.ConvertedPath);
-                if (result.ThumbnailPath != null) file.ThumbnailPath = GetTempUrl(result.ThumbnailPath);
+                if (result.ConvertedPath != null) file.ConvertedPath = MediaUrlBuilder.GetTempUrl(result.ConvertedPath);
+                if (result.ThumbnailPath != null) file.ThumbnailPath = MediaUrlBuilder.GetTempUrl(result.ThumbnailPath);
                 file.IsThumbnailExist = result.ThumbnailPath != null ? File.ThumbnailEnum.Exists : File.ThumbnailEnum.WillNot;
             }
             catch (InvalidImageFileException e)
@@ -348,6 +336,5 @@ namespace Sorter.Data
                 file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
             }
         }
-        private static string GetTempUrl(string physicalPath) => string.Concat("/tmp/", Path.GetFileName(physicalPath));
     }
 }

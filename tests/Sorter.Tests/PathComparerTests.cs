@@ -62,6 +62,22 @@ public class PathComparerTests : IDisposable
         Assert.False(PathComparer.AreNested(first, second));
     }
 
+    [Theory]
+    [InlineData("photos", "photos/a.jpg", true)]
+    [InlineData("photos", "photos/2024/summer/a.jpg", true)]
+    [InlineData("photos/", "photos/a.jpg", true)]
+    [InlineData("photos", "photos-sorted/a.jpg", false)]
+    [InlineData("photos", "photos", false)]
+    [InlineData("photos/2024", "photos/a.jpg", false)]
+    [InlineData("", "photos/a.jpg", false)]
+    public void IsInside_ComparesWholePathSegmentsWithoutTouchingDisk(string directory, string path, bool expected)
+    {
+        // relative paths resolve against the current directory and don't exist, which must not matter
+        string Native(string p) => p.Replace('/', Path.DirectorySeparatorChar);
+
+        Assert.Equal(expected, PathComparer.IsInside(Native(directory), Native(path)));
+    }
+
     [Fact]
     public void SameDirectory_IsNotReportedAsNested()
     {

@@ -21,11 +21,17 @@ public static class PathComparer
         return IsInside(first, second) || IsInside(second, first);
     }
 
-    private static bool IsInside(string parent, string child)
+    /// <summary>
+    /// Whether the path lies anywhere below the directory. Works on the path text only,
+    /// neither of them has to exist.
+    /// </summary>
+    public static bool IsInside(string directory, string path)
     {
+        if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(path)) return false;
+        string parent = Path.GetFullPath(directory);
         // the separator matters: /photos/2024a is not inside /photos/2024
         string prefix = Path.EndsInDirectorySeparator(parent) ? parent : parent + Path.DirectorySeparatorChar;
-        return child.StartsWith(prefix, Comparison);
+        return Path.GetFullPath(path).StartsWith(prefix, Comparison);
     }
 
     private static bool TryGetExistingDirectory(string? path, out string fullPath)

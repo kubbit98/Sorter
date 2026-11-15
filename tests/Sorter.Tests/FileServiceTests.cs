@@ -198,6 +198,20 @@ public class FileServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task MovedFile_GetsDestinationUrlWhenDestinationNameStartsWithSourceName()
+    {
+        // e.g. "Photos" and "Photos-sorted": the moved file's path starts with the source path as plain text
+        string destination = Directory.CreateDirectory(_source + "-sorted").FullName;
+        string target = Directory.CreateDirectory(Path.Combine(destination, "A")).FullName;
+        CreateSourceFile("a.jpg");
+        var service = await CreateInitializedServiceAsync(o => o.Destination = destination);
+
+        service.MoveFile(service.GetFileAtIndex(0)!, target);
+
+        Assert.Equal("/dest/A/a.jpg", service.GetFileAtIndex(0)!.Path);
+    }
+
+    [Fact]
     public async Task IsDestinationAvailable_IsFalseWhenNameIsTaken()
     {
         CreateSourceFile("a.txt");
