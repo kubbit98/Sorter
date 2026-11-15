@@ -1,5 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
+using HeyRed.ImageSharp.Heif.Formats.Avif;
+using HeyRed.ImageSharp.Heif.Formats.Heif;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 
 namespace Sorter.Data
@@ -13,7 +17,11 @@ namespace Sorter.Data
         private readonly ILogger _logger;
 
         private static readonly int s_maxSizeOfPhotoInPixels = 850;
-        private static readonly string[] s_thumbnailExtensions = ["bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp"];
+        private static readonly string[] s_thumbnailExtensions = ["bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp", "heic"];
+        private static readonly DecoderOptions s_heifDecoderOptions = new()
+        {
+            Configuration = new Configuration(new AvifConfigurationModule(), new HeifConfigurationModule())
+        };
         private static readonly string[] s_globalExtensionExclude = ["ds_store"];
         private static readonly int s_thumbnailsToCreateAhead = 5;
         private static readonly int s_maxLengthOfTextFile = 5000;
@@ -322,31 +330,51 @@ namespace Sorter.Data
                     return;
                 }
                 file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
-                using Image image = Image.Load(file.PhysicalPath);
-                double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
-                double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
-                double ratio = Math.Min(ratioWidth, ratioHeight);
-                if (ratio < 1)
+                try
                 {
-                    string temporaryThumbnailPath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
-                    do
+                    using Image image = file.RequiresConversion
+                        ? Image.Load(s_heifDecoderOptions, file.PhysicalPath)
+                        : Image.Load(file.PhysicalPath);
+                    // the HEIF decoder configuration has no JPG encoder, so it must be passed explicitly
+                    IImageEncoder? encoder = file.RequiresConversion ? new JpegEncoder() : null;
+                    string extension = file.RequiresConversion ? "jpg" : file.Extension;
+                    if (file.RequiresConversion) file.ConvertedPath = SaveImageInTemp(image, extension, encoder);
+                    double ratioWidth = s_maxSizeOfPhotoInPixels / (double)image.Width;
+                    double ratioHeight = s_maxSizeOfPhotoInPixels / (double)image.Height;
+                    double ratio = Math.Min(ratioWidth, ratioHeight);
+                    if (ratio < 1)
                     {
-                        temporaryThumbnailPath = Path.Combine(Path.GetFullPath(_configuration.GetValue<string>("TempPath")), Path.ChangeExtension(Path.GetRandomFileName(), file.Extension));
-                    } while (System.IO.File.Exists(temporaryThumbnailPath));
-                    image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
-                    do
+                        image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
+                        file.ThumbnailPath = SaveImageInTemp(image, extension, encoder);
+                        file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                    }
+                    else
                     {
-                        image.Save(temporaryThumbnailPath);
-                    } while (!System.IO.File.Exists(temporaryThumbnailPath));
-                    file.ThumbnailPath = string.Concat("/tmp/", Path.GetRelativePath(_configuration.GetValue<string>("TempPath"), temporaryThumbnailPath));
-                    file.IsThumbnailExist = File.ThumbnailEnum.Exists;
+                        file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+                    }
                 }
-                else
+                catch (Exception e)
                 {
+                    _logger.LogError(e, "Thumbnail cannot be created for {FilePath}", file.PhysicalPath);
                     file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
                 }
             }
             //Console.WriteLine("Elapsed time {0} ms", stopWatch.ElapsedMilliseconds);
+        }
+        private string SaveImageInTemp(Image image, string extension, IImageEncoder? encoder)
+        {
+            string tempPath = _configuration.GetValue<string>("TempPath")!;
+            string temporaryFilePath; //im doing that like this, bec when scrolling very fast, index can get a file with an incompletely processed thumbnail
+            do
+            {
+                temporaryFilePath = Path.Combine(Path.GetFullPath(tempPath), Path.ChangeExtension(Path.GetRandomFileName(), extension));
+            } while (System.IO.File.Exists(temporaryFilePath));
+            do
+            {
+                if (encoder == null) image.Save(temporaryFilePath);
+                else image.Save(temporaryFilePath, encoder);
+            } while (!System.IO.File.Exists(temporaryFilePath));
+            return string.Concat("/tmp/", Path.GetRelativePath(tempPath, temporaryFilePath));
         }
     }
 }

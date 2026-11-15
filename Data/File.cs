@@ -3,7 +3,9 @@
 public class File : ICloneable
 {
     private static readonly string[] s_videoExtensions = ["flv", "m3u8", "ts", "3gp", "qt", "wmv", "m4v", "mpg", "asf", "ogv", "oga", "ogx", "ogg", "spx", "webm", "avi", "mov", "mp4", "m4a", "m4p", "m4b", "m4r"]; //not sure if all of them works
-    private static readonly string[] s_photoExtensions = ["gif", "jpeg", "jpg", "png", "webp", "apng", "avif"]; //supported by <img> tag
+    private static readonly string[] s_photoExtensions = ["gif", "jpeg", "jpg", "png", "webp", "apng", "avif", "heic"];
+    // browsers (except Safari) can't render these in <img>, so a JPG conversion is shown instead
+    private static readonly string[] s_browserUnsupportedPhotoExtensions = ["heic"];
     private static readonly string[] s_audioExtensions = ["mp3", "wav", "ogg"]; //supported by <audio> tag
     private static readonly string[] s_textExtensions = ["txt", "csv", "log", "md", "html", "js", "css"];
     private static readonly string[] s_pdfExtensions = ["pdf"];
@@ -35,6 +37,7 @@ public class File : ICloneable
     public string Path { get; set; }
     public string PhysicalPath { get; set; }
     public string? ThumbnailPath { get; set; }
+    public string? ConvertedPath { get; set; }
     public string Name { get; set; }
     public string Extension { get; set; }
     public int? FIndex { get; set; }
@@ -59,10 +62,19 @@ public class File : ICloneable
     {
         get
         {
-            if (string.IsNullOrEmpty(ThumbnailPath)) return Path;
-            else return ThumbnailPath;
+            if (!string.IsNullOrEmpty(ThumbnailPath)) return ThumbnailPath;
+            else return ZoomPath;
         }
     }
+    public string ZoomPath
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(ConvertedPath)) return Path;
+            else return ConvertedPath;
+        }
+    }
+    public bool RequiresConversion => s_browserUnsupportedPhotoExtensions.Contains(Extension.ToLower());
     public string NameWithExtension
     {
         get
@@ -86,6 +98,11 @@ public class File : ICloneable
     public ThumbnailEnum IsThumbnailExist { get; set; }
     public object Clone()
     {
-        return new File(PhysicalPath, Name, Extension, IsThumbnailExist);
+        File clone = new(PhysicalPath, Name, Extension, IsThumbnailExist)
+        {
+            ThumbnailPath = ThumbnailPath,
+            ConvertedPath = ConvertedPath
+        };
+        return clone;
     }
 }
