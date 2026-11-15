@@ -62,13 +62,15 @@ app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<SourceDFP>(),
     RequestPath = new PathString("/src"),
-    ContentTypeProvider = contentTypeProvider
+    ContentTypeProvider = contentTypeProvider,
+    OnPrepareResponse = UserFileResponseHeaders.Apply
 })
 .UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = app.Services.GetService<DestinationDFP>(),
     RequestPath = new PathString("/dest"),
-    ContentTypeProvider = contentTypeProvider
+    ContentTypeProvider = contentTypeProvider,
+    OnPrepareResponse = UserFileResponseHeaders.Apply
 })
 .UseStaticFiles(new StaticFileOptions()
 {
