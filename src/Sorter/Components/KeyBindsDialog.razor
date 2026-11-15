@@ -43,9 +43,9 @@
                                 <ButtonInDiv DivCssClass="col d-grid mb-1"
                                              ButtonCssClass="btn btn-primary"
                                              ButtonName="@MyFolders[k].DisplayName"
-                                             ButtonOnClickTask="async ()=> await SetKeyBind(MyFolders[k])"
+                                             ButtonOnClickTask="async ()=> await SetKeyBind(k)"
                                              Title="@MyFolders[k].Path"
-                                             CustomButtonParameter="@_dictOnlyKeyBindButton" />
+                                             CustomButtonParameter="@KeyBindButtonAttributes(k)" />
                             }
                     </div>
                 }
@@ -72,7 +72,6 @@
 
     public Folder[]? MyFolders { get; set; }
     private Dictionary<string, object> _dictPreventKeydown = new Dictionary<string, object> { { "data-prevent-keydown", "" } };
-    private Dictionary<string, object> _dictOnlyKeyBindButton = new Dictionary<string, object> { { "data-keybind-button", "" }, { "data-prevent-keydown", "" } };
     private string _unlockBoxPassword = String.Empty;
     private string _truePassword = String.Empty;
 
@@ -112,8 +111,10 @@
             toastService.ShowError(e.Message);
         }
     }
-    private async Task SetKeyBind(Folder folder)
+    private static Dictionary<string, object> KeyBindButtonAttributes(int index) =>
+        new() { { "data-keybind-button", "" }, { "data-keybind-index", index }, { "data-prevent-keydown", "" } };
+    private async Task SetKeyBind(int index)
     {
-        await JS.InvokeVoidAsync("setButtonSuccess", "true");
+        await JS.InvokeVoidAsync("startKeyBindListening", index);
     }
 }
