@@ -159,6 +159,11 @@ def generate_photos(d):
     save_animation(make_frames(1200, 900, "GIF large"), d / "gif_animated_large.gif")
     save_animation(make_frames(500, 375, "APNG"), d / "apng_animated.apng", format="PNG")
     save_avif(make_image(2400, 1600, "AVIF"), d / "avif_large.avif")
+    make_image(1200, 900, "BMP").save(d / "bmp_large.bmp")
+    # 32-bit BMP with alpha, a variant browsers don't display reliably (the app converts BMP to PNG)
+    alpha = make_image(600, 450, "BMP 32-bit alpha").convert("RGBA")
+    alpha.putalpha(Image.linear_gradient("L").rotate(90).resize(alpha.size))
+    alpha.save(d / "bmp_alpha_32bit.bmp")
     make_image(800, 600, "Duplicate name (photos)").save(d / "duplicate_name.jpg", quality=85)
 
 
@@ -217,7 +222,6 @@ def generate_edge_cases(d):
     make_image(800, 600, "Diacritics in name").save(d / "zdjęcie z wakacji ąęśćżźół.jpg", quality=85)
     make_image(800, 600, "Hash and percent").save(d / "hash#and%percent.png")
     make_image(800, 600, "Duplicate name (edge)").save(d / "duplicate_name.jpg", quality=85)
-    make_image(1200, 900, "BMP").save(d / "image.bmp")
     make_image(1200, 900, "TIFF").save(d / "image.tiff")
     (d / "not_an_image.jpg").write_bytes(b"This is not a JPEG file.\n" * 50)
     (d / "not_an_image.heic").write_bytes(b"This is not a HEIC file.\n" * 50)

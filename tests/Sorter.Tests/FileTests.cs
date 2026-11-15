@@ -18,7 +18,9 @@ public class FileTests
     [InlineData("pdf", SorterFile.FileTypeEnum.PDF)]
     [InlineData("txt", SorterFile.FileTypeEnum.Text)]
     [InlineData("md", SorterFile.FileTypeEnum.Text)]
-    [InlineData("bmp", SorterFile.FileTypeEnum.NotSupported)]
+    [InlineData("bmp", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("BMP", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("tiff", SorterFile.FileTypeEnum.NotSupported)]
     [InlineData("mkv", SorterFile.FileTypeEnum.NotSupported)]
     [InlineData("", SorterFile.FileTypeEnum.NotSupported)]
     public void FileType_IsDetectedFromExtensionIgnoringCase(string extension, SorterFile.FileTypeEnum expected)

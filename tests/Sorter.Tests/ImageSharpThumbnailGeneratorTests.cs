@@ -1,4 +1,6 @@
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using Sorter.Data;
 
@@ -152,6 +154,52 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var thumbnail = Image.Identify(result.ThumbnailPath!);
         Assert.Equal(637, thumbnail.Width);
         Assert.Equal(850, thumbnail.Height);
+    }
+
+    [Fact]
+    public void SmallBmp_IsConvertedToPngWithoutThumbnail()
+    {
+        string path = TestImages.Create(_input.Combine("small.bmp"), 640, 480);
+
+        var result = _generator.Generate(path, "bmp");
+
+        Assert.Null(result.ThumbnailPath);
+        Assert.Equal(".png", Path.GetExtension(result.ConvertedPath));
+        var info = Image.Identify(result.ConvertedPath!);
+        Assert.Equal("PNG", info.Metadata.DecodedImageFormat!.Name);
+        Assert.Equal(640, info.Width);
+        Assert.Equal(480, info.Height);
+    }
+
+    [Fact]
+    public void LargeBmp_IsConvertedAndGetsPngThumbnail()
+    {
+        string path = TestImages.Create(_input.Combine("IMAGE.BMP"), 2000, 1000);
+
+        var result = _generator.Generate(path, "BMP");
+
+        Assert.Equal(2000, Image.Identify(result.ConvertedPath!).Width);
+        var thumbnail = Image.Identify(result.ThumbnailPath!);
+        Assert.Equal("PNG", thumbnail.Metadata.DecodedImageFormat!.Name);
+        Assert.Equal(850, thumbnail.Width);
+    }
+
+    [Fact]
+    public void BmpWithAlphaChannel_KeepsTransparencyInPng()
+    {
+        // 32-bit BMP with alpha is one of the variants browsers don't display reliably
+        string path = _input.Combine("alpha.bmp");
+        using (var image = new Image<Rgba32>(100, 100, new Rgba32(255, 0, 0, 255)))
+        {
+            image[0, 0] = new Rgba32(0, 0, 0, 0);
+            image.Save(path, new BmpEncoder { BitsPerPixel = BmpBitsPerPixel.Pixel32, SupportTransparency = true });
+        }
+
+        var result = _generator.Generate(path, "bmp");
+
+        using var converted = Image.Load<Rgba32>(result.ConvertedPath!);
+        Assert.Equal(0, converted[0, 0].A);
+        Assert.Equal(255, converted[50, 50].A);
     }
 
     [Theory]
