@@ -190,7 +190,7 @@
                 <div class="row mb-auto justify-content-end">
                     @if (null != _previousFile)
                     {
-                        @if (_previousFile?.FileType == File.FileTypeEnum.Photo)
+                        @if (_previousFile.FileType == File.FileTypeEnum.Photo)
                         {
                             <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
@@ -685,12 +685,12 @@
         {
             FileService.ChangeFileName(_currentFile.FIndex!.Value, _newFileName);
         }
-        catch (InvalidOperationException e)
+        catch (InvalidOperationException)
         {
             toastService.ShowWarning("Can't rename file; a file with that name already exists.");
             return;
         }
-        catch (Exception e)
+        catch (Exception)
         {
             toastService.ShowError("Something goes wrong, check logs in console");
             return;
@@ -736,7 +736,7 @@
         {
             FileService.MoveFile(oldFile, destiny);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             toastService.ShowError("Something goes wrong, check logs in console");
         }
