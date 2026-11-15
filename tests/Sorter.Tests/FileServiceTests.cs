@@ -37,7 +37,7 @@ public class FileServiceTests : IDisposable
             optionsMonitor,
             keyBindsMonitor);
         return new FileService(configuration, optionsMonitor, keyBindsMonitor, configOptionsService,
-            _logger, _thumbnailGenerator);
+            _logger, _thumbnailGenerator, new FileScanner(NullLogger<FileScanner>.Instance));
     }
 
     private async Task<FileService> CreateInitializedServiceAsync(Action<ConfigOptions>? configure = null)

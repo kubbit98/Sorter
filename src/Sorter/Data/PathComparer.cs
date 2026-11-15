@@ -1,13 +1,23 @@
 namespace Sorter.Data;
 
 /// <summary>
-/// Compares directory paths typed in the configuration dialog. Empty, invalid or missing
-/// directories never match, so the dialog can call these while the user is still typing.
+/// Compares paths. AreSameDirectory and AreNested are meant for paths typed in the configuration
+/// dialog: empty, invalid or missing directories never match, so they can be called while the user
+/// is still typing. IsSamePath and IsInside work on the path text only.
 /// </summary>
 public static class PathComparer
 {
     private static StringComparison Comparison =>
         OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    public static bool IsSamePath(string path1, string path2)
+    {
+        if (string.IsNullOrWhiteSpace(path1) || string.IsNullOrWhiteSpace(path2)) return false;
+        return string.Equals(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(path1)),
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(path2)),
+            Comparison);
+    }
 
     public static bool AreSameDirectory(string? path1, string? path2)
     {

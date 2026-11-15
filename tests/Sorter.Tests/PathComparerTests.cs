@@ -63,6 +63,20 @@ public class PathComparerTests : IDisposable
     }
 
     [Theory]
+    [InlineData("photos", "photos", true)]
+    [InlineData("photos", "photos/", true)]
+    [InlineData("photos", "other/../photos", true)]
+    [InlineData("photos", "photos-sorted", false)]
+    [InlineData("photos", "photos/sub", false)]
+    [InlineData("", "photos", false)]
+    public void IsSamePath_NormalizesWithoutTouchingDisk(string path1, string path2, bool expected)
+    {
+        string Native(string p) => p.Replace('/', Path.DirectorySeparatorChar);
+
+        Assert.Equal(expected, PathComparer.IsSamePath(Native(path1), Native(path2)));
+    }
+
+    [Theory]
     [InlineData("photos", "photos/a.jpg", true)]
     [InlineData("photos", "photos/2024/summer/a.jpg", true)]
     [InlineData("photos/", "photos/a.jpg", true)]

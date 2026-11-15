@@ -10,8 +10,8 @@ namespace Sorter.Data
         private readonly ConfigOptionsService _configOptionsService;
         private readonly ILogger _logger;
         private readonly IThumbnailGenerator _thumbnailGenerator;
+        private readonly FileScanner _fileScanner;
 
-        private static readonly string[] s_globalExtensionExclude = ["ds_store"];
         private static readonly int s_thumbnailsToCreateAhead = 5;
         private static readonly int s_maxLengthOfTextFile = 5000;
 
@@ -25,16 +25,15 @@ namespace Sorter.Data
         private MediaUrlBuilder urlBuilder = MediaUrlBuilder.Empty;
         private string[] excludeDirsInSource = [];
         private string[] excludeDirsInDestination = [];
-        private string[] whiteList = [];
-        private string[] blackList = [];
-        private bool useWhiteListInsteadOfBlackList;
+        private FileFilter fileFilter = FileFilter.AllowAll;
         private readonly string password;
         private bool allowRename;
         private bool useThumbnails;
         private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator, FileScanner fileScanner)
         {
+            _fileScanner = fileScanner;
             _thumbnailGenerator = thumbnailGenerator;
             _configuration = configuration;
             _options = options;
@@ -84,9 +83,7 @@ namespace Sorter.Data
                 destination = Path.GetFullPath(_options.CurrentValue.Destination);
                 urlBuilder = new MediaUrlBuilder(source, destination);
                 excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir));
-                whiteList = _options.CurrentValue.WhiteList;
-                blackList = _options.CurrentValue.BlackList;
-                useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
+                fileFilter = new FileFilter(_options.CurrentValue.UseWhiteListInsteadOfBlackList, _options.CurrentValue.WhiteList, _options.CurrentValue.BlackList);
                 allowRename = _options.CurrentValue.AllowRename;
                 useThumbnails = _configuration.GetValue<bool>("UseThumbnails");
             }
@@ -152,79 +149,9 @@ namespace Sorter.Data
         }
         private void LoadFilesAndFolders()
         {
-            files = ProcessFilesInDirectoryRecursively(source);
-            folders = ProcessDirectoryRecursively(destination);
+            files = _fileScanner.ScanFiles(source, excludeDirsInSource, fileFilter);
+            folders = _fileScanner.ScanFolders(destination, excludeDirsInDestination);
             AppendDirectoriesWithKeyBinds();
-        }
-        private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
-        {
-            List<Folder> folders = [];
-            try
-            {
-                if (!Directory.Exists(Path.GetFullPath(targetDirectoryPath)))
-                {
-                    return folders;
-                }
-                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath).OrderBy(f => f))
-                {
-                    try
-                    {
-                        var folderName = Path.GetFileName(fullPathToDirectory);
-                        if (!excludeDirsInDestination.Contains(fullPathToDirectory))
-                        {
-                            folders.Add(new Folder(fullPathToDirectory, folderName));
-                            folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("Error with folder {Path}\n{Error}", fullPathToDirectory, e.Message);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error with whole destination folder {Error}", e.Message);
-            }
-            return folders;
-        }
-        private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
-        {
-            List<File> files = [];
-            try
-            {
-                if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)) || excludeDirsInSource.Contains(Path.GetFullPath(sourceDirectoryPath)))
-                {
-                    return files;
-                }
-                foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath).OrderBy(f => f))
-                {
-                    var fileName = Path.GetFileNameWithoutExtension(fullPathToFile);
-                    var originalExtension = Path.GetExtension(fullPathToFile).Replace(".", "");
-                    var fileExtension = originalExtension.ToLower();
-                    if (s_globalExtensionExclude.Contains(fileExtension)) continue;
-                    if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
-                        || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
-                    // original case is kept, because the extension is used to rebuild the file name on move/rename
-                    files.Add(new File(fullPathToFile, fileName, originalExtension));
-                }
-                foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath).OrderBy(f => f))
-                {
-                    try
-                    {
-                        files.AddRange(ProcessFilesInDirectoryRecursively(fullPath));
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("Error with folder {Path}\n{Error}", fullPath, e.Message);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error with whole source folder {Error}", e.Message);
-            }
-            return files;
         }
         public void AppendDirectoriesWithKeyBinds()
         {
