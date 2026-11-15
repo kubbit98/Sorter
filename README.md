@@ -10,7 +10,7 @@ Ready-to-run packages are available for Windows (x64) and Linux (x64). macOS isn
 The application supports keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
 
 ## Supported media types
-- Photos: jpg, jpeg, png, gif, webp, apng, avif, bmp, heic. HEIC and BMP are converted for display (to JPG and PNG), because browsers can't show HEIC and only some BMP variants.
+- Photos: jpg, jpeg, jfif, jpe, png, gif, webp, apng, avif, bmp, heic, heif, hif and svg. HEIC/HEIF and BMP are converted for display (to JPG and PNG), because browsers can't show HEIF and only some BMP variants.
 - Videos: formats your browser can play, e.g. mp4, webm, mov, ogv
 - Audio recordings: mp3, wav, ogg
 - Text documents: txt, csv, log, md, html, js, css

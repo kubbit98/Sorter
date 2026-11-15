@@ -44,10 +44,12 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 
-// supported extensions missing from the default mappings, without them static files middleware returns 404
+// supported extensions missing from the default mappings (static files middleware returns 404 without them)
+// or mapped to an outdated type
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".apng"] = "image/apng";
 contentTypeProvider.Mappings[".avif"] = "image/avif";
+contentTypeProvider.Mappings[".jfif"] = "image/jpeg";
 contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".m4p"] = "audio/mp4";
 contentTypeProvider.Mappings[".m4b"] = "audio/mp4";

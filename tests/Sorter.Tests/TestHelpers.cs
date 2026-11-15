@@ -52,7 +52,8 @@ internal static class TestImages
 {
     public static string TestDataPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
-    public static string Create(string path, int width, int height, ushort? exifOrientation = null)
+    /// <param name="format">Saves in this format regardless of the file extension, e.g. "jpg" or "png".</param>
+    public static string Create(string path, int width, int height, ushort? exifOrientation = null, string? format = null)
     {
         using var image = new Image<Rgb24>(width, height, new Rgb24(40, 90, 160));
         if (exifOrientation != null)
@@ -60,7 +61,15 @@ internal static class TestImages
             image.Metadata.ExifProfile = new ExifProfile();
             image.Metadata.ExifProfile.SetValue(ExifTag.Orientation, exifOrientation.Value);
         }
-        image.Save(path);
+        if (format == null)
+        {
+            image.Save(path);
+        }
+        else
+        {
+            Configuration.Default.ImageFormatsManager.TryFindFormatByFileExtension(format, out var imageFormat);
+            image.Save(path, Configuration.Default.ImageFormatsManager.GetEncoder(imageFormat!));
+        }
         return path;
     }
 

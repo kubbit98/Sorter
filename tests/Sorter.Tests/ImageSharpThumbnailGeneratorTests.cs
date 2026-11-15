@@ -31,6 +31,11 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
     [InlineData("webp", true)]
     [InlineData("heic", true)]
     [InlineData("HEIC", true)]
+    [InlineData("heif", true)]
+    [InlineData("hif", true)]
+    [InlineData("jfif", true)]
+    [InlineData("jpe", true)]
+    [InlineData("svg", false)]
     [InlineData("avif", false)]
     [InlineData("apng", false)]
     [InlineData("mp4", false)]
@@ -137,6 +142,48 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(TestImages.TestDataPath("small_640x480.heic"), "HEIC");
 
         Assert.NotNull(result.ConvertedPath);
+    }
+
+    [Theory]
+    [InlineData("heif")]
+    [InlineData("hif")]
+    [InlineData("HIF")]
+    public void OtherHeifExtensions_AreConvertedLikeHeic(string extension)
+    {
+        string path = _input.Combine($"camera.{extension}");
+        System.IO.File.Copy(TestImages.TestDataPath("small_640x480.heic"), path);
+
+        var result = _generator.Generate(path, extension);
+
+        Assert.Equal(".jpg", Path.GetExtension(result.ConvertedPath));
+        Assert.Equal(640, Image.Identify(result.ConvertedPath!).Width);
+    }
+
+    [Theory]
+    [InlineData("jfif")]
+    [InlineData("jpe")]
+    public void JpegExtensionVariants_GetJpgThumbnail(string extension)
+    {
+        string path = _input.Combine($"photo.{extension}");
+        TestImages.Create(path, 2000, 1000, format: "jpg");
+
+        var result = _generator.Generate(path, extension);
+
+        Assert.Null(result.ConvertedPath);
+        Assert.Equal(".jpg", Path.GetExtension(result.ThumbnailPath));
+        Assert.Equal("JPEG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+    }
+
+    [Fact]
+    public void FileWithMismatchedExtension_ThumbnailUsesDecodedFormat()
+    {
+        string path = _input.Combine("actually_png.jpg");
+        TestImages.Create(path, 2000, 1000, format: "png");
+
+        var result = _generator.Generate(path, "jpg");
+
+        Assert.Equal(".png", Path.GetExtension(result.ThumbnailPath));
+        Assert.Equal("PNG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
     }
 
     [Fact]

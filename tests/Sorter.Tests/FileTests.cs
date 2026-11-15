@@ -10,6 +10,11 @@ public class FileTests
     [InlineData("JPG", SorterFile.FileTypeEnum.Photo)]
     [InlineData("heic", SorterFile.FileTypeEnum.Photo)]
     [InlineData("HEIC", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("heif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("hif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("jfif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("jpe", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("svg", SorterFile.FileTypeEnum.Photo)]
     [InlineData("apng", SorterFile.FileTypeEnum.Photo)]
     [InlineData("mp4", SorterFile.FileTypeEnum.Video)]
     [InlineData("ogg", SorterFile.FileTypeEnum.Video)] // listed as both video and audio, video wins
