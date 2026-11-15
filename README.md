@@ -5,12 +5,12 @@
 
 This app is a simple web program which is aimed at simplifying the process of sorting various files via simple control panel. Additional features of the sorter app is generation of thumbnails of photos, so that their loading during sorting is much faster than the classic several MB files, and simultaneous support for multiple sessions which do not collide with each other.
 
-Ready-to-run packages are available for Windows (x64) and Linux (x64). macOS isn't packaged, because the app has to be compiled on macOS itself for Apple reasons (https://github.com/dotnet/runtime/issues/49091) and I don't have a Mac to test it. It can be built from source there (see [Building from source](#building-from-source)), but HEIC photos are not supported on macOS.
+Ready-to-run packages are available for Windows (x64) and Linux (x64). macOS isn't packaged, because the app has to be compiled on macOS itself for Apple reasons (https://github.com/dotnet/runtime/issues/49091) and I don't have a Mac to test it. It can be built from source there (see [Building from source](#building-from-source)); HEIC support is included for macOS too, but it hasn't been tested there.
 
 The application supports keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
 
 ## Supported media types
-- Photos: jpg, jpeg, jfif, jpe, png, gif, webp, apng, avif, bmp, heic, heif, hif and svg. HEIC/HEIF and BMP are converted for display (to JPG and PNG), because browsers can't show HEIF and only some BMP variants.
+- Photos: jpg, jpeg, jfif, jpe, png, gif, webp, apng, avif, bmp, heic, heif, hif and svg. HEIC/HEIF and BMP are converted for display (to JPG and PNG), because browsers can't show HEIF and only some BMP variants. Thumbnails and conversions are made with [ImageMagick](https://imagemagick.org) (through Magick.NET), restricted to these formats.
 - Videos: formats your browser can play, e.g. mp4, webm, mov, ogv
 - Audio recordings: mp3, wav, ogg
 - Text documents: txt, csv, log, md, html, js, css
