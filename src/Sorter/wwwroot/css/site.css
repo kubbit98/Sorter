@@ -164,7 +164,14 @@ html[data-bs-theme="dark"] .blazored-toast {
 
 #txtcontent {
     word-wrap: break-word;
-    width: 800px;
+    /* keeps the lines of logs, CSV and code instead of one long paragraph */
+    white-space: pre-wrap;
+    width: 100%;
+    max-width: 800px;
+    /* stays within the window, the rest scrolls */
+    max-height: 95vh;
+    overflow-y: auto;
+    margin: 0 auto;
 }
 
 .tooltip-container {

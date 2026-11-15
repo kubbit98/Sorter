@@ -201,7 +201,7 @@ def generate_text(d):
     (d / "notes.txt").write_text("Short note.\nZażółć gęślą jaźń – Polish diacritics test.\n", encoding="utf-8")
     (d / "empty.txt").write_text("")
     lines = [f"{i:05d} Lorem ipsum dolor sit amet, consectetur adipiscing elit." for i in range(1, 401)]
-    (d / "long_text_over_5000_chars.txt").write_text("\n".join(lines) + "\n")
+    (d / "long_text_over_preview_limit.txt").write_text("\n".join(lines) + "\n")
     (d / "data.csv").write_text("id;name;value\n1;alpha;3.14\n2;beta;2.72\n3;gamma;1.41\n")
     (d / "server.log").write_text("".join(
         f"2026-11-16 12:{m:02d}:00 [{lvl}] Request {m} handled\n"
