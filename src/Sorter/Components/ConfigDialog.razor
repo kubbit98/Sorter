@@ -43,13 +43,13 @@
                         <div class="col-sm-4">
                             @if (!String.IsNullOrWhiteSpace(_source) && Directory.Exists(Path.GetFullPath(_source)))
                             {
-                                if (ArePathEqual(_source, _destination))
+                                if (PathComparer.AreSameDirectory(_source, _destination))
                                 {
                                     <ToolTip Tip="Source and destination are equal, are you sure you want that?">
                                         <p class="text-warning">Path is valid*</p>
                                     </ToolTip>
                                 }
-                                else if (ArePathsNested(_source, _destination))
+                                else if (PathComparer.AreNested(_source, _destination))
                                 {
                                     <ToolTip Tip="Source and destination are nested within each other, are you sure you want that?">
                                         <p class="text-warning">Path is valid*</p>
@@ -96,13 +96,13 @@
                         <div class="col-sm-4">
                             @if (!String.IsNullOrWhiteSpace(_destination) && Directory.Exists(Path.GetFullPath(_destination)))
                             {
-                                if (ArePathEqual(_source, _destination))
+                                if (PathComparer.AreSameDirectory(_source, _destination))
                                 {
                                     <ToolTip Tip="Source and destination are equal, are you sure you want that?">
                                         <p class="text-warning">Path is valid*</p>
                                     </ToolTip>
                                 }
-                                else if (ArePathsNested(_source, _destination))
+                                else if (PathComparer.AreNested(_source, _destination))
                                 {
                                     <ToolTip Tip="Source and destination are nested within each other, are you sure you want that?">
                                         <p class="text-warning">Path is valid*</p>
@@ -415,25 +415,5 @@
             return;
         }
         await InvokeAsync(() => OnChange.InvokeAsync(true));
-    }
-    static bool ArePathEqual(string path1, string path2)
-    {
-        if (!Directory.Exists(Path.GetFullPath(path1)) || !Directory.Exists(Path.GetFullPath(path2))) return false;
-        return Path.GetFullPath(path1).Equals(Path.GetFullPath(path2));
-    }
-    static bool ArePathsNested(string path1, string path2)
-    {
-        if (string.IsNullOrEmpty(path1) || string.IsNullOrEmpty(path2)) return false;
-        string normalizedPath1 = Path.GetFullPath(path1).TrimEnd(Path.DirectorySeparatorChar);
-        string normalizedPath2 = Path.GetFullPath(path2).TrimEnd(Path.DirectorySeparatorChar);
-        if (!Directory.Exists(Path.GetFullPath(normalizedPath1)) || !Directory.Exists(Path.GetFullPath(normalizedPath2))) return false;
-        return IsSubDirectory(normalizedPath1, normalizedPath2) || IsSubDirectory(normalizedPath2, normalizedPath1);
-    }
-
-    static bool IsSubDirectory(string basePath, string subPath)
-    {
-        DirectoryInfo baseDir = new DirectoryInfo(basePath);
-        DirectoryInfo subDir = new DirectoryInfo(subPath);
-        return baseDir.FullName.Contains(subDir.FullName);
     }
 }
