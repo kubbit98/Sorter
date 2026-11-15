@@ -380,7 +380,8 @@
         _previousFile = _currentFile;
         _myMediaCurrentIndex++;
         await _PSSWriteMyMediaCurrentIndex();
-        if (_nextFile != null) _currentFile = _nextFile;
+        // fetched again, because the thumbnail or HEIC conversion may have finished after _nextFile was loaded
+        if (_nextFile != null) _currentFile = await GetFileFromFileService(_nextFile.FIndex!.Value, _nextFile.Name);
         else
         {
             if (_myMediaIndexes!.Count >= _myMediaCurrentIndex)
@@ -447,7 +448,9 @@
         try
         {
             _nextFile = _currentFile;
-            _currentFile = (_previousFile != null) ? _previousFile : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
+            _currentFile = (_previousFile != null)
+                ? await GetFileFromFileService(_previousFile.FIndex!.Value, _previousFile.Name)
+                : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
             _newFileName = _currentFile.Name;
             if (_myMediaCurrentIndex > 0) _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
             else _previousFile = null;

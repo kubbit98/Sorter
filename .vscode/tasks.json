@@ -7,7 +7,7 @@
         "type": "process",
         "args": [
             "build",
-            "${workspaceFolder}/Sorter.csproj",
+            "${workspaceFolder}/src/Sorter/Sorter.csproj",
             "/property:GenerateFullPaths=true",
             "/consoleloggerparameters:NoSummary;ForceNoAlign"
         ],
@@ -21,7 +21,7 @@
             "watch",
             "run",
             "--project",
-            "${workspaceFolder}/Sorter.csproj"
+            "${workspaceFolder}/src/Sorter/Sorter.csproj"
         ],
         "problemMatcher": "$msCompile"
     },
@@ -31,7 +31,7 @@
         "type": "process",
         "args": [
             "publish",
-            "${workspaceFolder}/Sorter.csproj",
+            "${workspaceFolder}/src/Sorter/Sorter.csproj",
             "/property:GenerateFullPaths=true",
             "/consoleloggerparameters:NoSummary;ForceNoAlign"
         ],

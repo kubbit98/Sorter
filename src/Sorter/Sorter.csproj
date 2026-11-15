@@ -33,14 +33,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="COPYING">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Update="README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
+		<None Include="..\..\COPYING" Pack="True" PackagePath="\" />
+		<None Include="..\..\README.md" Pack="True" PackagePath="\" />
 	</ItemGroup>
 
 </Project>

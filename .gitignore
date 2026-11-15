@@ -3,8 +3,8 @@ config.json
 keybinds.json
 Sorter-Backup.csproj
 Temp/
-TestFolder/src
-TestFolder/dst
+src/Sorter/TestFolder/src
+src/Sorter/TestFolder/dst
 
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -195,7 +195,7 @@ publish/
 # but database connection strings (with potential passwords) will be unencrypted
 *.pubxml
 # shared publish profiles used by local publish and the release workflow
-!Properties/PublishProfiles/*.pubxml
+!src/Sorter/Properties/PublishProfiles/*.pubxml
 *.publishproj
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to

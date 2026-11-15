@@ -73,13 +73,15 @@ This is an early version of the project. Therefore, some unknowns changes are ex
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+The app lives in `src/Sorter`, automated tests (xUnit) in `tests/Sorter.Tests`. Run them with `dotnet test`, they also run in CI on Ubuntu and Windows for every pull request.
+
 ### Test files
 
-`TestFolder/generate_test_files.py` prepares a manual test environment: it fills `TestFolder/src` with sample files of every supported type (including edge cases like broken files or special characters in names) and recreates empty destination folders `TestFolder/dst/A`–`E`. It requires Python with `pillow` and `pillow-heif`, and `ffmpeg` (LibreOffice is optional).
+`src/Sorter/TestFolder/generate_test_files.py` prepares a manual test environment: it fills `src/Sorter/TestFolder/src` with sample files of every supported type (including edge cases like broken files or special characters in names) and recreates empty destination folders `src/Sorter/TestFolder/dst/A`–`E`. It requires Python with `pillow` and `pillow-heif`, and `ffmpeg` (LibreOffice is optional).
 
 ```
 pip install pillow pillow-heif
-python TestFolder/generate_test_files.py --clean
+python src/Sorter/TestFolder/generate_test_files.py --clean
 ```
 
 Then, when running in the Development environment, use "Load default config for testing" in the configuration dialog to point the app at these folders.
@@ -93,7 +95,7 @@ git tag v0.13.0-beta
 git push origin v0.13.0-beta
 ```
 
-The workflow builds and tests the app, publishes the Windows and Linux packages using the profiles in `Properties/PublishProfiles` and creates a draft release with generated notes. Review the notes and publish the draft. The same packages can be built locally with `dotnet publish -c Release -p:PublishProfile=win-x64` (or `linux-x64`).
+The workflow builds and tests the app, publishes the Windows and Linux packages using the profiles in `src/Sorter/Properties/PublishProfiles` and creates a draft release with generated notes. Review the notes and publish the draft. The same packages can be built locally with `dotnet publish src/Sorter/Sorter.csproj -c Release -p:PublishProfile=win-x64` (or `linux-x64`).
 
 ## License
 

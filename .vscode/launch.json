@@ -5,7 +5,7 @@
       "name": "Sorter (Debug)",
       "type": "dotnet",
       "request": "launch",
-      "projectPath": "${workspaceFolder}/Sorter.csproj",
+      "projectPath": "${workspaceFolder}/src/Sorter/Sorter.csproj",
       "launchConfigurationId": "TargetFramework=;http"
     }
   ]
