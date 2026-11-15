@@ -404,7 +404,7 @@
         }
         catch (Exception e)
         {
-            toastService.ShowError($"Cannot load test configuration: {e.Message}. Generate test files first with TestFolder/generate_test_files.py");
+            toastService.ShowError($"Cannot load test configuration: {e.Message}. Generate test files first with src/Sorter/TestFolder/generate_test_files.py");
             return;
         }
         toastService.ShowInfo("Default configuration loaded");

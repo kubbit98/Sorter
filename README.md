@@ -5,16 +5,18 @@
 
 This app is a simple web program which is aimed at simplifying the process of sorting various files via simple control panel. Additional features of the sorter app is generation of thumbnails of photos, so that their loading during sorting is much faster than the classic several MB files, and simultaneous support for multiple sessions which do not collide with each other.
 
-The application has been tested on Windows 11, Linux (Fedora 38) and macOS (Sonoma). For macOS, however, it had to be compiled under macOS itself, for apple reasons (https://github.com/dotnet/runtime/issues/49091), so although nothing needs to be changed in the code, there will not be a downloadable executable package available in releases, since I don't have any macOS to package the app.
+Ready-to-run packages are available for Windows (x64) and Linux (x64). macOS isn't packaged, because the app has to be compiled on macOS itself for Apple reasons (https://github.com/dotnet/runtime/issues/49091) and I don't have a Mac to test it. It can be built from source there (see [Building from source](#building-from-source)), but HEIC photos are not supported on macOS.
 
-As of version 0.10, the application also has support for keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
+The application supports keyboard shortcuts. Once the application is initialized, the a-z and 0-9 keys can be dynamically assigned to a folder in the settings, the spacebar opens or closes the photo zoom mode, the right and left arrows go forward and backward, and the F2 function key focuses the field to rename a file (you can then exit with ESC, or save with Enter).
 
 ## Supported media types
-- Photos (e.g. jpg, gif, png, heic)
-- Videos (e.g. mp4, webm, avi)
-- Audio recordings (e.g. mp3, wav)
-- Text documents (e.g. txt, log)
+- Photos: jpg, jpeg, png, gif, webp, apng, avif, bmp, heic. HEIC and BMP are converted for display (to JPG and PNG), because browsers can't show HEIC and only some BMP variants.
+- Videos: formats your browser can play, e.g. mp4, webm, mov, ogv
+- Audio recordings: mp3, wav, ogg
+- Text documents: txt, csv, log, md, html, js, css
 - PDF documents
+
+Other files are listed too and can be sorted, they just aren't previewed.
 
 ## Presentation
 You can watch the presentation here:
@@ -23,24 +25,33 @@ You can watch the presentation here:
 
 ## Installation
 
-To run the application, simply download the latest version appropriate for your operating system from the [releases](https://github.com/kubbit98/Sorter/releases). 
+To run the application, simply download the latest version appropriate for your operating system from the [releases](https://github.com/kubbit98/Sorter/releases), extract it and run `Sorter` (`Sorter.exe` on Windows). Nothing else needs to be installed.
+
+### Building from source
+
+Building requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0):
+
+```
+cd src/Sorter
+dotnet run
+```
 
 ## Configuration
 
-The basic and most important configuration is done inside the application, it is persistent and saved in the config.json and keybinds.json file.
+The basic and most important configuration is done inside the application, it is persistent and saved in the config.json and keybinds.json files next to the application.
 
 ## Advanced configuration
-You can look at some deeper settings in [appsettings.json](https://github.com/kubbit98/Sorter/blob/master/appsettings.json) file:
+You can look at some deeper settings in [appsettings.json](https://github.com/kubbit98/Sorter/blob/master/src/Sorter/appsettings.json) file:
 - Logging
 
   (object)
 
-  Settings of logging in console, the default show some information about the operation of the server itself, but also information about moved files or problems with the application. For more information, see the official documentation https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-6.0
+  Settings of logging in console, the default show some information about the operation of the server itself, but also information about moved files or problems with the application. For more information, see the official documentation https://learn.microsoft.com/en-us/aspnet/core/fundamentals/logging/
 - Kestrel
  
   (object) 
 
-  Settings of kestrel web server, the settings are many and there is no reason for me to list them all, some of them can be found in the [link below](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints?view=aspnetcore-6.0)
+  Settings of kestrel web server, the settings are many and there is no reason for me to list them all, some of them can be found in the [link below](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/endpoints)
   - Endpoints.Http.Url
 
     (string) Default: http://localhost:5000
@@ -63,7 +74,7 @@ You can look at some deeper settings in [appsettings.json](https://github.com/ku
 
   (string/path) Default: "Temp"
 
-  If the application has thumbnail generation enabled, it needs to save them somewhere. So it saves them in the folder indicated in the above parameter, by default it creates a Temp folder in the application folder. For example, you can set it to "c:\users\tempFiles". This folder is cleaned up every time the application is launched, so setting it wrong can cause the entire computer to crash irreversibly. If you don't know if you need to change it, you probably shouldn't change it.
+  If the application has thumbnail generation enabled, it needs to save them somewhere. So it saves them in the folder indicated in the above parameter, by default it creates a Temp folder in the application folder. For example, you can set it to "c:\users\tempFiles". **Everything inside this folder is deleted every time the application starts**, so never point it at a folder containing anything else. If you don't know if you need to change it, you probably shouldn't change it.
 
 ## Roadmap
 
