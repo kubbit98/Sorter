@@ -58,45 +58,10 @@ namespace Sorter.Data
         }
         public void LoadDefaultTestConfig()
         {
-            System.IO.File.Copy(Path.Combine("TestFolder", "test_config.json"), "config.json", true);
-        }
-        public void RearrangeTestFiles()
-        {
-            string dst = Path.Combine("TestFolder", "dst");
-            if (!Directory.Exists(dst))
-            {
-                Directory.CreateDirectory(dst);
-            }
-            string src = Path.Combine("TestFolder", "src");
-            if (!Directory.Exists(src))
-            {
-                Directory.CreateDirectory(src);
-            }
-
-            DirectoryInfo di = new(dst);
-            foreach (FileInfo file in di.GetFiles())
-            {
-                file.Delete();
-            }
-            foreach (DirectoryInfo dir in di.GetDirectories())
-            {
-                dir.Delete(true);
-            }
-            for (char c = 'A'; c <= 'E'; c++)
-            {
-                Directory.CreateDirectory(Path.Combine(dst, c.ToString()));
-            }
-            for (int i = 0; i <= 9; i++)
-            {
-                string path = Path.Combine(src, i + ".txt");
-                if (!System.IO.File.Exists(path))
-                {
-                    using StreamWriter sw = System.IO.File.CreateText(path);
-                    sw.WriteLine("File number");
-                    sw.WriteLine(i);
-                    sw.WriteLine(":P");
-                }
-            }
+            string json = System.IO.File.ReadAllText(Path.Combine("TestFolder", "test_config.json"));
+            ConfigOptions config = JsonSerializer.Deserialize<Dictionary<string, ConfigOptions>>(json)![ConfigOptions.config];
+            // SaveOptions also validates the paths and points static file providers at the test folders
+            SaveOptions(config);
         }
         public bool CheckMonitor(ConfigOptions config)
         {

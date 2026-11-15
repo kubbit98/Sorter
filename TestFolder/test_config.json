@@ -1,17 +1,16 @@
 {
   "config": {
-    "Source": "TestFolder\\src",
+    "Source": "TestFolder/src",
     "ExcludeDirsSource": [
     ],
-    "Destination": "TestFolder\\dst",
+    "Destination": "TestFolder/dst",
     "ExcludeDirsDestination": [
     ],
-    "UseWhiteListInsteadOfBlackList": true,
+    "UseWhiteListInsteadOfBlackList": false,
     "WhiteList": [
-      "txt"
     ],
     "BlackList": [
     ],
-    "AllowRename": false
+    "AllowRename": true
   }
 }

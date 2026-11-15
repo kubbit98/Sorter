@@ -226,7 +226,6 @@
                     @if (!@hostingEnv.IsProduction())
                     {
                         <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
-                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Rearrange test files to their original state" ButtonOnClickAction="RearrangeTestFiles" CustomButtonParameter=_dictPreventKeydown />
                     }
                 }
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
@@ -399,20 +398,16 @@
     }
     private async void LoadDefaultTestConfig()
     {
-        ConfigOptionsService.LoadDefaultTestConfig();
-        toastService.ShowInfo("Default configuration loaded");
-        Thread.Sleep(1000);
-        if (!await FileService.InitializeFiles(true))
+        try
         {
-            toastService.ShowError("Something wrong with configuration.");
+            ConfigOptionsService.LoadDefaultTestConfig();
+        }
+        catch (Exception e)
+        {
+            toastService.ShowError($"Cannot load test configuration: {e.Message}. Generate test files first with TestFolder/generate_test_files.py");
             return;
         }
-        await InvokeAsync(() => OnChange.InvokeAsync(true));
-    }
-    private async void RearrangeTestFiles()
-    {
-        ConfigOptionsService.RearrangeTestFiles();
-        toastService.ShowInfo("Test files rearranged");
+        toastService.ShowInfo("Default configuration loaded");
         Thread.Sleep(1000);
         if (!await FileService.InitializeFiles(true))
         {

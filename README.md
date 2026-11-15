@@ -73,6 +73,17 @@ This is an early version of the project. Therefore, some unknowns changes are ex
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+### Test files
+
+`TestFolder/generate_test_files.py` prepares a manual test environment: it fills `TestFolder/src` with sample files of every supported type (including edge cases like broken files or special characters in names) and recreates empty destination folders `TestFolder/dst/A`–`E`. It requires Python with `pillow` and `pillow-heif`, and `ffmpeg` (LibreOffice is optional).
+
+```
+pip install pillow pillow-heif
+python TestFolder/generate_test_files.py --clean
+```
+
+Then, when running in the Development environment, use "Load default config for testing" in the configuration dialog to point the app at these folders.
+
 ## License
 
 [GPL-3.0](https://choosealicense.com/licenses/gpl-3.0/)
