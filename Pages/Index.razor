@@ -198,13 +198,13 @@
                         {
                             <p class="my-0 py-0 text-end lh-1">Previous file is not a photo</p>
                         }
-                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @_previousFile.Path)</p>
+                        <p class="my-0 py-0 text-end lh-1">Previous file: @_previousFile.NameWithExtension<br />(in @Uri.UnescapeDataString(_previousFile.Path))</p>
                     }
                 </div>
                 @if (null != _nextFile)
                 {
                     <div class="row justify-content-end">
-                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @_nextFile.Path)</p>
+                        <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @Uri.UnescapeDataString(_nextFile.Path))</p>
                         @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                         {
                             <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
