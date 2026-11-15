@@ -5,7 +5,8 @@ namespace Sorter.Data;
 /// </summary>
 public class FileOperations(ILogger<FileOperations> logger)
 {
-    public const int MaxTextPreviewLength = 5000;
+    // about a screen of text; more only made the page longer than the window
+    public const int MaxTextPreviewLength = 2000;
 
     public static string CombineFileName(string name, string extension) =>
         string.IsNullOrEmpty(extension) ? name : string.Concat(name, ".", extension);

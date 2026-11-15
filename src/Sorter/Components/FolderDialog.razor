@@ -4,11 +4,11 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Add new folder</h4>
-                <button type="button" class="btn btn-danger btn-circle btn-circle-sm ms-1 close" data-bs-dismiss="modal" data-prevent-keydown><i class="bi bi-x-lg"></i></button>
+                <h4 class="modal-title" id="folderModalLabel">Add new folder</h4>
+                <button type="button" class="btn btn-danger btn-circle btn-circle-sm ms-1 close" data-bs-dismiss="modal" data-prevent-keydown aria-label="Close"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="modal-body">
-                <p>Insert name for new folder</p>
+                <label for="FolderName" class="form-label">Insert name for new folder</label>
                 <input class="form-control" type="text" id="FolderName" name="FolderName" @bind="_folderName" @bind:event="oninput" placeholder="New folder name" data-prevent-keydown>
                 @if (string.IsNullOrWhiteSpace(_folderName))
                 {

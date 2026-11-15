@@ -264,12 +264,12 @@ public class FileServiceTests : IDisposable
     [Fact]
     public async Task GetTextFileContent_TruncatesLongFiles()
     {
-        CreateSourceFile("long.txt", new string('x', 6000));
+        CreateSourceFile("long.txt", new string('x', FileOperations.MaxTextPreviewLength + 1000));
         var service = await CreateInitializedServiceAsync();
 
         string content = service.GetTextFileContent(service.GetFileAtIndex(0)!);
 
-        Assert.Equal(new string('x', 5000) + "[...]", content);
+        Assert.Equal(new string('x', FileOperations.MaxTextPreviewLength) + "[...]", content);
     }
 
     [Theory]
