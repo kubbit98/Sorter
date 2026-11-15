@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Sorter (Debug)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/Sorter.csproj",
+      "launchConfigurationId": "TargetFramework=;http"
+    }
+  ]
+}

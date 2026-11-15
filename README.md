@@ -73,6 +73,28 @@ This is an early version of the project. Therefore, some unknowns changes are ex
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+### Test files
+
+`TestFolder/generate_test_files.py` prepares a manual test environment: it fills `TestFolder/src` with sample files of every supported type (including edge cases like broken files or special characters in names) and recreates empty destination folders `TestFolder/dst/A`–`E`. It requires Python with `pillow` and `pillow-heif`, and `ffmpeg` (LibreOffice is optional).
+
+```
+pip install pillow pillow-heif
+python TestFolder/generate_test_files.py --clean
+```
+
+Then, when running in the Development environment, use "Load default config for testing" in the configuration dialog to point the app at these folders.
+
+### Releasing
+
+Releases are built by GitHub Actions. The version comes only from the git tag, local builds are versioned `0.0.0-dev`.
+
+```
+git tag v0.13.0-beta
+git push origin v0.13.0-beta
+```
+
+The workflow builds and tests the app, publishes the Windows and Linux packages using the profiles in `Properties/PublishProfiles` and creates a draft release with generated notes. Review the notes and publish the draft. The same packages can be built locally with `dotnet publish -c Release -p:PublishProfile=win-x64` (or `linux-x64`).
+
 ## License
 
 [GPL-3.0](https://choosealicense.com/licenses/gpl-3.0/)
