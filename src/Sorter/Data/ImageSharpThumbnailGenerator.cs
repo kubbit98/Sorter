@@ -3,6 +3,7 @@ using HeyRed.ImageSharp.Heif.Formats.Heif;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 
 namespace Sorter.Data;
@@ -11,9 +12,21 @@ public class ImageSharpThumbnailGenerator : IThumbnailGenerator
 {
     public const int DefaultMaxSize = 850;
 
-    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "pbm", "png", "tiff", "tga", "webp", "heic"];
-    // browsers (except Safari) can't render these in <img>, so a JPG conversion is shown instead
-    private static readonly string[] s_browserUnsupportedExtensions = ["heic"];
+    private static readonly string[] s_supportedExtensions = ["bmp", "gif", "jpg", "jpeg", "jfif", "jpe", "pbm", "png", "tiff", "tga", "webp", "heic", "heif", "hif"];
+    // .hif is what Canon, Fujifilm and Sony cameras use for HEIF photos
+    private static readonly string[] s_heifExtensions = ["heic", "heif", "hif"];
+    // formats browsers can't display reliably are always converted, the encoder is passed explicitly
+    // because the HEIF decoder configuration doesn't contain any encoders
+    private static readonly Dictionary<string, (string Extension, Func<IImageEncoder> CreateEncoder)> s_conversions = new()
+    {
+        // only Safari renders HEIF
+        ["heic"] = ("jpg", () => new JpegEncoder()),
+        ["heif"] = ("jpg", () => new JpegEncoder()),
+        ["hif"] = ("jpg", () => new JpegEncoder()),
+        // browsers render only common BMP variants (no RLE compression, alpha or unusual bit depths),
+        // PNG is lossless and keeps transparency
+        ["bmp"] = ("png", () => new PngEncoder()),
+    };
     private static readonly DecoderOptions s_heifDecoderOptions = new()
     {
         Configuration = new Configuration(new AvifConfigurationModule(), new HeifConfigurationModule())
@@ -34,11 +47,13 @@ public class ImageSharpThumbnailGenerator : IThumbnailGenerator
     public ThumbnailResult Generate(string physicalPath, string extension)
     {
         string normalizedExtension = extension.ToLowerInvariant();
-        bool convert = s_browserUnsupportedExtensions.Contains(normalizedExtension);
-        using Image image = Load(physicalPath, convert);
-        // the HEIF decoder configuration has no JPG encoder, so it must be passed explicitly
-        IImageEncoder? encoder = convert ? new JpegEncoder() : null;
-        string outputExtension = convert ? "jpg" : normalizedExtension;
+        bool convert = s_conversions.TryGetValue(normalizedExtension, out var conversion);
+        using Image image = Load(physicalPath, heif: s_heifExtensions.Contains(normalizedExtension));
+        IImageEncoder? encoder = convert ? conversion.CreateEncoder() : null;
+        // the decoded format decides, so .jfif/.jpe thumbnails get .jpg and a PNG named .jpg gets .png
+        string outputExtension = convert
+            ? conversion.Extension
+            : image.Metadata.DecodedImageFormat?.FileExtensions.FirstOrDefault() ?? normalizedExtension;
 
         string? convertedPath = convert ? Save(image, outputExtension, encoder) : null;
         double ratio = Math.Min(_maxSize / (double)image.Width, _maxSize / (double)image.Height);

@@ -81,7 +81,7 @@
     {
         await Task.Run((Action)(() =>
         {
-            _truePassword = configuration.GetValue<string>("Password");
+            _truePassword = configuration.GetValue<string>("Password") ?? string.Empty;
             if (null != this.ExistingFolders) this.MyFolders = (Folder[])ExistingFolders.Select(element => (Folder)element.Clone()).ToArray();
         }));
         await JS.InvokeVoidAsync("configKeyBindModal");

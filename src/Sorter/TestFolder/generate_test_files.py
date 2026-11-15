@@ -45,6 +45,13 @@ VIDEOS = {
     "video_flv_mp3.flv": ["-c:v", "flv", "-c:a", "libmp3lame", "-ar", "44100"],
     "video_mpeg2_mp2.mpg": ["-c:v", "mpeg2video", "-q:v", "5", "-c:a", "mp2"],
 }
+SVG_SAMPLE = """<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#2a5aa0"/>
+  <polygon points="400,30 350,110 450,110" fill="white"/>
+  <text x="400" y="140" font-family="sans-serif" font-size="28" fill="white" text-anchor="middle">TOP</text>
+  <text x="400" y="320" font-family="sans-serif" font-size="56" fill="white" text-anchor="middle">SVG vector</text>
+</svg>
+"""
 AUDIOS = {
     "audio.mp3": ["-c:a", "libmp3lame"],
     "audio.wav": ["-c:a", "pcm_s16le"],
@@ -151,6 +158,9 @@ def generate_photos(d):
     save_rotated_exif6(make_image(3000, 4000, "JPG portrait EXIF 6"), d / "jpg_portrait_exif_orientation6.jpg", quality=85)
     make_image(2000, 1500, "JPEG extension").save(d / "photo.jpeg", quality=85)
     make_image(1600, 1200, "Uppercase JPG").save(d / "IMG_0001.JPG", quality=85)
+    make_image(1600, 1200, "JFIF extension").save(d / "photo.jfif", format="JPEG", quality=85)
+    make_image(1600, 1200, "JPE extension").save(d / "photo.jpe", format="JPEG", quality=85)
+    (d / "vector.svg").write_text(SVG_SAMPLE, encoding="utf-8")
     make_image(2400, 1800, "PNG large").save(d / "png_large.png")
     make_image(500, 500, "PNG small").save(d / "png_small.png")
     make_image(3000, 2000, "WEBP large").save(d / "webp_large.webp", quality=80)
@@ -159,6 +169,11 @@ def generate_photos(d):
     save_animation(make_frames(1200, 900, "GIF large"), d / "gif_animated_large.gif")
     save_animation(make_frames(500, 375, "APNG"), d / "apng_animated.apng", format="PNG")
     save_avif(make_image(2400, 1600, "AVIF"), d / "avif_large.avif")
+    make_image(1200, 900, "BMP").save(d / "bmp_large.bmp")
+    # 32-bit BMP with alpha, a variant browsers don't display reliably (the app converts BMP to PNG)
+    alpha = make_image(600, 450, "BMP 32-bit alpha").convert("RGBA")
+    alpha.putalpha(Image.linear_gradient("L").rotate(90).resize(alpha.size))
+    alpha.save(d / "bmp_alpha_32bit.bmp")
     make_image(800, 600, "Duplicate name (photos)").save(d / "duplicate_name.jpg", quality=85)
 
 
@@ -167,6 +182,9 @@ def generate_heic(d):
     make_image(640, 480, "HEIC small").save(d / "heic_small.heic", quality=80)
     save_rotated_exif6(make_image(3024, 4032, "HEIC portrait irot+EXIF 6"), d / "heic_portrait_irot_exif6.heic", quality=80)
     make_image(1000, 750, "Uppercase HEIC").save(d / "IMG_0002.HEIC", quality=80)
+    make_image(1600, 1200, "HEIF extension").save(d / "photo.heif", format="HEIF", quality=80)
+    # .hif is used by Canon, Fujifilm and Sony cameras
+    make_image(1600, 1200, "HIF (camera)").save(d / "DSC00001.HIF", format="HEIF", quality=80)
 
 
 def generate_videos(d):
@@ -217,7 +235,6 @@ def generate_edge_cases(d):
     make_image(800, 600, "Diacritics in name").save(d / "zdjęcie z wakacji ąęśćżźół.jpg", quality=85)
     make_image(800, 600, "Hash and percent").save(d / "hash#and%percent.png")
     make_image(800, 600, "Duplicate name (edge)").save(d / "duplicate_name.jpg", quality=85)
-    make_image(1200, 900, "BMP").save(d / "image.bmp")
     make_image(1200, 900, "TIFF").save(d / "image.tiff")
     (d / "not_an_image.jpg").write_bytes(b"This is not a JPEG file.\n" * 50)
     (d / "not_an_image.heic").write_bytes(b"This is not a HEIC file.\n" * 50)

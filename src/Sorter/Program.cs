@@ -44,10 +44,12 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 
-// supported extensions missing from the default mappings, without them static files middleware returns 404
+// supported extensions missing from the default mappings (static files middleware returns 404 without them)
+// or mapped to an outdated type
 var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".apng"] = "image/apng";
 contentTypeProvider.Mappings[".avif"] = "image/avif";
+contentTypeProvider.Mappings[".jfif"] = "image/jpeg";
 contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
 contentTypeProvider.Mappings[".m4p"] = "audio/mp4";
 contentTypeProvider.Mappings[".m4b"] = "audio/mp4";
@@ -72,7 +74,8 @@ app.UseStaticFiles(new StaticFileOptions()
     ContentTypeProvider = contentTypeProvider
 });
 
-string address = app.Configuration.GetSection("Kestrel").GetSection("Endpoints").GetSection("Http").GetValue<string>("Url");
+// Kestrel listens on http://localhost:5000 when no endpoint is configured
+string address = app.Configuration.GetSection("Kestrel").GetSection("Endpoints").GetSection("Http").GetValue<string>("Url") ?? "http://localhost:5000";
 
 try
 {
@@ -81,7 +84,7 @@ try
     {
         Process.Start(new ProcessStartInfo(address) { UseShellExecute = true });
     }
-    catch (System.ComponentModel.Win32Exception ex)
+    catch (System.ComponentModel.Win32Exception)
     {
         //If someone doesn't have a default browser set, this exception may occur
     }
@@ -92,7 +95,7 @@ try
     app.Logger.LogInformation("You can close browser and console window now");
 
 }
-catch (IOException ex)
+catch (IOException)
 {
 
     app.Logger.LogCritical("The port in address {address} is currently in use, in order to run the application you must change the port in url configuration in appsettings.json. To close this window, hit ctrl+c or close the window", address);

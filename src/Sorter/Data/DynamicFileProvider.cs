@@ -3,15 +3,15 @@ using Microsoft.Extensions.Primitives;
 
 namespace Sorter.Data
 {
-    public class SourceDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
+    public class SourceDFP(string? root, ILogger logger) : DynamicFileProvider(root, logger)
     {
     }
-    public class DestinationDFP(string root, ILogger logger) : DynamicFileProvider(root, logger)
+    public class DestinationDFP(string? root, ILogger logger) : DynamicFileProvider(root, logger)
     {
     }
     public class TempDFP : DynamicFileProvider
     {
-        public TempDFP(string root, ILogger logger) : base(root, logger)
+        public TempDFP(string? root, ILogger logger) : base(root, logger)
         {
             if (string.IsNullOrWhiteSpace(root))
             {
@@ -43,7 +43,7 @@ namespace Sorter.Data
     {
         private PhysicalFileProvider? _physicalFileProvider;
         protected readonly ILogger _logger;
-        public DynamicFileProvider(string root, ILogger logger)
+        public DynamicFileProvider(string? root, ILogger logger)
         {
             _physicalFileProvider = null;
             if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(Path.GetFullPath(root)))

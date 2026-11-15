@@ -40,7 +40,7 @@ namespace Sorter.Data
             _keyOptions = keyOptions;
             _configOptionsService = configOptionsService;
             _logger = logger;
-            password = _configuration.GetValue<string>("Password");
+            password = _configuration.GetValue<string>("Password") ?? string.Empty;
             sessionStoragePrefix = Path.GetRandomFileName();
             initialized = false;
         }

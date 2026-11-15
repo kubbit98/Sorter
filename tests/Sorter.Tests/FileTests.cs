@@ -10,6 +10,11 @@ public class FileTests
     [InlineData("JPG", SorterFile.FileTypeEnum.Photo)]
     [InlineData("heic", SorterFile.FileTypeEnum.Photo)]
     [InlineData("HEIC", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("heif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("hif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("jfif", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("jpe", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("svg", SorterFile.FileTypeEnum.Photo)]
     [InlineData("apng", SorterFile.FileTypeEnum.Photo)]
     [InlineData("mp4", SorterFile.FileTypeEnum.Video)]
     [InlineData("ogg", SorterFile.FileTypeEnum.Video)] // listed as both video and audio, video wins
@@ -18,7 +23,9 @@ public class FileTests
     [InlineData("pdf", SorterFile.FileTypeEnum.PDF)]
     [InlineData("txt", SorterFile.FileTypeEnum.Text)]
     [InlineData("md", SorterFile.FileTypeEnum.Text)]
-    [InlineData("bmp", SorterFile.FileTypeEnum.NotSupported)]
+    [InlineData("bmp", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("BMP", SorterFile.FileTypeEnum.Photo)]
+    [InlineData("tiff", SorterFile.FileTypeEnum.NotSupported)]
     [InlineData("mkv", SorterFile.FileTypeEnum.NotSupported)]
     [InlineData("", SorterFile.FileTypeEnum.NotSupported)]
     public void FileType_IsDetectedFromExtensionIgnoringCase(string extension, SorterFile.FileTypeEnum expected)
