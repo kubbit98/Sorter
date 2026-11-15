@@ -63,6 +63,7 @@ public sealed class SorterSettings
         return Directory.Exists(fullPath);
     }
 
-    private static string[] ToFullPaths(string[]? paths) =>
+    /// <summary>Absolute paths; null lists and blank entries (possible in hand-edited config.json) are skipped.</summary>
+    public static string[] ToFullPaths(string[]? paths) =>
         (paths ?? []).Where(path => !string.IsNullOrWhiteSpace(path)).Select(Path.GetFullPath).ToArray();
 }

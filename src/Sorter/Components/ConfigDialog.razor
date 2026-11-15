@@ -262,13 +262,13 @@
         await Task.Run(() =>
         {
             _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
-            _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+            _excludeSourceList = SorterSettings.ToFullPaths(configOptions.CurrentValue.ExcludeDirsSource).ToList();
             _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);
-            _excludeDestinationList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+            _excludeDestinationList = SorterSettings.ToFullPaths(configOptions.CurrentValue.ExcludeDirsDestination).ToList();
             _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
-            _whiteList = configOptions.CurrentValue.WhiteList.ToList();
-            _blackList = configOptions.CurrentValue.BlackList.ToList();
-            _truePassword = configuration.GetValue<string>("Password")!;
+            _whiteList = (configOptions.CurrentValue.WhiteList ?? []).ToList();
+            _blackList = (configOptions.CurrentValue.BlackList ?? []).ToList();
+            _truePassword = configuration.GetValue<string>("Password") ?? string.Empty;
             _allowRename = configOptions.CurrentValue.AllowRename;
             if (string.IsNullOrEmpty(_source)) _source = Path.GetFullPath(".");
             if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");

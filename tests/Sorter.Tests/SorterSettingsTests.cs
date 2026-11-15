@@ -102,4 +102,11 @@ public class SorterSettingsTests : IDisposable
         Assert.True(SorterSettings.TryCreate(ValidOptions(), Configuration(value), out var settings));
         Assert.Equal(expected, settings.UseThumbnails);
     }
+
+    [Fact]
+    public void ToFullPaths_SkipsNullAndBlankEntries()
+    {
+        Assert.Empty(SorterSettings.ToFullPaths(null));
+        Assert.Equal([_source], SorterSettings.ToFullPaths(["", "  ", _source]));
+    }
 }
