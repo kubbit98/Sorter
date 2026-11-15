@@ -66,6 +66,20 @@ public class FileServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeFiles_ToleratesBlankAndNullListsInConfig()
+    {
+        CreateSourceFile("a.txt");
+
+        var service = await CreateInitializedServiceAsync(o =>
+        {
+            o.ExcludeDirsSource = [""];
+            o.WhiteList = null!;
+        });
+
+        Assert.Equal(["a.txt"], ListFileNames(service));
+    }
+
+    [Fact]
     public async Task Files_AreListedRecursivelyFilesBeforeSubfolders()
     {
         CreateSourceFile("b.txt");

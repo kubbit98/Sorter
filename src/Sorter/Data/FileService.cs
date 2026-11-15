@@ -20,15 +20,9 @@ namespace Sorter.Data
         private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
 
-        private string source = "";
-        private string destination = "";
+        private SorterSettings settings = SorterSettings.Empty;
         private MediaUrlBuilder urlBuilder = MediaUrlBuilder.Empty;
-        private string[] excludeDirsInSource = [];
-        private string[] excludeDirsInDestination = [];
-        private FileFilter fileFilter = FileFilter.AllowAll;
         private readonly string password;
-        private bool allowRename;
-        private bool useThumbnails;
         private bool initialized;
 
         public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator, FileScanner fileScanner)
@@ -44,24 +38,17 @@ namespace Sorter.Data
             sessionStoragePrefix = Path.GetRandomFileName();
             initialized = false;
         }
-        public bool CheckCorrectnessOfConfig()
-        {
-            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Source)) return false;
-            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Destination)) return false;
-            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Source))) return false;
-            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Destination))) return false;
-            return true;
-        }
         public Task<bool> InitializeFiles(bool reInit)
         {
             if (!initialized || reInit)
             {
                 while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) Thread.Sleep(100);
-                if (!CheckCorrectnessOfConfig()) return Task.FromResult(false);
-                LoadConfig();
+                if (!SorterSettings.TryCreate(_options.CurrentValue, _configuration, out var newSettings)) return Task.FromResult(false);
+                settings = newSettings;
+                urlBuilder = new MediaUrlBuilder(settings.Source, settings.Destination);
                 LoadFilesAndFolders();
                 indexOfLastProcessingFile = -1;
-                if (useThumbnails && files!.Count > 0)
+                if (settings.UseThumbnails && files.Count > 0)
                 {
                     foreach (var f in files.GetRange(0, Math.Min(files.Count, s_thumbnailsToCreateAhead)))
                     {
@@ -74,28 +61,6 @@ namespace Sorter.Data
             }
             return Task.FromResult(true);
         }
-        public void LoadConfig()
-        {
-            try
-            {
-                source = Path.GetFullPath(_options.CurrentValue.Source);
-                excludeDirsInSource = Array.ConvertAll(_options.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir));
-                destination = Path.GetFullPath(_options.CurrentValue.Destination);
-                urlBuilder = new MediaUrlBuilder(source, destination);
-                excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir));
-                fileFilter = new FileFilter(_options.CurrentValue.UseWhiteListInsteadOfBlackList, _options.CurrentValue.WhiteList, _options.CurrentValue.BlackList);
-                allowRename = _options.CurrentValue.AllowRename;
-                useThumbnails = _configuration.GetValue<bool>("UseThumbnails");
-            }
-            catch (NullReferenceException)
-            {
-                throw new NullReferenceException("Probably there is error in config.json");
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
         public Task<string> GetStoragePrefix()
         {
             return Task.FromResult(sessionStoragePrefix);
@@ -106,8 +71,8 @@ namespace Sorter.Data
         }
         public Task<bool> GetAllowRename()
         {
-            allowRename = _options.CurrentValue.AllowRename;
-            return Task.FromResult(allowRename);
+            // read on every call, so changing it in the configuration doesn't need a new session
+            return Task.FromResult(_options.CurrentValue.AllowRename);
         }
         public Task<Folder[]> GetFoldersAsync()
         {
@@ -118,7 +83,7 @@ namespace Sorter.Data
             if (indexOfLastProcessingFile < files.Count - 1)
             {
                 indexOfLastProcessingFile++;
-                if (useThumbnails)
+                if (settings.UseThumbnails)
                 {
                     foreach (var f in files.GetRange(indexOfLastProcessingFile, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
                     {
@@ -149,8 +114,8 @@ namespace Sorter.Data
         }
         private void LoadFilesAndFolders()
         {
-            files = _fileScanner.ScanFiles(source, excludeDirsInSource, fileFilter);
-            folders = _fileScanner.ScanFolders(destination, excludeDirsInDestination);
+            files = _fileScanner.ScanFiles(settings.Source, settings.ExcludedSourceDirectories, settings.Filter);
+            folders = _fileScanner.ScanFolders(settings.Destination, settings.ExcludedDestinationDirectories);
             AppendDirectoriesWithKeyBinds();
         }
         public void AppendDirectoriesWithKeyBinds()
@@ -206,7 +171,7 @@ namespace Sorter.Data
         {
             if (folders.Any(f => f.Name == folderName)) return false;
             if (folderName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return false;
-            string fullPath = Path.Combine(destination, folderName);
+            string fullPath = Path.Combine(settings.Destination, folderName);
             Directory.CreateDirectory(fullPath);
             folderName = Path.GetFileName(fullPath);
             if (folderName != null)
