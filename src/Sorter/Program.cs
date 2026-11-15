@@ -20,6 +20,9 @@ builder.Services.AddSingleton<ConfigOptionsService>();
 builder.Services.AddSingleton(provider => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source"), provider.GetRequiredService<ILogger<SourceDFP>>()));
 builder.Services.AddSingleton(provider => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination"), provider.GetRequiredService<ILogger<DestinationDFP>>()));
 builder.Services.AddSingleton(provider => new TempDFP(builder.Configuration.GetValue<string>("TempPath"), provider.GetRequiredService<ILogger<TempDFP>>()));
+// TempDFP falls back to "Temp" as well, both must point at the same folder
+builder.Services.AddSingleton<IThumbnailGenerator>(_ => new ImageSharpThumbnailGenerator(
+    string.IsNullOrWhiteSpace(builder.Configuration.GetValue<string>("TempPath")) ? "Temp" : builder.Configuration.GetValue<string>("TempPath")!));
 
 var app = builder.Build();
 
