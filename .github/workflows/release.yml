@@ -33,7 +33,7 @@ jobs:
       - name: Publish
         run: |
           for rid in win-x64 linux-x64; do
-            dotnet publish Sorter.csproj -c Release -p:PublishProfile="$rid" -p:Version="$VERSION" -o "out/$rid"
+            dotnet publish src/Sorter/Sorter.csproj -c Release -p:PublishProfile="$rid" -p:Version="$VERSION" -o "out/$rid"
           done
 
       - name: Package
