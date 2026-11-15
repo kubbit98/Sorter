@@ -6,16 +6,31 @@ using Sorter.Data;
 
 namespace Sorter.Tests;
 
-public class ImageSharpThumbnailGeneratorTests : IDisposable
+public class ImageSharpThumbnailGeneratorTests : ThumbnailGeneratorTests
+{
+    protected override IThumbnailGenerator CreateGenerator(string outputDirectory) => new ImageSharpThumbnailGenerator(outputDirectory);
+}
+
+public class MagickThumbnailGeneratorTests : ThumbnailGeneratorTests
+{
+    protected override IThumbnailGenerator CreateGenerator(string outputDirectory) => new MagickThumbnailGenerator(outputDirectory);
+}
+
+/// <summary>
+/// The same behavior is required from every implementation, the derived classes run all tests for each of them.
+/// </summary>
+public abstract class ThumbnailGeneratorTests : IDisposable
 {
     private readonly TempDirectory _input = new();
     private readonly TempDirectory _output = new();
-    private readonly ImageSharpThumbnailGenerator _generator;
+    private readonly IThumbnailGenerator _generator;
 
-    public ImageSharpThumbnailGeneratorTests()
+    protected ThumbnailGeneratorTests()
     {
-        _generator = new ImageSharpThumbnailGenerator(_output.Path);
+        _generator = CreateGenerator(_output.Path);
     }
+
+    protected abstract IThumbnailGenerator CreateGenerator(string outputDirectory);
 
     public void Dispose()
     {
@@ -257,7 +272,19 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         string path = _input.CreateFile(fileName, "This is not an image.");
 
         var exception = Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, extension));
-        Assert.Equal("unrecognized image format", exception.Message);
+        Assert.False(string.IsNullOrWhiteSpace(exception.Message));
+        // the message ends up in a log line next to the path already
+        Assert.DoesNotContain(path, exception.Message);
+    }
+
+    [Fact]
+    public void SvgDisguisedAsJpg_IsRejected()
+    {
+        // a library detecting the format from the content mustn't hand this to an SVG renderer
+        string path = _input.CreateFile("vector.jpg",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"2000\" height=\"1000\"><rect width=\"2000\" height=\"1000\"/></svg>");
+
+        Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, "jpg"));
     }
 
     [Fact]
