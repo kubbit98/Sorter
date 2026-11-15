@@ -156,7 +156,7 @@
                         break;
                     case File.FileTypeEnum.Photo:
                         <img data-bs-toggle="modal" data-bs-target="#photoModal" @onclick="@PhotoModalOpen"
-                             src="@(_currentFile!.DisplayPath)"
+                             src="@(_currentFile!.DisplayPath)" alt="@_currentFile.NameWithExtension"
                              class="img-fluid mx-auto d-block"
                              style="max-height: 97vh;" />
                         <PhotoDialog Photo="@_currentFile" OnNext="@Next" OnBack="@Back" @ref="_photoDialog"
@@ -192,7 +192,7 @@
                     {
                         @if (_previousFile.FileType == File.FileTypeEnum.Photo)
                         {
-                            <img src="@_previousFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
+                            <img src="@_previousFile.DisplayPath" alt="Previous file: @_previousFile.NameWithExtension" class="img-fluid" style="cursor: pointer;" @onclick="@Back" />
                         }
                         else
                         {
@@ -207,7 +207,7 @@
                         <p class="my-0 py-0 text-end lh-1">Next file: @_nextFile.NameWithExtension<br />(in @Uri.UnescapeDataString(_nextFile.Path))</p>
                         @if (_nextFile?.FileType == File.FileTypeEnum.Photo)
                         {
-                            <img src="@_nextFile.DisplayPath" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
+                            <img src="@_nextFile.DisplayPath" alt="Next file: @_nextFile.NameWithExtension" class="img-fluid" style="cursor: pointer;" @onclick="@Next" />
                         }
                         else
                         {
