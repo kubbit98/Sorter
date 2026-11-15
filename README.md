@@ -73,6 +73,8 @@ This is an early version of the project. Therefore, some unknowns changes are ex
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
+The app lives in `src/Sorter`, automated tests (xUnit) in `tests/Sorter.Tests`. Run them with `dotnet test`, they also run in CI on Ubuntu and Windows for every pull request.
+
 ### Test files
 
 `src/Sorter/TestFolder/generate_test_files.py` prepares a manual test environment: it fills `src/Sorter/TestFolder/src` with sample files of every supported type (including edge cases like broken files or special characters in names) and recreates empty destination folders `src/Sorter/TestFolder/dst/A`–`E`. It requires Python with `pillow` and `pillow-heif`, and `ffmpeg` (LibreOffice is optional).
