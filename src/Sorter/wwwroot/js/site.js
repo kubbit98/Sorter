@@ -62,9 +62,12 @@ function loadZoom() {
     }
     zoom.onwheel = function (e) {
         e.preventDefault();
+        // horizontal scrolling (e.g. on a touchpad) used to zoom out
+        if (e.deltaY === 0) return;
         var xs = (e.offsetX - pointX) / scale,
             ys = (e.offsetY - pointY) / scale;
-        if (e.wheelDelta > 0) {
+        // standard deltaY is negative when the wheel turns away from the user, the old wheelDelta was positive
+        if (e.deltaY < 0) {
             scale *= scaleStep
             if (scale >= maxZoom) scale = maxZoom;
         }
