@@ -222,13 +222,13 @@
             <div class="modal-footer">
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
-                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" CustomButtonParameter=_dictPreventKeydown />
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickTask="Save" CustomButtonParameter=_dictPreventKeydown />
                     @if (!@hostingEnv.IsProduction())
                     {
-                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickTask="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
                     }
                 }
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickTask="Close" CustomButtonParameter=_dictPreventKeydown />
             </div>
         </div>
     </div>
@@ -274,11 +274,11 @@
             if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");
         });
     }
-    private async void Close()
+    private async Task Close()
     {
         await InvokeAsync(() => OnChange.InvokeAsync(false));
     }
-    private async void Save()
+    private async Task Save()
     {
         if (!ConfigOptionsService.CheckPath(_source))
         {
@@ -399,7 +399,7 @@
             _newBlack = string.Empty;
         }
     }
-    private async void LoadDefaultTestConfig()
+    private async Task LoadDefaultTestConfig()
     {
         ConfigOptions config;
         try

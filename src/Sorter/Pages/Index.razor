@@ -22,7 +22,7 @@
                 </div>
             </div>
             <div class="row mb-3">
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickAction="InitSession" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Init session" ButtonOnClickTask="InitSession" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
             </div>
         </div>
@@ -36,8 +36,8 @@
             </div>
             <div class="row mb-3">
                 <ButtonInDiv DivCssClass="col-6 d-grid" ButtonCssClass="btn btn-secondary" ButtonName="Back" ButtonOnClickTask="Back" />
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Reset server" ButtonOnClickTask="Reset" />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Shut down" ButtonOnClickTask="ShutdownApp" />
                 <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-outline-secondary" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" />
             </div>
         </div>
@@ -128,8 +128,8 @@
                             <li><ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Configuration" ButtonOnClickTask="ConfigModalOnOpen" CustomButtonParameter="_dictConfigDialog" /></li>
                             @if (_password.Equals(_unlockBoxPassword) || _password.Equals(string.Empty))
                             {
-                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Reset server" ButtonOnClickAction="Reset" />
-                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Shut down" ButtonOnClickAction="ShutdownApp" />
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Reset server" ButtonOnClickTask="Reset" />
+                                <ButtonInDiv ButtonCssClass="dropdown-item" ButtonName="Shut down" ButtonOnClickTask="ShutdownApp" />
                             }
                         </ul>
                     </div>
@@ -140,7 +140,7 @@
                     @for (int i = 0; i < _folders!.Length; i++)
                     {
                         var k = i;
-                        <ButtonInDiv DivCssClass="col d-grid my-1 px-1" ButtonCssClass="btn btn-primary overflow-hidden" ButtonName="@_folders[k].DisplayName" ButtonOnClickAction="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
+                        <ButtonInDiv DivCssClass="col d-grid my-1 px-1" ButtonCssClass="btn btn-primary overflow-hidden" ButtonName="@_folders[k].DisplayName" ButtonOnClickTask="async () => await MoveFile(_folders[k].Path)" Title="@_folders[k].Path" />
                     }
                 </div>
             </div>
@@ -314,12 +314,16 @@
                 case Status.Initialized:
                     await _PSSReadMyMediaIndexes();
                     await _PSSReadMyMediaCurrentIndex();
-                    LoadSession();
+                    await LoadSession();
+                    // a null result means the session was reset, the indexes are gone then
                     _currentFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes![_myMediaCurrentIndex].Item2);
                     if (_currentFile == null) break;
                     _newFileName = _currentFile.Name;
                     if (_myMediaCurrentIndex > 0)
+                    {
                         _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes![_myMediaCurrentIndex - 1].Item2);
+                        if (_previousFile == null) break;
+                    }
                     if (_myMediaCurrentIndex + 1 < _myMediaIndexes!.Count)
                         _nextFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex + 1].Item1, _myMediaIndexes![_myMediaCurrentIndex + 1].Item2);
                     break;
@@ -333,13 +337,13 @@
         }
         if (firstRender) StateHasChanged();
     }
-    private async void LoadSession()
+    private async Task LoadSession()
     {
         _folders = await FileService.GetFoldersAsync();
         _password = await FileService.GetPassword();
         _allowRename = await FileService.GetAllowRename();
     }
-    private async void InitSession()
+    private async Task InitSession()
     {
         if (!await FileService.InitializeFiles(false))
         {
@@ -350,13 +354,18 @@
         if (index.HasValue)
         {
             _myMediaIndexes = new List<Tuple<int, string>>();
-            LoadSession();
+            await LoadSession();
             _currentFile = await GetFileFromFileService(index.Value);
+            if (_currentFile == null) return;
             _newFileName = _currentFile.Name;
             _myMediaIndexes.Add(new Tuple<int, string>(_currentFile.FIndex!.Value, _currentFile.Name));
             int? nextIndex = FileService.GetNextIndex();
-            if (nextIndex.HasValue) _nextFile = await GetFileFromFileService(nextIndex.Value);
-            if (null != _nextFile) _myMediaIndexes.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
+            if (nextIndex.HasValue)
+            {
+                _nextFile = await GetFileFromFileService(nextIndex.Value);
+                if (_nextFile == null) return;
+                _myMediaIndexes.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
+            }
             _myMediaCurrentIndex = 0;
             _status = Status.Initialized;
             await _PSSWriteMyMediaIndexes();
@@ -379,107 +388,103 @@
     {
         if (_status != Status.Initialized || _isChangingFile) return;
         _isChangingFile = true;
-        _previousFile = _currentFile;
-        _myMediaCurrentIndex++;
-        await _PSSWriteMyMediaCurrentIndex();
-        // fetched again, because the thumbnail or HEIC conversion may have finished after _nextFile was loaded
-        if (_nextFile != null) _currentFile = await GetFileFromFileService(_nextFile.FIndex!.Value, _nextFile.Name);
-        else
+        try
         {
-            if (_myMediaIndexes!.Count >= _myMediaCurrentIndex)
+            _previousFile = _currentFile;
+            _myMediaCurrentIndex++;
+            await _PSSWriteMyMediaCurrentIndex();
+            if (_nextFile != null)
+            {
+                // fetched again, because the thumbnail or HEIC conversion may have finished after _nextFile was loaded
+                _currentFile = await GetFileFromFileService(_nextFile.FIndex!.Value, _nextFile.Name);
+                // a null result means the session was reset, the indexes are gone then
+                if (_currentFile == null) return;
+            }
+            else
             {
                 _currentFile = null;
                 await JS.InvokeVoidAsync("unLoadVideo");
                 _status = Status.Empty;
                 await _PSSWriteStatus();
             }
+            if (null != _currentFile) _newFileName = _currentFile.Name;
+            if (_myMediaCurrentIndex + 1 < _myMediaIndexes!.Count)
+            {
+                _nextFile = await GetFileFromFileService(_myMediaIndexes[_myMediaCurrentIndex + 1].Item1, _myMediaIndexes[_myMediaCurrentIndex + 1].Item2);
+                if (_nextFile == null) return;
+            }
             else
             {
-                File f = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes![_myMediaCurrentIndex].Item2);
-                if (f == null)
+                int? index = FileService.GetNextIndex();
+                if (index.HasValue)
                 {
-                    toastService.ShowWarning("Something went wrong");
-                    _myMediaIndexes = null;
-                    _myMediaCurrentIndex = -1;
-                    _status = Status.BeforeInit;
-                    await _ResetProtectedSessionStore();
+                    _nextFile = await GetFileFromFileService(index.Value);
+                    if (_nextFile == null) return;
+                    _myMediaIndexes.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
+                    await _PSSWriteMyMediaIndexes();
                 }
                 else
                 {
-                    _currentFile = f;
+                    _nextFile = null;
                 }
             }
+            _ = ReloadPlayerIfVideoOrAudio();
+            StateHasChanged();
         }
-        if (null != _currentFile) _newFileName = _currentFile.Name;
-        if (_myMediaCurrentIndex + 1 < _myMediaIndexes!.Count)
+        finally
         {
-            _nextFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex + 1].Item1, _myMediaIndexes[_myMediaCurrentIndex + 1].Item2);
+            _isChangingFile = false;
         }
-        else
-        {
-            int? index = FileService.GetNextIndex();
-            if (index.HasValue)
-            {
-                _nextFile = await GetFileFromFileService(index.Value);
-                if (_nextFile != null)
-                {
-                    _myMediaIndexes!.Add(new Tuple<int, string>(_nextFile.FIndex!.Value, _nextFile.Name));
-                    await _PSSWriteMyMediaIndexes();
-                }
-            }
-            else
-            {
-                _nextFile = null;
-            }
-        }
-        ReloadPlayerIfVideoOrAudio();
-        StateHasChanged();
-        _isChangingFile = false;
     }
     private async Task Back()
     {
         if (_status != Status.Initialized && _status != Status.Empty || _isChangingFile) return;
         _isChangingFile = true;
-        if (_myMediaCurrentIndex <= 0)
-        {
-            toastService.ShowWarning("No more files");
-            _isChangingFile = false;
-            return;
-        }
-        _myMediaCurrentIndex--;
         try
         {
+            if (_myMediaCurrentIndex <= 0)
+            {
+                toastService.ShowWarning("No more files");
+                return;
+            }
+            _myMediaCurrentIndex--;
             _nextFile = _currentFile;
             _currentFile = (_previousFile != null)
                 ? await GetFileFromFileService(_previousFile.FIndex!.Value, _previousFile.Name)
                 : await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex].Item1, _myMediaIndexes[_myMediaCurrentIndex].Item2);
+            // a null result means the session was reset, the indexes are gone then
+            if (_currentFile == null) return;
             _newFileName = _currentFile.Name;
-            if (_myMediaCurrentIndex > 0) _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
-            else _previousFile = null;
+            if (_myMediaCurrentIndex > 0)
+            {
+                _previousFile = await GetFileFromFileService(_myMediaIndexes![_myMediaCurrentIndex - 1].Item1, _myMediaIndexes[_myMediaCurrentIndex - 1].Item2);
+                if (_previousFile == null) return;
+            }
+            else
+            {
+                _previousFile = null;
+            }
 
             if (_status.Equals(Status.Empty))
             {
-                if (null == _folders) LoadSession();
+                if (null == _folders) await LoadSession();
                 _status = Status.Initialized;
                 await _PSSWriteStatus();
             }
-            ReloadPlayerIfVideoOrAudio();
+            _ = ReloadPlayerIfVideoOrAudio();
             StateHasChanged();
             await _PSSWriteMyMediaCurrentIndex();
-            _isChangingFile = false;
         }
         catch (Exception)
         {
-            toastService.ShowWarning("Something went wrong");
-            _myMediaIndexes = null;
-            _myMediaCurrentIndex = -1;
-            _status = Status.BeforeInit;
-            await _ResetProtectedSessionStore();
-            StateHasChanged();
+            await ResetSession("Something went wrong");
+        }
+        finally
+        {
             _isChangingFile = false;
         }
     }
-    private async void Reset()
+    private async Task Reset()
     {
         if (!await FileService.InitializeFiles(true))
         {
@@ -489,23 +494,23 @@
         await _ResetProtectedSessionStore();
         _storagePrefix = await FileService.GetStoragePrefix();
         _previousFile = _currentFile = _nextFile = null;
-        InitSession();
-        ReloadPlayerIfVideoOrAudio();
+        await InitSession();
+        _ = ReloadPlayerIfVideoOrAudio();
         StateHasChanged();
     }
-    private async void ShutdownApp()
+    private async Task ShutdownApp()
     {
         await JS.InvokeVoidAsync("close");
         AppLifetime.StopApplication();
     }
 
     [JSInvokable]
-    public async void HandleKeyDown(string key, bool isListenForRegisterKey, string folderTitle)
+    public async Task HandleKeyDown(string key, bool isListenForRegisterKey, string folderTitle)
     {
         switch (_status)
         {
             case Status.BeforeInit:
-                if (key == " ") InitSession();
+                if (key == " ") await InitSession();
                 break;
             case Status.Initialized:
                 if (isListenForRegisterKey && key.Length == 1) await RegisterKeyInFolder(key.First(), folderTitle);
@@ -616,7 +621,7 @@
         }
     }
 
-    private async void ReloadPlayerIfVideoOrAudio()
+    private async Task ReloadPlayerIfVideoOrAudio()
     {
         if (File.FileTypeEnum.Video == _currentFile?.FileType)
         {
@@ -629,40 +634,49 @@
             await JS.InvokeVoidAsync("loadAudio");
         }
     }
-    private async void ToggleSidePanel()
+    private async Task ToggleSidePanel()
     {
         _showSideFiles = !_showSideFiles;
         await JS.InvokeVoidAsync("setFocusOnElement", "mediaDiv");
         StateHasChanged();
     }
 
-    private async Task<File> GetFileFromFileService(int index, string fileName = "")
+    /// <summary>
+    /// Returns null when the session no longer matches the server (it was reinitialized or the file is gone);
+    /// the session is reset then and the caller should stop.
+    /// </summary>
+    private async Task<File?> GetFileFromFileService(int index, string fileName = "")
     {
         string newPrefix = await FileService.GetStoragePrefix();
         if (newPrefix != _storagePrefix)
         {
             _storagePrefix = newPrefix;
-            toastService.ShowWarning("Page was reloaded due to data discrepancy");
-            _myMediaIndexes = null;
-            _myMediaCurrentIndex = -1;
-            _status = Status.BeforeInit;
-            await _ResetProtectedSessionStore();
-            StateHasChanged();
-            return null!;
+            await ResetSession("Page was reloaded due to data discrepancy");
+            return null;
         }
 
-        var file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
-
-        if (file == null)
+        File? file;
+        try
         {
-            toastService.ShowWarning("Something went wrong");
-            _myMediaIndexes = null;
-            _myMediaCurrentIndex = -1;
-            _status = Status.BeforeInit;
-            await _ResetProtectedSessionStore();
-            StateHasChanged();
+            file = string.IsNullOrEmpty(fileName) ? FileService.GetFileAtIndex(index) : FileService.GetFileAtIndex(index, fileName);
         }
-        return file ?? throw new Exception("File not found");
+        catch (Exception)
+        {
+            // the name at that index changed, the server state was reset meanwhile
+            file = null;
+        }
+        if (file == null) await ResetSession("Something went wrong");
+        return file;
+    }
+    private async Task ResetSession(string warning)
+    {
+        toastService.ShowWarning(warning);
+        _myMediaIndexes = null;
+        _myMediaCurrentIndex = -1;
+        _previousFile = _currentFile = _nextFile = null;
+        _status = Status.BeforeInit;
+        await _ResetProtectedSessionStore();
+        StateHasChanged();
     }
 
     private async Task FileNameInputOpen()

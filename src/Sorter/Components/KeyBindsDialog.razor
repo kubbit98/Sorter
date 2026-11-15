@@ -43,7 +43,7 @@
                                 <ButtonInDiv DivCssClass="col d-grid mb-1"
                                              ButtonCssClass="btn btn-primary"
                                              ButtonName="@MyFolders[k].DisplayName"
-                                             ButtonOnClickAction="async ()=> await SetKeyBind(MyFolders[k])"
+                                             ButtonOnClickTask="async ()=> await SetKeyBind(MyFolders[k])"
                                              Title="@MyFolders[k].Path"
                                              CustomButtonParameter="@_dictOnlyKeyBindButton" />
                             }
@@ -57,9 +57,9 @@
             <div class="modal-footer">
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
-                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new keybindings" ButtonOnClickAction="Save" CustomButtonParameter=_dictPreventKeydown />
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new keybindings" ButtonOnClickTask="Save" CustomButtonParameter=_dictPreventKeydown />
                 }
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickTask="Close" CustomButtonParameter=_dictPreventKeydown />
             </div>
         </div>
     </div>
@@ -86,11 +86,11 @@
         }));
         await JS.InvokeVoidAsync("configKeyBindModal");
     }
-    private async void Close()
+    private async Task Close()
     {
         await InvokeAsync(() => OnChange.InvokeAsync(false));
     }
-    private async void Save()
+    private async Task Save()
     {
         KeyBindsOptions _config = new KeyBindsOptions();
         if (null != MyFolders)
