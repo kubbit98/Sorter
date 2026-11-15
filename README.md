@@ -11,8 +11,8 @@ The application supports keyboard shortcuts. Once the application is initialized
 
 ## Supported media types
 - Photos: jpg, jpeg, jfif, jpe, png, gif, webp, apng, avif, bmp, heic, heif, hif and svg. HEIC/HEIF and BMP are converted for display (to JPG and PNG), because browsers can't show HEIF and only some BMP variants. Thumbnails and conversions are made with [ImageMagick](https://imagemagick.org) (through Magick.NET), restricted to these formats.
-- Videos: formats your browser can play, e.g. mp4, webm, mov, ogv
-- Audio recordings: mp3, wav, ogg
+- Videos: mp4, m4v, mov, qt and webm
+- Audio recordings: mp3, wav, ogg, oga, m4a, m4b and m4r
 - Text documents: txt, csv, log, md, html, js, css
 - PDF documents
 

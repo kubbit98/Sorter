@@ -56,8 +56,6 @@ var contentTypeProvider = new FileExtensionContentTypeProvider();
 contentTypeProvider.Mappings[".apng"] = "image/apng";
 contentTypeProvider.Mappings[".avif"] = "image/avif";
 contentTypeProvider.Mappings[".jfif"] = "image/jpeg";
-contentTypeProvider.Mappings[".m3u8"] = "application/vnd.apple.mpegurl";
-contentTypeProvider.Mappings[".m4p"] = "audio/mp4";
 contentTypeProvider.Mappings[".m4b"] = "audio/mp4";
 contentTypeProvider.Mappings[".m4r"] = "audio/mp4";
 
