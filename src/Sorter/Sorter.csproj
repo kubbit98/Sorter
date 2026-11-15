@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<!-- the real version comes from the git tag in the release workflow -->
@@ -13,6 +13,9 @@
 		<Title>Sorter</Title>
 		<NeutralLanguage>en-001</NeutralLanguage>
 		<PackageLicenseFile>COPYING</PackageLicenseFile>
+		<!-- precompressed .gz/.br copies of static assets only help over a network, the app runs on localhost
+		     and they added ~30 MB to the unpacked package -->
+		<CompressionEnabled>false</CompressionEnabled>
 	</PropertyGroup>
 
 	<ItemGroup>
