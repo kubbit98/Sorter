@@ -51,4 +51,25 @@ public class FileFilterTests
     {
         Assert.False(new FileFilter(true, [], []).IsAllowed("jpg"));
     }
+
+    [Theory]
+    [InlineData("jpg", "jpg")]
+    [InlineData(".jpg", "jpg")]
+    [InlineData("  .JPG ", "JPG")]
+    [InlineData("tar.gz", "tar.gz")]
+    [InlineData(".", "")]
+    [InlineData("", "")]
+    [InlineData(null, "")]
+    public void NormalizeExtension_DropsSurroundingSpacesAndLeadingDot(string? input, string expected)
+    {
+        Assert.Equal(expected, FileFilter.NormalizeExtension(input));
+    }
+
+    [Fact]
+    public void EntriesWithLeadingDot_StillMatch()
+    {
+        // e.g. entered before the configuration dialog normalized them
+        Assert.False(new FileFilter(false, [], [".mp4"]).IsAllowed("mp4"));
+        Assert.True(new FileFilter(true, [" .TXT"], []).IsAllowed("txt"));
+    }
 }

@@ -379,12 +379,9 @@
     }
     private void AddWhite()
     {
-        _newWhite = _newWhite.Trim();
-        if (!_whiteList.Contains(_newWhite))
-        {
-            _whiteList.Add(_newWhite);
-            _newWhite = string.Empty;
-        }
+        string extension = FileFilter.NormalizeExtension(_newWhite);
+        if (!_whiteList.Contains(extension, StringComparer.OrdinalIgnoreCase)) _whiteList.Add(extension);
+        _newWhite = string.Empty;
     }
     private void RemoveBlack(string black)
     {
@@ -392,12 +389,9 @@
     }
     private void AddBlack()
     {
-        _newBlack = _newBlack.Trim();
-        if (!_blackList.Contains(_newBlack))
-        {
-            _blackList.Add(_newBlack);
-            _newBlack = string.Empty;
-        }
+        string extension = FileFilter.NormalizeExtension(_newBlack);
+        if (!_blackList.Contains(extension, StringComparer.OrdinalIgnoreCase)) _blackList.Add(extension);
+        _newBlack = string.Empty;
     }
     private async Task LoadDefaultTestConfig()
     {

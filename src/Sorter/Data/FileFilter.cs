@@ -16,9 +16,13 @@ public class FileFilter
     public FileFilter(bool useWhiteList, IEnumerable<string> whiteList, IEnumerable<string> blackList)
     {
         _useWhiteList = useWhiteList;
-        _whiteList = new HashSet<string>(whiteList, StringComparer.OrdinalIgnoreCase);
-        _blackList = new HashSet<string>(blackList, StringComparer.OrdinalIgnoreCase);
+        // entries saved before normalization was added may still contain a leading dot
+        _whiteList = new HashSet<string>(whiteList.Select(NormalizeExtension), StringComparer.OrdinalIgnoreCase);
+        _blackList = new HashSet<string>(blackList.Select(NormalizeExtension), StringComparer.OrdinalIgnoreCase);
     }
+
+    /// <summary>File extensions are compared without the dot, so ".jpg" typed by the user means "jpg".</summary>
+    public static string NormalizeExtension(string? extension) => (extension ?? string.Empty).Trim().TrimStart('.');
 
     public bool IsAllowed(string extension)
     {
