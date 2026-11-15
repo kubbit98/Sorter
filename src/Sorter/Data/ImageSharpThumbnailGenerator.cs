@@ -35,9 +35,7 @@ public class ImageSharpThumbnailGenerator : IThumbnailGenerator
     {
         string normalizedExtension = extension.ToLowerInvariant();
         bool convert = s_browserUnsupportedExtensions.Contains(normalizedExtension);
-        using Image image = convert
-            ? Image.Load(s_heifDecoderOptions, physicalPath)
-            : Image.Load(physicalPath);
+        using Image image = Load(physicalPath, convert);
         // the HEIF decoder configuration has no JPG encoder, so it must be passed explicitly
         IImageEncoder? encoder = convert ? new JpegEncoder() : null;
         string outputExtension = convert ? "jpg" : normalizedExtension;
@@ -48,6 +46,28 @@ public class ImageSharpThumbnailGenerator : IThumbnailGenerator
 
         image.Mutate(x => x.Resize((int)(image.Width * ratio), (int)(image.Height * ratio)));
         return new ThumbnailResult(Save(image, outputExtension, encoder), convertedPath);
+    }
+
+    private static Image Load(string physicalPath, bool heif)
+    {
+        try
+        {
+            return heif ? Image.Load(s_heifDecoderOptions, physicalPath) : Image.Load(physicalPath);
+        }
+        catch (UnknownImageFormatException e)
+        {
+            throw new InvalidImageFileException("unrecognized image format", e);
+        }
+        catch (InvalidImageContentException e)
+        {
+            throw new InvalidImageFileException(e.Message, e);
+        }
+        // the libheif error code isn't public, its category is only the message prefix; other categories
+        // (e.g. "Unsupported feature" for a missing HEVC decoder) are setup problems, not broken files
+        catch (LibHeifSharp.HeifException e) when (e.Message.StartsWith("Invalid input", StringComparison.Ordinal))
+        {
+            throw new InvalidImageFileException(e.Message, e);
+        }
     }
 
     private string Save(Image image, string extension, IImageEncoder? encoder)

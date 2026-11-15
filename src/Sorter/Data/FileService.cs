@@ -337,6 +337,11 @@ namespace Sorter.Data
                 if (result.ThumbnailPath != null) file.ThumbnailPath = GetTempUrl(result.ThumbnailPath);
                 file.IsThumbnailExist = result.ThumbnailPath != null ? File.ThumbnailEnum.Exists : File.ThumbnailEnum.WillNot;
             }
+            catch (InvalidImageFileException e)
+            {
+                _logger.LogWarning("Thumbnail cannot be created for {FilePath}: {Reason}", file.PhysicalPath, e.Message);
+                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+            }
             catch (Exception e)
             {
                 _logger.LogError(e, "Thumbnail cannot be created for {FilePath}", file.PhysicalPath);
