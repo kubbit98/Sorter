@@ -37,7 +37,7 @@ public class FileServiceTests : IDisposable
             optionsMonitor,
             keyBindsMonitor);
         return new FileService(configuration, optionsMonitor, keyBindsMonitor, configOptionsService,
-            _logger, _thumbnailGenerator, new FileScanner(NullLogger<FileScanner>.Instance));
+            _logger, _thumbnailGenerator, new FileScanner(NullLogger<FileScanner>.Instance), new FileOperations(NullLogger<FileOperations>.Instance));
     }
 
     private async Task<FileService> CreateInitializedServiceAsync(Action<ConfigOptions>? configure = null)
@@ -269,6 +269,40 @@ public class FileServiceTests : IDisposable
         string content = await service.GetTextFileContent(service.GetFileAtIndex(0)!);
 
         Assert.Equal(new string('x', 5000) + "[...]", content);
+    }
+
+    [Theory]
+    [InlineData("..")]
+    [InlineData("")]
+    public async Task CreateFolder_DoesNotAddFoldersOutsideDestination(string name)
+    {
+        var service = await CreateInitializedServiceAsync();
+
+        Assert.False(service.CreateFolder(name));
+        Assert.Empty(await service.GetFoldersAsync());
+    }
+
+    [Fact]
+    public async Task ChangeFileName_ToTheSameName_DoesNotThrow()
+    {
+        CreateSourceFile("a.txt");
+        var service = await CreateInitializedServiceAsync();
+
+        service.ChangeFileName(0, "a");
+
+        Assert.Equal("a.txt", service.GetFileAtIndex(0)!.NameWithExtension);
+    }
+
+    [Fact]
+    public async Task ChangeFileName_OfFileWithoutExtension_AddsNoTrailingDot()
+    {
+        CreateSourceFile("README");
+        var service = await CreateInitializedServiceAsync();
+
+        service.ChangeFileName(0, "NOTES");
+
+        Assert.True(System.IO.File.Exists(Path.Combine(_source, "NOTES")));
+        Assert.Equal("/src/NOTES", service.GetFileAtIndex(0)!.Path);
     }
 
     [Fact]

@@ -11,9 +11,9 @@ namespace Sorter.Data
         private readonly ILogger _logger;
         private readonly IThumbnailGenerator _thumbnailGenerator;
         private readonly FileScanner _fileScanner;
+        private readonly FileOperations _fileOperations;
 
         private static readonly int s_thumbnailsToCreateAhead = 5;
-        private static readonly int s_maxLengthOfTextFile = 5000;
 
         private List<File> files = [];
         private List<Folder> folders = [];
@@ -25,8 +25,9 @@ namespace Sorter.Data
         private readonly string password;
         private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator, FileScanner fileScanner)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator, FileScanner fileScanner, FileOperations fileOperations)
         {
+            _fileOperations = fileOperations;
             _fileScanner = fileScanner;
             _thumbnailGenerator = thumbnailGenerator;
             _configuration = configuration;
@@ -135,71 +136,39 @@ namespace Sorter.Data
         }
         public Task<bool> IsDestinationAvailable(File file, string destiny)
         {
-            return Task.FromResult(!System.IO.File.Exists(Path.Combine(destiny, file.NameWithExtension)));
+            return Task.FromResult(_fileOperations.IsNameFree(destiny, file.NameWithExtension));
         }
         public void MoveFile(File file, string destiny)
         {
-            string newFullPath = Path.Combine(destiny, file.NameWithExtension);
-            try
+            if (files[file.FIndex!.Value].Name != file.Name)
             {
-                if (files[file!.FIndex!.Value].Name == file.Name)
-                {
-                    System.IO.File.Move(file.PhysicalPath, newFullPath);
-                    file.PhysicalPath = newFullPath;
-                    files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
-                    _logger.LogInformation("File {FileNameExt} moved to {Destination}", file.NameWithExtension, destiny);
-                }
-                else _logger.LogWarning("The file index has changed, you need to reload session");
+                _logger.LogWarning("The file index has changed, you need to reload session");
+                return;
             }
-            catch (Exception e)
-            {
-                _logger.LogError("File {FileNameExt} cannot be moved to {destiny}\n{Error}", file.NameWithExtension, destiny, e.Message);
-                throw;
-            }
+            file.PhysicalPath = _fileOperations.Move(file.PhysicalPath, destiny);
+            files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
         }
         public Task<string> GetTextFileContent(File file)
         {
             if (file == null) throw new Exception("No file");
-            string content = System.IO.File.ReadAllText(file.PhysicalPath);
-            if (content.Length > s_maxLengthOfTextFile)
-            {
-                content = string.Concat(content[..s_maxLengthOfTextFile], "[...]");
-            }
-            return Task.FromResult(content);
+            return Task.FromResult(_fileOperations.ReadTextPreview(file.PhysicalPath));
         }
         public bool CreateFolder(string folderName)
         {
             if (folders.Any(f => f.Name == folderName)) return false;
-            if (folderName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return false;
-            string fullPath = Path.Combine(settings.Destination, folderName);
-            Directory.CreateDirectory(fullPath);
-            folderName = Path.GetFileName(fullPath);
-            if (folderName != null)
-            {
-                folders.Add(new Folder(fullPath, folderName));
-                return true;
-            }
-            return false;
+            string? fullPath = _fileOperations.CreateFolder(settings.Destination, folderName);
+            if (fullPath == null) return false;
+            folders.Add(new Folder(fullPath, Path.GetFileName(fullPath)));
+            return true;
         }
         public void ChangeFileName(int index, string newFileName)
         {
-            if (newFileName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return;
             File file = files[index];
-            string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
-            if (System.IO.File.Exists(newFullPath)) throw new InvalidOperationException("File with that name exists");
-            try
-            {
-                System.IO.File.Move(file.PhysicalPath, newFullPath);
-                _logger.LogInformation("File renamed from {FileNameExt} to {Name}.{Extension}", file.NameWithExtension, newFileName, file.Extension);
-                files[index].PhysicalPath = newFullPath;
-                files[index].Name = newFileName;
-                files[index].Path = urlBuilder.GetUrl(newFullPath);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("File {FileNameExt} cannot be renamed to {NewFileName}\n{Error}", file.NameWithExtension, newFileName, e.Message);
-                throw;
-            }
+            string? newFullPath = _fileOperations.Rename(file.PhysicalPath, newFileName, file.Extension);
+            if (newFullPath == null) return;
+            file.PhysicalPath = newFullPath;
+            file.Name = newFileName;
+            file.Path = urlBuilder.GetUrl(newFullPath);
         }
         public void CreateThumbnail(File file)
         {
