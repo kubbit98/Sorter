@@ -302,8 +302,8 @@
         try
         {
             ConfigOptionsService.SaveOptions(config);
-            toastService.ShowSuccess("Settings are saved");
-            while (!ConfigOptionsService.CheckMonitor(config)) Thread.Sleep(100);
+            if (await ConfigOptionsService.WaitUntilAppliedAsync(config)) toastService.ShowSuccess("Settings are saved");
+            else toastService.ShowWarning("Settings are saved, but the application hasn't loaded them yet. Restart it if they don't apply.");
             if (!await FileService.InitializeFiles(true))
             {
                 toastService.ShowError("Cannot initialize service. The destination or/and source path is invalid. Visit the configuration page");
@@ -398,17 +398,18 @@
     }
     private async void LoadDefaultTestConfig()
     {
+        ConfigOptions config;
         try
         {
-            ConfigOptionsService.LoadDefaultTestConfig();
+            config = ConfigOptionsService.LoadDefaultTestConfig();
         }
         catch (Exception e)
         {
             toastService.ShowError($"Cannot load test configuration: {e.Message}. Generate test files first with src/Sorter/TestFolder/generate_test_files.py");
             return;
         }
-        toastService.ShowInfo("Default configuration loaded");
-        Thread.Sleep(1000);
+        if (await ConfigOptionsService.WaitUntilAppliedAsync(config)) toastService.ShowInfo("Default configuration loaded");
+        else toastService.ShowWarning("Test configuration is saved, but the application hasn't loaded it yet. Restart it if it doesn't apply.");
         if (!await FileService.InitializeFiles(true))
         {
             toastService.ShowError("Something wrong with configuration.");

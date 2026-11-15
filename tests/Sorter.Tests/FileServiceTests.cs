@@ -35,7 +35,8 @@ public class FileServiceTests : IDisposable
             new DestinationDFP(_destination, NullLogger.Instance),
             new SourceDFP(_source, NullLogger.Instance),
             optionsMonitor,
-            keyBindsMonitor);
+            keyBindsMonitor,
+            configuration);
         return new FileService(configuration, optionsMonitor, keyBindsMonitor, configOptionsService,
             _logger, new ThumbnailScheduler(_thumbnailGenerator, NullLogger<ThumbnailScheduler>.Instance), new FileScanner(NullLogger<FileScanner>.Instance), new FileOperations(NullLogger<FileOperations>.Instance));
     }

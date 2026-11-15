@@ -103,11 +103,8 @@
         try
         {
             ConfigOptionsService.SaveKeyBinds(_config);
-            toastService.ShowSuccess("Settings are saved");
-            while (!ConfigOptionsService.CheckMonitor(_config))
-            {
-                Thread.Sleep(100);
-            }
+            if (await ConfigOptionsService.WaitUntilAppliedAsync(_config)) toastService.ShowSuccess("Settings are saved");
+            else toastService.ShowWarning("Settings are saved, but the application hasn't loaded them yet. Restart it if they don't apply.");
             await InvokeAsync(() => OnChange.InvokeAsync(true));
         }
         catch (Exception e)
