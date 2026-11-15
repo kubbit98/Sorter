@@ -1,15 +1,7 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Bmp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using ImageMagick;
 using Sorter.Data;
 
 namespace Sorter.Tests;
-
-public class ImageSharpThumbnailGeneratorTests : ThumbnailGeneratorTests
-{
-    protected override IThumbnailGenerator CreateGenerator(string outputDirectory) => new ImageSharpThumbnailGenerator(outputDirectory);
-}
 
 public class MagickThumbnailGeneratorTests : ThumbnailGeneratorTests
 {
@@ -17,7 +9,7 @@ public class MagickThumbnailGeneratorTests : ThumbnailGeneratorTests
 }
 
 /// <summary>
-/// The same behavior is required from every implementation, the derived classes run all tests for each of them.
+/// Behavior required from every implementation; a derived class runs all tests for one of them.
 /// </summary>
 public abstract class ThumbnailGeneratorTests : IDisposable
 {
@@ -84,7 +76,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         Assert.NotNull(result.ThumbnailPath);
         Assert.Null(result.ConvertedPath);
-        var info = Image.Identify(result.ThumbnailPath!);
+        var info = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(expectedWidth, info.Width);
         Assert.Equal(expectedHeight, info.Height);
     }
@@ -108,7 +100,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, "JPG");
 
         Assert.Equal(".jpg", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("JPEG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("JPEG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -118,8 +110,8 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "gif");
 
-        using var thumbnail = Image.Load(result.ThumbnailPath!);
-        Assert.Equal(3, thumbnail.Frames.Count);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal(3, thumbnail.Frames);
         Assert.Equal(850, thumbnail.Width);
     }
 
@@ -130,11 +122,10 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "jpg");
 
-        var info = Image.Identify(result.ThumbnailPath!);
+        var info = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(850, info.Width);
         Assert.Equal(637, info.Height);
-        Assert.True(info.Metadata.ExifProfile!.TryGetValue(ExifTag.Orientation, out var orientation));
-        Assert.Equal((ushort)6, orientation.Value);
+        Assert.Equal((ushort)6, info.Orientation);
     }
 
     [Fact]
@@ -145,8 +136,8 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         Assert.Null(result.ThumbnailPath);
         Assert.NotNull(result.ConvertedPath);
         Assert.Equal(".jpg", Path.GetExtension(result.ConvertedPath));
-        var info = Image.Identify(result.ConvertedPath!);
-        Assert.Equal("JPEG", info.Metadata.DecodedImageFormat!.Name);
+        var info = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("JPEG", info.Format);
         Assert.Equal(640, info.Width);
         Assert.Equal(480, info.Height);
     }
@@ -171,7 +162,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, extension);
 
         Assert.Equal(".jpg", Path.GetExtension(result.ConvertedPath));
-        Assert.Equal(640, Image.Identify(result.ConvertedPath!).Width);
+        Assert.Equal(640, TestImages.Identify(result.ConvertedPath!).Width);
     }
 
     [Theory]
@@ -186,7 +177,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         Assert.Null(result.ConvertedPath);
         Assert.Equal(".jpg", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("JPEG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("JPEG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -198,7 +189,7 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, "jpg");
 
         Assert.Equal(".png", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("PNG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("PNG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -207,13 +198,12 @@ public abstract class ThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(TestImages.TestDataPath("portrait_1200x1600_irot_exif6.heic"), "heic");
 
         // libheif applies the rotation, an orientation tag left in the JPG would make browsers rotate it again
-        var converted = Image.Identify(result.ConvertedPath!);
+        var converted = TestImages.Identify(result.ConvertedPath!);
         Assert.Equal(1200, converted.Width);
         Assert.Equal(1600, converted.Height);
-        ushort? orientation = converted.Metadata.ExifProfile?.TryGetValue(ExifTag.Orientation, out var value) == true ? value.Value : null;
-        Assert.True(orientation is null or 1, $"Unexpected EXIF orientation {orientation}");
+        Assert.True(converted.Orientation is null or 1, $"Unexpected EXIF orientation {converted.Orientation}");
 
-        var thumbnail = Image.Identify(result.ThumbnailPath!);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(637, thumbnail.Width);
         Assert.Equal(850, thumbnail.Height);
     }
@@ -227,8 +217,8 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         Assert.Null(result.ThumbnailPath);
         Assert.Equal(".png", Path.GetExtension(result.ConvertedPath));
-        var info = Image.Identify(result.ConvertedPath!);
-        Assert.Equal("PNG", info.Metadata.DecodedImageFormat!.Name);
+        var info = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("PNG", info.Format);
         Assert.Equal(640, info.Width);
         Assert.Equal(480, info.Height);
     }
@@ -240,9 +230,9 @@ public abstract class ThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "BMP");
 
-        Assert.Equal(2000, Image.Identify(result.ConvertedPath!).Width);
-        var thumbnail = Image.Identify(result.ThumbnailPath!);
-        Assert.Equal("PNG", thumbnail.Metadata.DecodedImageFormat!.Name);
+        Assert.Equal(2000, TestImages.Identify(result.ConvertedPath!).Width);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal("PNG", thumbnail.Format);
         Assert.Equal(850, thumbnail.Width);
     }
 
@@ -251,17 +241,12 @@ public abstract class ThumbnailGeneratorTests : IDisposable
     {
         // 32-bit BMP with alpha is one of the variants browsers don't display reliably
         string path = _input.Combine("alpha.bmp");
-        using (var image = new Image<Rgba32>(100, 100, new Rgba32(255, 0, 0, 255)))
-        {
-            image[0, 0] = new Rgba32(0, 0, 0, 0);
-            image.Save(path, new BmpEncoder { BitsPerPixel = BmpBitsPerPixel.Pixel32, SupportTransparency = true });
-        }
+        TestImages.CreateBmpWithTransparentCorner(path, 100, 100);
 
         var result = _generator.Generate(path, "bmp");
 
-        using var converted = Image.Load<Rgba32>(result.ConvertedPath!);
-        Assert.Equal(0, converted[0, 0].A);
-        Assert.Equal(255, converted[50, 50].A);
+        Assert.Equal(0, TestImages.AlphaAt(result.ConvertedPath!, 0, 0));
+        Assert.Equal(255, TestImages.AlphaAt(result.ConvertedPath!, 50, 50));
     }
 
     [Theory]
