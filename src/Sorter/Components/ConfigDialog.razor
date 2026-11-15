@@ -222,13 +222,13 @@
             <div class="modal-footer">
                 @if (_truePassword.Equals(string.Empty) || _truePassword.Equals(_unlockBoxPassword))
                 {
-                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickAction="Save" CustomButtonParameter=_dictPreventKeydown />
+                    <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-primary" ButtonName="Save new configuration" ButtonOnClickTask="Save" CustomButtonParameter=_dictPreventKeydown />
                     @if (!@hostingEnv.IsProduction())
                     {
-                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickAction="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
+                        <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-info" ButtonName="Load default config for testing" ButtonOnClickTask="LoadDefaultTestConfig" CustomButtonParameter=_dictPreventKeydown />
                     }
                 }
-                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickAction="Close" CustomButtonParameter=_dictPreventKeydown />
+                <ButtonInDiv DivCssClass="col d-grid" ButtonCssClass="btn btn-warning" ButtonName="Return" ButtonOnClickTask="Close" CustomButtonParameter=_dictPreventKeydown />
             </div>
         </div>
     </div>
@@ -262,25 +262,24 @@
         await Task.Run(() =>
         {
             _source = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Source);
-            _excludeSourceList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir)).ToList();
+            _excludeSourceList = SorterSettings.ToFullPaths(configOptions.CurrentValue.ExcludeDirsSource).ToList();
             _destination = ConfigOptionsService.GetPathIfValid(configOptions.CurrentValue.Destination);
-            _excludeDestinationList = Array.ConvertAll(configOptions.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir)).ToList();
+            _excludeDestinationList = SorterSettings.ToFullPaths(configOptions.CurrentValue.ExcludeDirsDestination).ToList();
             _useWhite = configOptions.CurrentValue.UseWhiteListInsteadOfBlackList;
-            _whiteList = configOptions.CurrentValue.WhiteList.ToList();
-            _blackList = configOptions.CurrentValue.BlackList.ToList();
-            _truePassword = configuration.GetValue<string>("Password")!;
+            _whiteList = (configOptions.CurrentValue.WhiteList ?? []).ToList();
+            _blackList = (configOptions.CurrentValue.BlackList ?? []).ToList();
+            _truePassword = configuration.GetValue<string>("Password") ?? string.Empty;
             _allowRename = configOptions.CurrentValue.AllowRename;
             if (string.IsNullOrEmpty(_source)) _source = Path.GetFullPath(".");
             if (string.IsNullOrEmpty(_destination)) _destination = Path.GetFullPath(".");
         });
     }
-    private async void Close()
+    private async Task Close()
     {
         await InvokeAsync(() => OnChange.InvokeAsync(false));
     }
-    private async void Save()
+    private async Task Save()
     {
-        var config = configOptions.CurrentValue;
         if (!ConfigOptionsService.CheckPath(_source))
         {
             toastService.ShowError("Source path is invalid");
@@ -291,19 +290,23 @@
             toastService.ShowError("Destination path is invalid");
             return;
         }
-        config.Source = _source;
-        config.ExcludeDirsSource = _excludeSourceList.ToArray();
-        config.Destination = _destination;
-        config.ExcludeDirsDestination = _excludeDestinationList.ToArray();
-        config.UseWhiteListInsteadOfBlackList = _useWhite;
-        config.WhiteList = _whiteList.ToArray();
-        config.BlackList = _blackList.ToArray();
-        config.AllowRename = _allowRename;
+        // a new object: CurrentValue is shared by the whole app and must keep the old values if saving fails
+        var config = new ConfigOptions
+        {
+            Source = _source,
+            ExcludeDirsSource = _excludeSourceList.ToArray(),
+            Destination = _destination,
+            ExcludeDirsDestination = _excludeDestinationList.ToArray(),
+            UseWhiteListInsteadOfBlackList = _useWhite,
+            WhiteList = _whiteList.ToArray(),
+            BlackList = _blackList.ToArray(),
+            AllowRename = _allowRename
+        };
         try
         {
             ConfigOptionsService.SaveOptions(config);
-            toastService.ShowSuccess("Settings are saved");
-            while (!ConfigOptionsService.CheckMonitor(config)) Thread.Sleep(100);
+            if (await ConfigOptionsService.WaitUntilAppliedAsync(config)) toastService.ShowSuccess("Settings are saved");
+            else toastService.ShowWarning("Settings are saved, but the application hasn't loaded them yet. Restart it if they don't apply.");
             if (!await FileService.InitializeFiles(true))
             {
                 toastService.ShowError("Cannot initialize service. The destination or/and source path is invalid. Visit the configuration page");
@@ -376,12 +379,9 @@
     }
     private void AddWhite()
     {
-        _newWhite = _newWhite.Trim();
-        if (!_whiteList.Contains(_newWhite))
-        {
-            _whiteList.Add(_newWhite);
-            _newWhite = string.Empty;
-        }
+        string extension = FileFilter.NormalizeExtension(_newWhite);
+        if (!_whiteList.Contains(extension, StringComparer.OrdinalIgnoreCase)) _whiteList.Add(extension);
+        _newWhite = string.Empty;
     }
     private void RemoveBlack(string black)
     {
@@ -389,26 +389,24 @@
     }
     private void AddBlack()
     {
-        _newBlack = _newBlack.Trim();
-        if (!_blackList.Contains(_newBlack))
-        {
-            _blackList.Add(_newBlack);
-            _newBlack = string.Empty;
-        }
+        string extension = FileFilter.NormalizeExtension(_newBlack);
+        if (!_blackList.Contains(extension, StringComparer.OrdinalIgnoreCase)) _blackList.Add(extension);
+        _newBlack = string.Empty;
     }
-    private async void LoadDefaultTestConfig()
+    private async Task LoadDefaultTestConfig()
     {
+        ConfigOptions config;
         try
         {
-            ConfigOptionsService.LoadDefaultTestConfig();
+            config = ConfigOptionsService.LoadDefaultTestConfig();
         }
         catch (Exception e)
         {
             toastService.ShowError($"Cannot load test configuration: {e.Message}. Generate test files first with src/Sorter/TestFolder/generate_test_files.py");
             return;
         }
-        toastService.ShowInfo("Default configuration loaded");
-        Thread.Sleep(1000);
+        if (await ConfigOptionsService.WaitUntilAppliedAsync(config)) toastService.ShowInfo("Default configuration loaded");
+        else toastService.ShowWarning("Test configuration is saved, but the application hasn't loaded it yet. Restart it if it doesn't apply.");
         if (!await FileService.InitializeFiles(true))
         {
             toastService.ShowError("Something wrong with configuration.");

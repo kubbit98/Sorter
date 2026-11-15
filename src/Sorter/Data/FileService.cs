@@ -2,6 +2,14 @@
 
 namespace Sorter.Data
 {
+    /// <summary>
+    /// Session state shared by all browser sessions (the service is a singleton). All fields below
+    /// _stateLock are read and written only under it; slow disk work runs outside the lock, so one
+    /// session moving a large file doesn't block the others. The file list is never modified after
+    /// a scan, only replaced, so a reference taken under the lock can be read outside of it.
+    /// Thumbnail fields of the files are written by ThumbnailScheduler without the lock, single
+    /// reference writes can't be torn.
+    /// </summary>
     public class FileService
     {
         private readonly IConfiguration _configuration;
@@ -9,32 +17,30 @@ namespace Sorter.Data
         private readonly IOptionsMonitor<KeyBindsOptions> _keyOptions;
         private readonly ConfigOptionsService _configOptionsService;
         private readonly ILogger _logger;
-        private readonly IThumbnailGenerator _thumbnailGenerator;
+        private readonly ThumbnailScheduler _thumbnailScheduler;
+        private readonly FileScanner _fileScanner;
+        private readonly FileOperations _fileOperations;
+        private readonly string password;
 
-        private static readonly string[] s_globalExtensionExclude = ["ds_store"];
-        private static readonly int s_thumbnailsToCreateAhead = 5;
-        private static readonly int s_maxLengthOfTextFile = 5000;
+        // the first file is shown right after initialization, a stuck decoder mustn't block the session though
+        private static readonly TimeSpan s_firstThumbnailTimeout = TimeSpan.FromSeconds(30);
+        // initialization awaits, so it can't hold _stateLock; this keeps two of them from running at once
+        private readonly SemaphoreSlim _initializationLock = new(1, 1);
 
-        private List<File> files = [];
+        private readonly object _stateLock = new();
+        private IReadOnlyList<File> files = [];
         private List<Folder> folders = [];
         private int indexOfLastProcessingFile = -1;
         private string sessionStoragePrefix;
-
-        private string source = "";
-        private string destination = "";
-        private string[] excludeDirsInSource = [];
-        private string[] excludeDirsInDestination = [];
-        private string[] whiteList = [];
-        private string[] blackList = [];
-        private bool useWhiteListInsteadOfBlackList;
-        private readonly string password;
-        private bool allowRename;
-        private bool useThumbnails;
+        private SorterSettings settings = SorterSettings.Empty;
+        private MediaUrlBuilder urlBuilder = MediaUrlBuilder.Empty;
         private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, ThumbnailScheduler thumbnailScheduler, FileScanner fileScanner, FileOperations fileOperations)
         {
-            _thumbnailGenerator = thumbnailGenerator;
+            _fileOperations = fileOperations;
+            _fileScanner = fileScanner;
+            _thumbnailScheduler = thumbnailScheduler;
             _configuration = configuration;
             _options = options;
             _keyOptions = keyOptions;
@@ -42,64 +48,55 @@ namespace Sorter.Data
             _logger = logger;
             password = _configuration.GetValue<string>("Password") ?? string.Empty;
             sessionStoragePrefix = Path.GetRandomFileName();
-            initialized = false;
         }
-        public bool CheckCorrectnessOfConfig()
+        public async Task<bool> InitializeFiles(bool reInit)
         {
-            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Source)) return false;
-            if (string.IsNullOrWhiteSpace(_options.CurrentValue.Destination)) return false;
-            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Source))) return false;
-            if (!Directory.Exists(Path.GetFullPath(_options.CurrentValue.Destination))) return false;
-            return true;
-        }
-        public Task<bool> InitializeFiles(bool reInit)
-        {
-            if (!initialized || reInit)
-            {
-                while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) Thread.Sleep(100);
-                if (!CheckCorrectnessOfConfig()) return Task.FromResult(false);
-                LoadConfig();
-                LoadFilesAndFolders();
-                indexOfLastProcessingFile = -1;
-                if (useThumbnails && files!.Count > 0)
-                {
-                    foreach (var f in files.GetRange(0, Math.Min(files.Count, s_thumbnailsToCreateAhead)))
-                    {
-                        Task.Run(() => CreateThumbnail(f));
-                    }
-                    while (files[0].IsThumbnailExist == File.ThumbnailEnum.Unknown || files[0].IsThumbnailExist == File.ThumbnailEnum.WillBe) Thread.Sleep(100);
-                }
-                initialized = true;
-                if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
-            }
-            return Task.FromResult(true);
-        }
-        public void LoadConfig()
-        {
+            await _initializationLock.WaitAsync();
             try
             {
-                source = Path.GetFullPath(_options.CurrentValue.Source);
-                excludeDirsInSource = Array.ConvertAll(_options.CurrentValue.ExcludeDirsSource, dir => dir = Path.GetFullPath(dir));
-                destination = Path.GetFullPath(_options.CurrentValue.Destination);
-                excludeDirsInDestination = Array.ConvertAll(_options.CurrentValue.ExcludeDirsDestination, dir => dir = Path.GetFullPath(dir));
-                whiteList = _options.CurrentValue.WhiteList;
-                blackList = _options.CurrentValue.BlackList;
-                useWhiteListInsteadOfBlackList = _options.CurrentValue.UseWhiteListInsteadOfBlackList;
-                allowRename = _options.CurrentValue.AllowRename;
-                useThumbnails = _configuration.GetValue<bool>("UseThumbnails");
+                lock (_stateLock)
+                {
+                    if (initialized && !reInit) return true;
+                }
+                // config.json is reloaded asynchronously after the configuration dialog saves it
+                while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) await Task.Delay(100);
+                if (!SorterSettings.TryCreate(_options.CurrentValue, _configuration, out var newSettings)) return false;
+
+                // scanning reads the disk, other sessions keep using the previous lists until the swap below
+                var newFiles = _fileScanner.ScanFiles(newSettings.Source, newSettings.ExcludedSourceDirectories, newSettings.Filter);
+                var newFolders = _fileScanner.ScanFolders(newSettings.Destination, newSettings.ExcludedDestinationDirectories);
+                lock (_stateLock)
+                {
+                    settings = newSettings;
+                    urlBuilder = new MediaUrlBuilder(newSettings.Source, newSettings.Destination);
+                    files = newFiles;
+                    folders = newFolders;
+                    indexOfLastProcessingFile = -1;
+                    AssignKeyBinds();
+                }
+
+                _thumbnailScheduler.Reset();
+                if (newSettings.UseThumbnails && newFiles.Count > 0)
+                {
+                    _thumbnailScheduler.ScheduleAhead(newFiles, 0);
+                    await Task.WhenAny(_thumbnailScheduler.Schedule(newFiles[0]), Task.Delay(s_firstThumbnailTimeout));
+                }
+
+                lock (_stateLock)
+                {
+                    initialized = true;
+                    if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
+                }
+                return true;
             }
-            catch (NullReferenceException)
+            finally
             {
-                throw new NullReferenceException("Probably there is error in config.json");
-            }
-            catch (Exception)
-            {
-                throw;
+                _initializationLock.Release();
             }
         }
         public Task<string> GetStoragePrefix()
         {
-            return Task.FromResult(sessionStoragePrefix);
+            lock (_stateLock) return Task.FromResult(sessionStoragePrefix);
         }
         public Task<string> GetPassword()
         {
@@ -107,53 +104,41 @@ namespace Sorter.Data
         }
         public Task<bool> GetAllowRename()
         {
-            allowRename = _options.CurrentValue.AllowRename;
-            return Task.FromResult(allowRename);
+            // read on every call, so changing it in the configuration doesn't need a new session
+            return Task.FromResult(_options.CurrentValue.AllowRename);
         }
         public Task<Folder[]> GetFoldersAsync()
         {
-            return Task.FromResult(folders.ToArray());
+            lock (_stateLock) return Task.FromResult(folders.ToArray());
         }
+        /// <summary>
+        /// Hands out the next file not yet shown in any session, so sessions split the files between them.
+        /// </summary>
         public int? GetNextIndex()
         {
-            if (indexOfLastProcessingFile < files.Count - 1)
+            int index;
+            IReadOnlyList<File> currentFiles;
+            bool useThumbnails;
+            lock (_stateLock)
             {
-                indexOfLastProcessingFile++;
-                if (useThumbnails)
-                {
-                    foreach (var f in files.GetRange(indexOfLastProcessingFile, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
-                    {
-                        if (f.IsThumbnailExist == File.ThumbnailEnum.Unknown) Task.Run(() => CreateThumbnail(f));
-                    }
-                }
-                return indexOfLastProcessingFile;
+                if (indexOfLastProcessingFile >= files.Count - 1) return null;
+                index = ++indexOfLastProcessingFile;
+                currentFiles = files;
+                useThumbnails = settings.UseThumbnails;
             }
-            return null;
+            if (useThumbnails) _thumbnailScheduler.ScheduleAhead(currentFiles, index);
+            return index;
         }
         public File? GetFileAtIndex(int index)
         {
-            if (index < files.Count && index >= 0)
+            lock (_stateLock)
             {
+                if (index < 0 || index >= files.Count) return null;
                 File file = (File)files[index].Clone();
-                file.Path = GetUrlPath(file.PhysicalPath);
+                file.Path = urlBuilder.GetUrl(file.PhysicalPath);
                 file.FIndex = index;
                 return file;
             }
-            return null;
-        }
-        private string GetUrlPath(string physicalPath)
-        {
-            if (physicalPath.Contains(source)) return BuildUrl("/src/", source, physicalPath);
-            if (physicalPath.Contains(destination)) return BuildUrl("/dest/", destination, physicalPath);
-            return physicalPath;
-        }
-        private static string BuildUrl(string prefix, string root, string physicalPath)
-        {
-            // characters like '#', '%' or '?' in file names break the URL unless escaped
-            var segments = Path.GetRelativePath(root, physicalPath)
-                .Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar])
-                .Select(Uri.EscapeDataString);
-            return string.Concat(prefix, string.Join('/', segments));
         }
         public File? GetFileAtIndex(int index, string name)
         {
@@ -162,83 +147,12 @@ namespace Sorter.Data
             if (!file.Name.Equals(name)) throw new Exception("You need to reload yor session, the server was reset");
             return file;
         }
-        private void LoadFilesAndFolders()
-        {
-            files = ProcessFilesInDirectoryRecursively(source);
-            folders = ProcessDirectoryRecursively(destination);
-            AppendDirectoriesWithKeyBinds();
-        }
-        private List<Folder> ProcessDirectoryRecursively(string targetDirectoryPath)
-        {
-            List<Folder> folders = [];
-            try
-            {
-                if (!Directory.Exists(Path.GetFullPath(targetDirectoryPath)))
-                {
-                    return folders;
-                }
-                foreach (var fullPathToDirectory in Directory.GetDirectories(targetDirectoryPath).OrderBy(f => f))
-                {
-                    try
-                    {
-                        var folderName = Path.GetFileName(fullPathToDirectory);
-                        if (!excludeDirsInDestination.Contains(fullPathToDirectory))
-                        {
-                            folders.Add(new Folder(fullPathToDirectory, folderName));
-                            folders.AddRange(ProcessDirectoryRecursively(fullPathToDirectory));
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("Error with folder {Path}\n{Error}", fullPathToDirectory, e.Message);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error with whole destination folder {Error}", e.Message);
-            }
-            return folders;
-        }
-        private List<File> ProcessFilesInDirectoryRecursively(string sourceDirectoryPath)
-        {
-            List<File> files = [];
-            try
-            {
-                if (!Directory.Exists(Path.GetFullPath(sourceDirectoryPath)) || excludeDirsInSource.Contains(Path.GetFullPath(sourceDirectoryPath)))
-                {
-                    return files;
-                }
-                foreach (var fullPathToFile in Directory.GetFiles(sourceDirectoryPath).OrderBy(f => f))
-                {
-                    var fileName = Path.GetFileNameWithoutExtension(fullPathToFile);
-                    var originalExtension = Path.GetExtension(fullPathToFile).Replace(".", "");
-                    var fileExtension = originalExtension.ToLower();
-                    if (s_globalExtensionExclude.Contains(fileExtension)) continue;
-                    if ((useWhiteListInsteadOfBlackList && !whiteList.Contains(fileExtension))
-                        || (!useWhiteListInsteadOfBlackList && blackList.Contains(fileExtension))) continue;
-                    // original case is kept, because the extension is used to rebuild the file name on move/rename
-                    files.Add(new File(fullPathToFile, fileName, originalExtension));
-                }
-                foreach (var fullPath in Directory.GetDirectories(sourceDirectoryPath).OrderBy(f => f))
-                {
-                    try
-                    {
-                        files.AddRange(ProcessFilesInDirectoryRecursively(fullPath));
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError("Error with folder {Path}\n{Error}", fullPath, e.Message);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError("Error with whole source folder {Error}", e.Message);
-            }
-            return files;
-        }
         public void AppendDirectoriesWithKeyBinds()
+        {
+            lock (_stateLock) AssignKeyBinds();
+        }
+        // callers hold _stateLock
+        private void AssignKeyBinds()
         {
             var dict = _keyOptions.CurrentValue.KeyBinds;
             foreach (var folder in folders)
@@ -255,99 +169,64 @@ namespace Sorter.Data
         }
         public Task<bool> IsDestinationAvailable(File file, string destiny)
         {
-            return Task.FromResult(!System.IO.File.Exists(Path.Combine(destiny, file.NameWithExtension)));
+            return Task.FromResult(_fileOperations.IsNameFree(destiny, file.NameWithExtension));
         }
         public void MoveFile(File file, string destiny)
         {
-            string newFullPath = Path.Combine(destiny, file.NameWithExtension);
-            try
+            int index = file.FIndex!.Value;
+            IReadOnlyList<File> currentFiles;
+            lock (_stateLock)
             {
-                if (files[file!.FIndex!.Value].Name == file.Name)
+                currentFiles = files;
+                if (currentFiles[index].Name != file.Name)
                 {
-                    System.IO.File.Move(file.PhysicalPath, newFullPath);
-                    file.PhysicalPath = newFullPath;
-                    files[file.FIndex.Value].PhysicalPath = file.PhysicalPath;
-                    _logger.LogInformation("File {FileNameExt} moved to {Destination}", file.NameWithExtension, destiny);
+                    _logger.LogWarning("The file index has changed, you need to reload session");
+                    return;
                 }
-                else _logger.LogWarning("The file index has changed, you need to reload session");
             }
-            catch (Exception e)
-            {
-                _logger.LogError("File {FileNameExt} cannot be moved to {destiny}\n{Error}", file.NameWithExtension, destiny, e.Message);
-                throw;
-            }
+            // moving to another disk copies the whole file, which mustn't block other sessions
+            string newPath = _fileOperations.Move(file.PhysicalPath, destiny);
+            file.PhysicalPath = newPath;
+            lock (_stateLock) currentFiles[index].PhysicalPath = newPath;
         }
-        public Task<string> GetTextFileContent(File file)
+        public string GetTextFileContent(File file)
         {
-            if (file == null) throw new Exception("No file");
-            string content = System.IO.File.ReadAllText(file.PhysicalPath);
-            if (content.Length > s_maxLengthOfTextFile)
-            {
-                content = string.Concat(content[..s_maxLengthOfTextFile], "[...]");
-            }
-            return Task.FromResult(content);
+            return _fileOperations.ReadTextPreview(file.PhysicalPath);
         }
         public bool CreateFolder(string folderName)
         {
-            if (folders.Any(f => f.Name == folderName)) return false;
-            if (folderName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return false;
-            string fullPath = Path.Combine(destination, folderName);
-            Directory.CreateDirectory(fullPath);
-            folderName = Path.GetFileName(fullPath);
-            if (folderName != null)
+            // creating a directory is quick, holding the lock keeps the duplicate check and adding atomic
+            lock (_stateLock)
             {
-                folders.Add(new Folder(fullPath, folderName));
+                if (folders.Any(f => f.Name == folderName)) return false;
+                string? fullPath = _fileOperations.CreateFolder(settings.Destination, folderName);
+                if (fullPath == null) return false;
+                folders.Add(new Folder(fullPath, Path.GetFileName(fullPath)));
                 return true;
             }
-            return false;
         }
         public void ChangeFileName(int index, string newFileName)
         {
-            if (newFileName.IndexOfAny([.. Path.GetInvalidFileNameChars()]) != -1) return;
-            File file = files[index];
-            string newFullPath = Path.Combine(Directory.GetParent(file.PhysicalPath)!.FullName, string.Concat(newFileName, ".", file.Extension));
-            if (System.IO.File.Exists(newFullPath)) throw new InvalidOperationException("File with that name exists");
-            try
+            File file;
+            string physicalPath;
+            string extension;
+            MediaUrlBuilder currentUrlBuilder;
+            lock (_stateLock)
             {
-                System.IO.File.Move(file.PhysicalPath, newFullPath);
-                _logger.LogInformation("File renamed from {FileNameExt} to {Name}.{Extension}", file.NameWithExtension, newFileName, file.Extension);
-                files[index].PhysicalPath = newFullPath;
-                files[index].Name = newFileName;
-                files[index].Path = GetUrlPath(newFullPath);
+                file = files[index];
+                physicalPath = file.PhysicalPath;
+                extension = file.Extension;
+                currentUrlBuilder = urlBuilder;
             }
-            catch (Exception e)
+            string? newFullPath = _fileOperations.Rename(physicalPath, newFileName, extension);
+            if (newFullPath == null) return;
+            // all fields at once, so GetFileAtIndex never copies a half renamed file
+            lock (_stateLock)
             {
-                _logger.LogError("File {FileNameExt} cannot be renamed to {NewFileName}\n{Error}", file.NameWithExtension, newFileName, e.Message);
-                throw;
-            }
-        }
-        public void CreateThumbnail(File file)
-        {
-            if (file.IsThumbnailExist != File.ThumbnailEnum.Unknown) return;
-            if (!_thumbnailGenerator.CanProcess(file.Extension))
-            {
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-                return;
-            }
-            file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
-            try
-            {
-                ThumbnailResult result = _thumbnailGenerator.Generate(file.PhysicalPath, file.Extension);
-                if (result.ConvertedPath != null) file.ConvertedPath = GetTempUrl(result.ConvertedPath);
-                if (result.ThumbnailPath != null) file.ThumbnailPath = GetTempUrl(result.ThumbnailPath);
-                file.IsThumbnailExist = result.ThumbnailPath != null ? File.ThumbnailEnum.Exists : File.ThumbnailEnum.WillNot;
-            }
-            catch (InvalidImageFileException e)
-            {
-                _logger.LogWarning("Thumbnail cannot be created for {FilePath}: {Reason}", file.PhysicalPath, e.Message);
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Thumbnail cannot be created for {FilePath}", file.PhysicalPath);
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
+                file.PhysicalPath = newFullPath;
+                file.Name = newFileName;
+                file.Path = currentUrlBuilder.GetUrl(newFullPath);
             }
         }
-        private static string GetTempUrl(string physicalPath) => string.Concat("/tmp/", Path.GetFileName(physicalPath));
     }
 }

@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace Sorter.Data
 {
-    public class ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor, IOptionsMonitor<KeyBindsOptions> keyBindsOptions)
+    public class ConfigOptionsService(DestinationDFP destinationDFP, SourceDFP sourceDFP, IOptionsMonitor<ConfigOptions> configOptionsMonitor, IOptionsMonitor<KeyBindsOptions> keyBindsOptions, IConfiguration configuration)
     {
+        private static readonly TimeSpan s_applyTimeout = TimeSpan.FromSeconds(5);
         private readonly DestinationDFP _destinationDFP = destinationDFP;
         private readonly SourceDFP _sourceDFP = sourceDFP;
         private readonly IOptionsMonitor<ConfigOptions> _configOptionsMonitor = configOptionsMonitor;
@@ -35,6 +37,7 @@ namespace Sorter.Data
                 string jsonString = JsonSerializer.Serialize(config);
                 jsonString = string.Concat("{\"config\": ", jsonString, "}");
                 System.IO.File.WriteAllText("config.json", jsonString);
+                ReloadConfiguration();
                 _sourceDFP.UpdateProvider(Path.GetFullPath(config.Source));
                 _destinationDFP.UpdateProvider(Path.GetFullPath(config.Destination));
             }
@@ -50,19 +53,42 @@ namespace Sorter.Data
                 string jsonString = JsonSerializer.Serialize(keyBindsOptions);
                 jsonString = string.Concat("{\"KeyBinds\": ", jsonString, "}");
                 System.IO.File.WriteAllText("keybinds.json", jsonString);
+                ReloadConfiguration();
             }
             catch
             {
                 throw new Exception("Error upon writing the configuration");
             }
         }
-        public void LoadDefaultTestConfig()
+        /// <summary>Returns the loaded configuration, so callers can wait until it's applied.</summary>
+        public ConfigOptions LoadDefaultTestConfig()
         {
             string json = System.IO.File.ReadAllText(Path.Combine("TestFolder", "test_config.json"));
             ConfigOptions config = JsonSerializer.Deserialize<Dictionary<string, ConfigOptions>>(json)![ConfigOptions.config];
             // SaveOptions also validates the paths and points static file providers at the test folders
             SaveOptions(config);
+            return config;
         }
+        /// <summary>
+        /// Waits until the options monitor returns the saved values. False after the timeout,
+        /// then the file is saved but the application still uses the previous values.
+        /// </summary>
+        public Task<bool> WaitUntilAppliedAsync(ConfigOptions config, TimeSpan? timeout = null) =>
+            WaitUntilAsync(() => CheckMonitor(config), timeout ?? s_applyTimeout);
+        public Task<bool> WaitUntilAppliedAsync(KeyBindsOptions config, TimeSpan? timeout = null) =>
+            WaitUntilAsync(() => CheckMonitor(config), timeout ?? s_applyTimeout);
+        private static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            while (!condition())
+            {
+                if (stopwatch.Elapsed > timeout) return false;
+                await Task.Delay(50);
+            }
+            return true;
+        }
+        // reloadOnChange relies on file system notifications, which don't work everywhere (e.g. network drives)
+        private void ReloadConfiguration() => (configuration as IConfigurationRoot)?.Reload();
         public bool CheckMonitor(ConfigOptions config)
         {
             if (!_configOptionsMonitor.CurrentValue.Source.Equals(config.Source)) return false;

@@ -144,36 +144,32 @@ function toggleModal(modalId) {
 async function setFocusOnElement(elementId) {
     document.getElementById(elementId).focus({ focusVisible: true });
 }
-var activeButton;
-async function setButtonSuccess(isTrue) {
-    if (isTrue == "true") {
-
-        if (isListenForRegisterKey) {
-            activeButton.classList = ['btn btn-primary'];
-        }
-        else {
-            isListenForRegisterKey = true;
-        }
-        if (document.activeElement.hasAttribute('data-keybind-button')) {
-            activeButton = document.activeElement;
-            activeButton.classList = ['btn btn-info'];
-        }
-    }
-    else {
-        activeButton.classList = ['btn btn-primary'];
-        isListenForRegisterKey = false;
-        activeButton = null;
-    }
+var activeButton = null;
+// the clicked button is passed explicitly: Safari doesn't focus buttons on click,
+// so document.activeElement can't be relied on
+function startKeyBindListening(index) {
+    if (activeButton) activeButton.className = 'btn btn-primary';
+    activeButton = document.querySelector('[data-keybind-index="' + index + '"]');
+    isListenForRegisterKey = activeButton != null;
+    if (activeButton) activeButton.className = 'btn btn-info';
 }
-async function configKeyBindModal() {
-    var modal = document.getElementById('keyBindsModal')
+function stopKeyBindListening() {
+    if (activeButton) activeButton.className = 'btn btn-primary';
+    activeButton = null;
+    isListenForRegisterKey = false;
+}
+function configKeyBindModal() {
+    var modal = document.getElementById('keyBindsModal');
+    // called on every opening, the listener must be added only once per element
+    if (!modal || modal.dataset.keyBindListener) return;
+    modal.dataset.keyBindListener = 'true';
     //https://stackoverflow.com/a/49583286
     modal.addEventListener('hide.bs.modal', function (event) {
         if (isListenForRegisterKey) {
             event.preventDefault();
-            setButtonSuccess(false);
+            stopKeyBindListening();
         }
-    })
+    });
 }
 
 window.addEventListener('keydown', function (event) {
@@ -181,16 +177,18 @@ window.addEventListener('keydown', function (event) {
         event.preventDefault();
         event.stopPropagation();
     }
-    if (isListenForRegisterKey) {
+    // keys pressed before Blazor connects have nowhere to go
+    if (!dotNetObjRef) return;
+    if (isListenForRegisterKey && activeButton) {
         if (event.key == 'Shift') {
             return;
         }
         else if (event.key == 'Alt' || event.key == 'Control') {
-            setButtonSuccess(false);
+            stopKeyBindListening();
             return;
         }
-        dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, isListenForRegisterKey, activeButton.title);
-        setButtonSuccess(false);
+        dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, true, activeButton.title);
+        stopKeyBindListening();
     }
     else if (!document.activeElement.hasAttribute('data-prevent-keydown')) {
         dotNetObjRef.invokeMethodAsync('HandleKeyDown', event.key, isListenForRegisterKey, '');

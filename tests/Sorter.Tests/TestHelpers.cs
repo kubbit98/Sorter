@@ -31,6 +31,27 @@ internal sealed class ListLogger<T> : ILogger<T>
     }
 }
 
+internal sealed class FakeThumbnailGenerator : Sorter.Data.IThumbnailGenerator
+{
+    private int _calls;
+
+    public Sorter.Data.ThumbnailResult Result { get; set; } = new(null, null);
+    public Exception? Exception { get; set; }
+    /// <summary>When set, Generate waits for it, to keep a generation in progress.</summary>
+    public ManualResetEventSlim? Gate { get; set; }
+    public int Calls => Volatile.Read(ref _calls);
+
+    public bool CanProcess(string extension) => extension.ToLowerInvariant() is "jpg" or "heic";
+
+    public Sorter.Data.ThumbnailResult Generate(string physicalPath, string extension)
+    {
+        Interlocked.Increment(ref _calls);
+        Gate?.Wait(TimeSpan.FromSeconds(10));
+        if (Exception != null) throw Exception;
+        return Result;
+    }
+}
+
 internal sealed class TempDirectory : IDisposable
 {
     public string Path { get; } = Directory.CreateTempSubdirectory("sorter-tests-").FullName;

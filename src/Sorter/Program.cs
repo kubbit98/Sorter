@@ -16,6 +16,9 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddSingleton<FileService>();
+builder.Services.AddSingleton<FileScanner>();
+builder.Services.AddSingleton<FileOperations>();
+builder.Services.AddSingleton<ThumbnailScheduler>();
 builder.Services.AddSingleton<ConfigOptionsService>();
 builder.Services.AddSingleton(provider => new SourceDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Source"), provider.GetRequiredService<ILogger<SourceDFP>>()));
 builder.Services.AddSingleton(provider => new DestinationDFP(builder.Configuration.GetSection(ConfigOptions.config).GetValue<string>("Destination"), provider.GetRequiredService<ILogger<DestinationDFP>>()));
