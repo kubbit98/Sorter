@@ -22,14 +22,14 @@ public class FileServiceTests : IDisposable
 
     public void Dispose() => _root.Dispose();
 
-    private FileService CreateService(Action<ConfigOptions>? configure = null)
+    private FileService CreateService(Action<ConfigOptions>? configure = null, bool useThumbnails = false)
     {
         var options = new ConfigOptions { Source = _source, Destination = _destination };
         configure?.Invoke(options);
         var optionsMonitor = new TestOptionsMonitor<ConfigOptions>(options);
         var keyBindsMonitor = new TestOptionsMonitor<KeyBindsOptions>(new KeyBindsOptions());
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["UseThumbnails"] = "false", ["Password"] = "" })
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["UseThumbnails"] = useThumbnails.ToString(), ["Password"] = "" })
             .Build();
         var configOptionsService = new ConfigOptionsService(
             new DestinationDFP(_destination, NullLogger.Instance),
@@ -37,12 +37,12 @@ public class FileServiceTests : IDisposable
             optionsMonitor,
             keyBindsMonitor);
         return new FileService(configuration, optionsMonitor, keyBindsMonitor, configOptionsService,
-            _logger, _thumbnailGenerator, new FileScanner(NullLogger<FileScanner>.Instance), new FileOperations(NullLogger<FileOperations>.Instance));
+            _logger, new ThumbnailScheduler(_thumbnailGenerator, NullLogger<ThumbnailScheduler>.Instance), new FileScanner(NullLogger<FileScanner>.Instance), new FileOperations(NullLogger<FileOperations>.Instance));
     }
 
-    private async Task<FileService> CreateInitializedServiceAsync(Action<ConfigOptions>? configure = null)
+    private async Task<FileService> CreateInitializedServiceAsync(Action<ConfigOptions>? configure = null, bool useThumbnails = false)
     {
-        var service = CreateService(configure);
+        var service = CreateService(configure, useThumbnails);
         Assert.True(await service.InitializeFiles(false));
         return service;
     }
@@ -317,96 +317,45 @@ public class FileServiceTests : IDisposable
     }
 
     [Fact]
-    public void CreateThumbnail_SkipsUnsupportedFiles()
+    public async Task InitializeFiles_WaitsForFirstThumbnailAndSchedulesTheNextFiles()
     {
-        var file = new SorterFile("/x/a.mp4", "a", "mp4");
+        for (int i = 0; i < 8; i++) CreateSourceFile($"{i}.jpg");
+        _thumbnailGenerator.Result = new ThumbnailResult(Path.Combine(_root.Path, "thumb.jpg"), null);
 
-        CreateService().CreateThumbnail(file);
+        var service = await CreateInitializedServiceAsync(useThumbnails: true);
 
-        Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
+        Assert.Equal("/tmp/thumb.jpg", service.GetFileAtIndex(0)!.ThumbnailPath);
+        await WaitUntil(() => _thumbnailGenerator.Calls == ThumbnailScheduler.FilesAhead);
+        Assert.Equal(ThumbnailScheduler.FilesAhead, _thumbnailGenerator.Calls);
+    }
+
+    [Fact]
+    public async Task GetNextIndex_SchedulesFilesAheadOfTheUser()
+    {
+        for (int i = 0; i < 8; i++) CreateSourceFile($"{i}.jpg");
+        var service = await CreateInitializedServiceAsync(useThumbnails: true);
+
+        for (int i = 0; i < 4; i++) service.GetNextIndex();
+
+        // the 4th file is index 3, files 3..7 are scheduled, all 8 in total
+        await WaitUntil(() => _thumbnailGenerator.Calls == 8);
+        Assert.Equal(8, _thumbnailGenerator.Calls);
+    }
+
+    [Fact]
+    public async Task WithoutThumbnails_GeneratorIsNeverCalled()
+    {
+        CreateSourceFile("a.jpg");
+        var service = await CreateInitializedServiceAsync();
+
+        service.GetNextIndex();
+
+        await Task.Delay(100);
         Assert.Equal(0, _thumbnailGenerator.Calls);
     }
 
-    [Fact]
-    public void CreateThumbnail_SetsTempUrlWhenThumbnailIsCreated()
+    private static async Task WaitUntil(Func<bool> condition)
     {
-        _thumbnailGenerator.Result = new ThumbnailResult(Path.Combine(_root.Path, "abc.jpg"), null);
-        var file = new SorterFile("/x/a.JPG", "a", "JPG");
-
-        CreateService().CreateThumbnail(file);
-
-        Assert.Equal(SorterFile.ThumbnailEnum.Exists, file.IsThumbnailExist);
-        Assert.Equal("/tmp/abc.jpg", file.ThumbnailPath);
-        Assert.Null(file.ConvertedPath);
-    }
-
-    [Fact]
-    public void CreateThumbnail_SetsConversionWithoutThumbnail()
-    {
-        _thumbnailGenerator.Result = new ThumbnailResult(null, Path.Combine(_root.Path, "conv.jpg"));
-        var file = new SorterFile("/x/a.heic", "a", "heic");
-
-        CreateService().CreateThumbnail(file);
-
-        Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
-        Assert.Equal("/tmp/conv.jpg", file.ConvertedPath);
-        Assert.Null(file.ThumbnailPath);
-    }
-
-    [Fact]
-    public void CreateThumbnail_LogsBrokenImageAsShortWarning()
-    {
-        _thumbnailGenerator.Exception = new InvalidImageFileException("unrecognized image format", new Exception("details"));
-        var file = new SorterFile("/x/a.jpg", "a", "jpg");
-
-        CreateService().CreateThumbnail(file);
-
-        Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
-        var entry = Assert.Single(_logger.Entries);
-        Assert.Equal(LogLevel.Warning, entry.Level);
-        Assert.Equal("Thumbnail cannot be created for /x/a.jpg: unrecognized image format", entry.Message);
-        Assert.Null(entry.Exception);
-    }
-
-    [Fact]
-    public void CreateThumbnail_LogsUnexpectedErrorWithException()
-    {
-        _thumbnailGenerator.Exception = new InvalidOperationException("unexpected");
-        var file = new SorterFile("/x/a.jpg", "a", "jpg");
-
-        CreateService().CreateThumbnail(file);
-
-        Assert.Equal(SorterFile.ThumbnailEnum.WillNot, file.IsThumbnailExist);
-        var entry = Assert.Single(_logger.Entries);
-        Assert.Equal(LogLevel.Error, entry.Level);
-        Assert.Same(_thumbnailGenerator.Exception, entry.Exception);
-    }
-
-    [Fact]
-    public void CreateThumbnail_ProcessesEachFileOnlyOnce()
-    {
-        var file = new SorterFile("/x/a.jpg", "a", "jpg");
-        var service = CreateService();
-
-        service.CreateThumbnail(file);
-        service.CreateThumbnail(file);
-
-        Assert.Equal(1, _thumbnailGenerator.Calls);
-    }
-
-    private sealed class FakeThumbnailGenerator : IThumbnailGenerator
-    {
-        public ThumbnailResult Result { get; set; } = new(null, null);
-        public Exception? Exception { get; set; }
-        public int Calls { get; private set; }
-
-        public bool CanProcess(string extension) => extension.ToLowerInvariant() is "jpg" or "heic";
-
-        public ThumbnailResult Generate(string physicalPath, string extension)
-        {
-            Calls++;
-            if (Exception != null) throw Exception;
-            return Result;
-        }
+        for (int i = 0; i < 100 && !condition(); i++) await Task.Delay(20);
     }
 }

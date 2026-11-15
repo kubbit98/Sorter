@@ -9,11 +9,14 @@ namespace Sorter.Data
         private readonly IOptionsMonitor<KeyBindsOptions> _keyOptions;
         private readonly ConfigOptionsService _configOptionsService;
         private readonly ILogger _logger;
-        private readonly IThumbnailGenerator _thumbnailGenerator;
+        private readonly ThumbnailScheduler _thumbnailScheduler;
         private readonly FileScanner _fileScanner;
         private readonly FileOperations _fileOperations;
 
-        private static readonly int s_thumbnailsToCreateAhead = 5;
+        // the first file is shown right after initialization, a stuck decoder mustn't block the session though
+        private static readonly TimeSpan s_firstThumbnailTimeout = TimeSpan.FromSeconds(30);
+        // two sessions initializing at once would replace each other's file list halfway
+        private readonly SemaphoreSlim _initializationLock = new(1, 1);
 
         private List<File> files = [];
         private List<Folder> folders = [];
@@ -25,11 +28,11 @@ namespace Sorter.Data
         private readonly string password;
         private bool initialized;
 
-        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, IThumbnailGenerator thumbnailGenerator, FileScanner fileScanner, FileOperations fileOperations)
+        public FileService(IConfiguration configuration, IOptionsMonitor<ConfigOptions> options, IOptionsMonitor<KeyBindsOptions> keyOptions, ConfigOptionsService configOptionsService, ILogger<FileService> logger, ThumbnailScheduler thumbnailScheduler, FileScanner fileScanner, FileOperations fileOperations)
         {
             _fileOperations = fileOperations;
             _fileScanner = fileScanner;
-            _thumbnailGenerator = thumbnailGenerator;
+            _thumbnailScheduler = thumbnailScheduler;
             _configuration = configuration;
             _options = options;
             _keyOptions = keyOptions;
@@ -39,28 +42,33 @@ namespace Sorter.Data
             sessionStoragePrefix = Path.GetRandomFileName();
             initialized = false;
         }
-        public Task<bool> InitializeFiles(bool reInit)
+        public async Task<bool> InitializeFiles(bool reInit)
         {
-            if (!initialized || reInit)
+            await _initializationLock.WaitAsync();
+            try
             {
-                while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) Thread.Sleep(100);
-                if (!SorterSettings.TryCreate(_options.CurrentValue, _configuration, out var newSettings)) return Task.FromResult(false);
+                if (initialized && !reInit) return true;
+                // config.json is reloaded asynchronously after the configuration dialog saves it
+                while (!_configOptionsService.CheckMonitor(_options.CurrentValue)) await Task.Delay(100);
+                if (!SorterSettings.TryCreate(_options.CurrentValue, _configuration, out var newSettings)) return false;
                 settings = newSettings;
                 urlBuilder = new MediaUrlBuilder(settings.Source, settings.Destination);
+                _thumbnailScheduler.Reset();
                 LoadFilesAndFolders();
                 indexOfLastProcessingFile = -1;
                 if (settings.UseThumbnails && files.Count > 0)
                 {
-                    foreach (var f in files.GetRange(0, Math.Min(files.Count, s_thumbnailsToCreateAhead)))
-                    {
-                        Task.Run(() => CreateThumbnail(f));
-                    }
-                    while (files[0].IsThumbnailExist == File.ThumbnailEnum.Unknown || files[0].IsThumbnailExist == File.ThumbnailEnum.WillBe) Thread.Sleep(100);
+                    _thumbnailScheduler.ScheduleAhead(files, 0);
+                    await Task.WhenAny(_thumbnailScheduler.Schedule(files[0]), Task.Delay(s_firstThumbnailTimeout));
                 }
                 initialized = true;
                 if (reInit) sessionStoragePrefix = Path.GetRandomFileName();
+                return true;
             }
-            return Task.FromResult(true);
+            finally
+            {
+                _initializationLock.Release();
+            }
         }
         public Task<string> GetStoragePrefix()
         {
@@ -84,13 +92,7 @@ namespace Sorter.Data
             if (indexOfLastProcessingFile < files.Count - 1)
             {
                 indexOfLastProcessingFile++;
-                if (settings.UseThumbnails)
-                {
-                    foreach (var f in files.GetRange(indexOfLastProcessingFile, Math.Min(files.Count - indexOfLastProcessingFile, s_thumbnailsToCreateAhead)))
-                    {
-                        if (f.IsThumbnailExist == File.ThumbnailEnum.Unknown) Task.Run(() => CreateThumbnail(f));
-                    }
-                }
+                if (settings.UseThumbnails) _thumbnailScheduler.ScheduleAhead(files, indexOfLastProcessingFile);
                 return indexOfLastProcessingFile;
             }
             return null;
@@ -169,33 +171,6 @@ namespace Sorter.Data
             file.PhysicalPath = newFullPath;
             file.Name = newFileName;
             file.Path = urlBuilder.GetUrl(newFullPath);
-        }
-        public void CreateThumbnail(File file)
-        {
-            if (file.IsThumbnailExist != File.ThumbnailEnum.Unknown) return;
-            if (!_thumbnailGenerator.CanProcess(file.Extension))
-            {
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-                return;
-            }
-            file.IsThumbnailExist = File.ThumbnailEnum.WillBe;
-            try
-            {
-                ThumbnailResult result = _thumbnailGenerator.Generate(file.PhysicalPath, file.Extension);
-                if (result.ConvertedPath != null) file.ConvertedPath = MediaUrlBuilder.GetTempUrl(result.ConvertedPath);
-                if (result.ThumbnailPath != null) file.ThumbnailPath = MediaUrlBuilder.GetTempUrl(result.ThumbnailPath);
-                file.IsThumbnailExist = result.ThumbnailPath != null ? File.ThumbnailEnum.Exists : File.ThumbnailEnum.WillNot;
-            }
-            catch (InvalidImageFileException e)
-            {
-                _logger.LogWarning("Thumbnail cannot be created for {FilePath}: {Reason}", file.PhysicalPath, e.Message);
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Thumbnail cannot be created for {FilePath}", file.PhysicalPath);
-                file.IsThumbnailExist = File.ThumbnailEnum.WillNot;
-            }
         }
     }
 }
