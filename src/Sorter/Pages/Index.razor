@@ -55,7 +55,7 @@
                             {
                                 case FileNameInputStatus.Closed:
                                     @_currentFile.OnlyPath
-                                    <strong>@_currentFile.Name.@_currentFile.Extension</strong>
+                                    <strong>@_currentFile.NameWithExtension</strong>
                                     @if (_password!.Equals(string.Empty) || _password.Equals(_unlockBoxPassword) || _allowRename)
                                     {
                                         <button class="btn btn-info btn-circle btn-circle-xs ms-1" @onclick=@FileNameInputOpen aria-label="Rename file"><i class="bi bi-pencil" aria-hidden="true"></i></button>
