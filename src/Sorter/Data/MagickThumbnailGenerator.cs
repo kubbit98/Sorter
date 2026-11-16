@@ -97,10 +97,10 @@ public class MagickThumbnailGenerator : IThumbnailGenerator
         {
             throw new InvalidImageFileException(ShortMessage(e), e);
         }
-        // e.g. libraw reports damaged RAW files as coder errors
-        catch (MagickCoderErrorException e)
+        // e.g. libraw reports damaged RAW files as coder errors, the HEIC reader non-HEIC content as "image type not supported"
+        catch (Exception e) when (e is MagickCoderErrorException or MagickImageErrorException)
         {
-            throw new InvalidImageFileException(ShortMessage(e), e);
+            throw new InvalidImageFileException(ShortMessage((MagickException)e), e);
         }
         catch (MagickMissingDelegateErrorException e)
         {

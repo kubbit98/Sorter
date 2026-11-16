@@ -324,12 +324,14 @@ public abstract class ThumbnailGeneratorTests : IDisposable
     }
 
     [Theory]
-    [InlineData("broken.jpg", "jpg")]
-    [InlineData("broken.heic", "heic")]
-    [InlineData("broken.dng", "dng")]
-    public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension)
+    [InlineData("broken.jpg", "jpg", 1)]
+    [InlineData("broken.heic", "heic", 1)]
+    // longer content gets further into the HEIC reader and fails differently
+    [InlineData("broken_long.heic", "heic", 50)]
+    [InlineData("broken.dng", "dng", 1)]
+    public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension, int repeat)
     {
-        string path = _input.CreateFile(fileName, "This is not an image.");
+        string path = _input.CreateFile(fileName, string.Concat(Enumerable.Repeat("This is not an image.\n", repeat)));
 
         var exception = Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, extension));
         Assert.False(string.IsNullOrWhiteSpace(exception.Message));
