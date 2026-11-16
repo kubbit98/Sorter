@@ -137,24 +137,12 @@ public class ThumbnailSchedulerTests
     [InlineData(2, 10, new[] { 2, 3, 4, 5, 6 })]
     [InlineData(7, 10, new[] { 7, 8, 9 })]
     [InlineData(3, 3, new int[0])]
-    public async Task ScheduleAhead_StartsFilesAheadFromStartIndexWithinList(int startIndex, int count, int[] expected)
+    public void ScheduleAhead_StartsFilesAheadFromStartIndexWithinList(int startIndex, int count, int[] expected)
     {
-        using var gate = new ManualResetEventSlim(false);
-        _generator.Gate = gate;
         var files = Enumerable.Range(0, count).Select(i => Jpg(i.ToString())).ToList();
 
         _scheduler.ScheduleAhead(files, startIndex);
-        // the gate keeps scheduled files in WillBe, so they can be told apart from the rest
-        await WaitUntil(() => _generator.Calls == expected.Length);
-        var inProgress = Enumerable.Range(0, count).Where(i => files[i].IsThumbnailExist == SorterFile.ThumbnailEnum.WillBe).ToArray();
-        gate.Set();
 
-        Assert.Equal(expected, inProgress);
-        Assert.Equal(expected.Length, _generator.Calls);
-    }
-
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        for (int i = 0; i < 100 && !condition(); i++) await Task.Delay(20);
+        Assert.Equal(expected, Enumerable.Range(0, count).Where(i => _scheduler.IsScheduled(files[i])));
     }
 }

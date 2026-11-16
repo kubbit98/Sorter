@@ -357,7 +357,9 @@ public class FileServiceTests : IDisposable
 
     private static async Task WaitUntil(Func<bool> condition)
     {
-        for (int i = 0; i < 100 && !condition(); i++) await Task.Delay(20);
+        // a time limit, not a number of tries: Task.Delay(20) takes ~31 ms on Windows and CI runners are slow
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!condition() && DateTime.UtcNow < deadline) await Task.Delay(20);
     }
 
     [Fact]

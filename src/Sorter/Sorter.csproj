@@ -34,6 +34,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Sorter.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\..\COPYING" Pack="True" PackagePath="\" />
 		<None Include="..\..\README.md" Pack="True" PackagePath="\" />
 	</ItemGroup>
