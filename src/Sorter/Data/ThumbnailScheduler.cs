@@ -31,6 +31,8 @@ public class ThumbnailScheduler(IThumbnailGenerator generator, ILogger<Thumbnail
     /// <summary>Forgets files of the previous session, they are never scheduled again.</summary>
     public void Reset() => _tasks.Clear();
 
+    internal bool IsScheduled(File file) => _tasks.ContainsKey(file);
+
     public void CreateThumbnail(File file)
     {
         if (file.IsThumbnailExist != File.ThumbnailEnum.Unknown) return;
