@@ -34,16 +34,8 @@ VIDEOS = {
     "video_h264_aac.mov": H264_AAC,
     "video_h264_aac.m4v": H264_AAC,
     "video_h264_aac.qt": H264_AAC + ["-f", "mov"],
-    "video_h264_aac.ts": H264_AAC,
     "video_vp9_opus.webm": ["-c:v", "libvpx-vp9", "-crf", "40", "-b:v", "0", "-deadline", "realtime",
                             "-cpu-used", "8", "-c:a", "libopus"],
-    "video_theora_vorbis.ogv": ["-c:v", "libtheora", "-q:v", "6", "-c:a", "libvorbis"],
-    "video_mpeg4_mp3.avi": ["-c:v", "mpeg4", "-q:v", "5", "-c:a", "libmp3lame"],
-    "video_h263_aac.3gp": ["-s", "352x288", "-c:v", "h263", "-c:a", "aac", "-ar", "16000", "-ac", "1"],
-    "video_wmv2_wma.wmv": ["-c:v", "wmv2", "-c:a", "wmav2"],
-    "video_wmv2_wma.asf": ["-c:v", "wmv2", "-c:a", "wmav2"],
-    "video_flv_mp3.flv": ["-c:v", "flv", "-c:a", "libmp3lame", "-ar", "44100"],
-    "video_mpeg2_mp2.mpg": ["-c:v", "mpeg2video", "-q:v", "5", "-c:a", "mp2"],
 }
 SVG_SAMPLE = """<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
   <rect width="800" height="600" fill="#2a5aa0"/>
@@ -52,12 +44,15 @@ SVG_SAMPLE = """<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"
   <text x="400" y="320" font-family="sans-serif" font-size="56" fill="white" text-anchor="middle">SVG vector</text>
 </svg>
 """
+RAW_SAMPLE = Path(__file__).resolve().parents[3] / "tests" / "Sorter.Tests" / "TestData" / "landscape_900x300.dng"
 AUDIOS = {
     "audio.mp3": ["-c:a", "libmp3lame"],
     "audio.wav": ["-c:a", "pcm_s16le"],
     "audio_vorbis.ogg": ["-c:a", "libvorbis"],
     "audio_vorbis.oga": ["-c:a", "libvorbis", "-f", "ogg"],
     "audio_aac.m4a": ["-c:a", "aac"],
+    "audiobook_aac.m4b": ["-c:a", "aac", "-f", "ipod"],
+    "ringtone_aac.m4r": ["-c:a", "aac", "-f", "ipod"],
 }
 
 
@@ -174,6 +169,11 @@ def generate_photos(d):
     alpha = make_image(600, 450, "BMP 32-bit alpha").convert("RGBA")
     alpha.putalpha(Image.linear_gradient("L").rotate(90).resize(alpha.size))
     alpha.save(d / "bmp_alpha_32bit.bmp")
+    make_image(2400, 1800, "TIFF").save(d / "tiff_large.tiff")
+    make_image(1200, 900, "TIF extension").save(d / "scan.tif")
+    # camera RAW sample written with tifffile for the unit tests (libraw can develop it), copied to keep
+    # this script free of extra dependencies
+    shutil.copy(RAW_SAMPLE, d / "raw_sample.dng")
     make_image(800, 600, "Duplicate name (photos)").save(d / "duplicate_name.jpg", quality=85)
 
 

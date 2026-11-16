@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
-using SixLabors.ImageSharp.PixelFormats;
+using ImageMagick;
 
 namespace Sorter.Tests;
 
@@ -69,40 +67,97 @@ internal sealed class TempDirectory : IDisposable
     public void Dispose() => Directory.Delete(Path, recursive: true);
 }
 
+/// <summary>Basic properties of an image file, read independently of the generator under test.</summary>
+internal sealed record ImageFileInfo(int Width, int Height, string Format, int Frames, ushort? Orientation);
+
 internal static class TestImages
 {
+    // the app's ImageMagick security policy must be in place before any test uses ImageMagick
+    static TestImages() => Sorter.Data.MagickThumbnailGenerator.EnsureInitialized();
+
     public static string TestDataPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", fileName);
 
     /// <param name="format">Saves in this format regardless of the file extension, e.g. "jpg" or "png".</param>
     public static string Create(string path, int width, int height, ushort? exifOrientation = null, string? format = null)
     {
-        using var image = new Image<Rgb24>(width, height, new Rgb24(40, 90, 160));
+        using var image = Solid(width, height, 40, 90, 160);
         if (exifOrientation != null)
         {
-            image.Metadata.ExifProfile = new ExifProfile();
-            image.Metadata.ExifProfile.SetValue(ExifTag.Orientation, exifOrientation.Value);
+            var exif = new ExifProfile();
+            exif.SetValue(ExifTag.Orientation, exifOrientation.Value);
+            image.SetProfile(exif);
+            // ImageMagick writes this property into the EXIF tag when saving, it would overwrite it with "undefined"
+            image.Orientation = (Orientation)exifOrientation.Value;
         }
-        if (format == null)
-        {
-            image.Save(path);
-        }
-        else
-        {
-            Configuration.Default.ImageFormatsManager.TryFindFormatByFileExtension(format, out var imageFormat);
-            image.Save(path, Configuration.Default.ImageFormatsManager.GetEncoder(imageFormat!));
-        }
+        image.Write(path, ToMagickFormat(format ?? Path.GetExtension(path).TrimStart('.')));
         return path;
     }
 
     public static string CreateAnimatedGif(string path, int width, int height, int frames)
     {
-        using var image = new Image<Rgb24>(width, height, new Rgb24(0, 0, 0));
-        for (int i = 1; i < frames; i++)
+        using var images = new MagickImageCollection();
+        for (int i = 0; i < frames; i++)
         {
-            using var frame = new Image<Rgb24>(width, height, new Rgb24((byte)(i * 60), 0, 0));
-            image.Frames.AddFrame(frame.Frames.RootFrame);
+            var frame = Solid(width, height, (byte)(i * 60), 0, 0);
+            frame.AnimationDelay = 10;
+            images.Add(frame);
         }
-        image.Save(path);
+        images.Write(path, MagickFormat.Gif);
         return path;
     }
+
+    /// <summary>32-bit BMP with alpha, one of the variants browsers don't display reliably.</summary>
+    public static string CreateBmpWithTransparentCorner(string path, int width, int height)
+    {
+        using var image = Solid(width, height, 255, 0, 0, alpha: 255);
+        using (var pixels = image.GetPixels())
+        {
+            pixels.SetPixel(0, 0, [0, 0, 0, 0]);
+        }
+        image.Write(path, MagickFormat.Bmp);
+        return path;
+    }
+
+    public static string CreateMultiPageTiff(string path, int width, int height, int pages)
+    {
+        using var images = new MagickImageCollection();
+        for (int i = 0; i < pages; i++) images.Add(Solid(width, height, (byte)(i * 80), 0, 0));
+        images.Write(path, MagickFormat.Tiff);
+        return path;
+    }
+
+    public static ImageFileInfo Identify(string path)
+    {
+        using var images = new MagickImageCollection(path);
+        var first = images[0];
+        ushort? orientation = first.GetExifProfile()?.GetValue(ExifTag.Orientation)?.Value;
+        return new ImageFileInfo((int)first.Width, (int)first.Height, first.Format.ToString().ToUpperInvariant(), images.Count, orientation);
+    }
+
+    public static int AlphaAt(string path, int x, int y)
+    {
+        using var image = new MagickImage(path);
+        using var pixels = image.GetPixels();
+        return pixels.GetPixel(x, y).ToColor()!.A;
+    }
+
+    // built from raw pixels: ImageMagick's usual "xc:" color source is a format the app's security policy blocks
+    private static MagickImage Solid(int width, int height, byte red, byte green, byte blue, byte? alpha = null)
+    {
+        byte[] color = alpha == null ? [red, green, blue] : [red, green, blue, alpha.Value];
+        byte[] pixels = new byte[width * height * color.Length];
+        for (int i = 0; i < pixels.Length; i += color.Length) color.CopyTo(pixels, i);
+        var mapping = alpha == null ? PixelMapping.RGB : PixelMapping.RGBA;
+        return new MagickImage(pixels, new PixelReadSettings((uint)width, (uint)height, StorageType.Char, mapping));
+    }
+
+    private static MagickFormat ToMagickFormat(string extension) => extension.ToLowerInvariant() switch
+    {
+        "jpg" or "jpeg" => MagickFormat.Jpeg,
+        "png" => MagickFormat.Png,
+        "gif" => MagickFormat.Gif,
+        "bmp" => MagickFormat.Bmp,
+        "tiff" or "tif" => MagickFormat.Tiff,
+        var other => throw new ArgumentException($"No test format for '{other}'"),
+    };
 }

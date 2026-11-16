@@ -1,21 +1,28 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Bmp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Metadata.Profiles.Exif;
+using ImageMagick;
 using Sorter.Data;
 
 namespace Sorter.Tests;
 
-public class ImageSharpThumbnailGeneratorTests : IDisposable
+public class MagickThumbnailGeneratorTests : ThumbnailGeneratorTests
+{
+    protected override IThumbnailGenerator CreateGenerator(string outputDirectory) => new MagickThumbnailGenerator(outputDirectory);
+}
+
+/// <summary>
+/// Behavior required from every implementation; a derived class runs all tests for one of them.
+/// </summary>
+public abstract class ThumbnailGeneratorTests : IDisposable
 {
     private readonly TempDirectory _input = new();
     private readonly TempDirectory _output = new();
-    private readonly ImageSharpThumbnailGenerator _generator;
+    private readonly IThumbnailGenerator _generator;
 
-    public ImageSharpThumbnailGeneratorTests()
+    protected ThumbnailGeneratorTests()
     {
-        _generator = new ImageSharpThumbnailGenerator(_output.Path);
+        _generator = CreateGenerator(_output.Path);
     }
+
+    protected abstract IThumbnailGenerator CreateGenerator(string outputDirectory);
 
     public void Dispose()
     {
@@ -36,6 +43,11 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
     [InlineData("jfif", true)]
     [InlineData("jpe", true)]
     [InlineData("svg", false)]
+    [InlineData("tif", true)]
+    [InlineData("dng", true)]
+    [InlineData("CR2", true)]
+    [InlineData("nef", true)]
+    [InlineData("arw", true)]
     [InlineData("avif", false)]
     [InlineData("apng", false)]
     [InlineData("mp4", false)]
@@ -69,7 +81,7 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         Assert.NotNull(result.ThumbnailPath);
         Assert.Null(result.ConvertedPath);
-        var info = Image.Identify(result.ThumbnailPath!);
+        var info = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(expectedWidth, info.Width);
         Assert.Equal(expectedHeight, info.Height);
     }
@@ -93,7 +105,7 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, "JPG");
 
         Assert.Equal(".jpg", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("JPEG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("JPEG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -103,8 +115,8 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "gif");
 
-        using var thumbnail = Image.Load(result.ThumbnailPath!);
-        Assert.Equal(3, thumbnail.Frames.Count);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal(3, thumbnail.Frames);
         Assert.Equal(850, thumbnail.Width);
     }
 
@@ -115,11 +127,10 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "jpg");
 
-        var info = Image.Identify(result.ThumbnailPath!);
+        var info = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(850, info.Width);
         Assert.Equal(637, info.Height);
-        Assert.True(info.Metadata.ExifProfile!.TryGetValue(ExifTag.Orientation, out var orientation));
-        Assert.Equal((ushort)6, orientation.Value);
+        Assert.Equal((ushort)6, info.Orientation);
     }
 
     [Fact]
@@ -130,8 +141,8 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         Assert.Null(result.ThumbnailPath);
         Assert.NotNull(result.ConvertedPath);
         Assert.Equal(".jpg", Path.GetExtension(result.ConvertedPath));
-        var info = Image.Identify(result.ConvertedPath!);
-        Assert.Equal("JPEG", info.Metadata.DecodedImageFormat!.Name);
+        var info = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("JPEG", info.Format);
         Assert.Equal(640, info.Width);
         Assert.Equal(480, info.Height);
     }
@@ -156,7 +167,7 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, extension);
 
         Assert.Equal(".jpg", Path.GetExtension(result.ConvertedPath));
-        Assert.Equal(640, Image.Identify(result.ConvertedPath!).Width);
+        Assert.Equal(640, TestImages.Identify(result.ConvertedPath!).Width);
     }
 
     [Theory]
@@ -171,7 +182,7 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         Assert.Null(result.ConvertedPath);
         Assert.Equal(".jpg", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("JPEG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("JPEG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -183,7 +194,7 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(path, "jpg");
 
         Assert.Equal(".png", Path.GetExtension(result.ThumbnailPath));
-        Assert.Equal("PNG", Image.Identify(result.ThumbnailPath!).Metadata.DecodedImageFormat!.Name);
+        Assert.Equal("PNG", TestImages.Identify(result.ThumbnailPath!).Format);
     }
 
     [Fact]
@@ -192,13 +203,12 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
         var result = _generator.Generate(TestImages.TestDataPath("portrait_1200x1600_irot_exif6.heic"), "heic");
 
         // libheif applies the rotation, an orientation tag left in the JPG would make browsers rotate it again
-        var converted = Image.Identify(result.ConvertedPath!);
+        var converted = TestImages.Identify(result.ConvertedPath!);
         Assert.Equal(1200, converted.Width);
         Assert.Equal(1600, converted.Height);
-        ushort? orientation = converted.Metadata.ExifProfile?.TryGetValue(ExifTag.Orientation, out var value) == true ? value.Value : null;
-        Assert.True(orientation is null or 1, $"Unexpected EXIF orientation {orientation}");
+        Assert.True(converted.Orientation is null or 1, $"Unexpected EXIF orientation {converted.Orientation}");
 
-        var thumbnail = Image.Identify(result.ThumbnailPath!);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
         Assert.Equal(637, thumbnail.Width);
         Assert.Equal(850, thumbnail.Height);
     }
@@ -212,8 +222,8 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         Assert.Null(result.ThumbnailPath);
         Assert.Equal(".png", Path.GetExtension(result.ConvertedPath));
-        var info = Image.Identify(result.ConvertedPath!);
-        Assert.Equal("PNG", info.Metadata.DecodedImageFormat!.Name);
+        var info = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("PNG", info.Format);
         Assert.Equal(640, info.Width);
         Assert.Equal(480, info.Height);
     }
@@ -225,9 +235,9 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
 
         var result = _generator.Generate(path, "BMP");
 
-        Assert.Equal(2000, Image.Identify(result.ConvertedPath!).Width);
-        var thumbnail = Image.Identify(result.ThumbnailPath!);
-        Assert.Equal("PNG", thumbnail.Metadata.DecodedImageFormat!.Name);
+        Assert.Equal(2000, TestImages.Identify(result.ConvertedPath!).Width);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal("PNG", thumbnail.Format);
         Assert.Equal(850, thumbnail.Width);
     }
 
@@ -236,28 +246,107 @@ public class ImageSharpThumbnailGeneratorTests : IDisposable
     {
         // 32-bit BMP with alpha is one of the variants browsers don't display reliably
         string path = _input.Combine("alpha.bmp");
-        using (var image = new Image<Rgba32>(100, 100, new Rgba32(255, 0, 0, 255)))
-        {
-            image[0, 0] = new Rgba32(0, 0, 0, 0);
-            image.Save(path, new BmpEncoder { BitsPerPixel = BmpBitsPerPixel.Pixel32, SupportTransparency = true });
-        }
+        TestImages.CreateBmpWithTransparentCorner(path, 100, 100);
 
         var result = _generator.Generate(path, "bmp");
 
-        using var converted = Image.Load<Rgba32>(result.ConvertedPath!);
-        Assert.Equal(0, converted[0, 0].A);
-        Assert.Equal(255, converted[50, 50].A);
+        Assert.Equal(0, TestImages.AlphaAt(result.ConvertedPath!, 0, 0));
+        Assert.Equal(255, TestImages.AlphaAt(result.ConvertedPath!, 50, 50));
     }
 
     [Theory]
-    [InlineData("broken.jpg", "jpg")]
-    [InlineData("broken.heic", "heic")]
-    public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension)
+    [InlineData("scan.tiff", "tiff")]
+    [InlineData("SCAN.TIF", "TIF")]
+    public void Tiff_IsConvertedToPngWithThumbnail(string fileName, string extension)
     {
-        string path = _input.CreateFile(fileName, "This is not an image.");
+        string path = TestImages.Create(_input.Combine(fileName), 2000, 1000);
+
+        var result = _generator.Generate(path, extension);
+
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("PNG", converted.Format);
+        Assert.Equal(2000, converted.Width);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal("PNG", thumbnail.Format);
+        Assert.Equal(850, thumbnail.Width);
+    }
+
+    [Fact]
+    public void TiffWithOrientation_IsConvertedUpright()
+    {
+        string path = TestImages.Create(_input.Combine("portrait.tiff"), 2000, 1000, exifOrientation: 6);
+
+        var result = _generator.Generate(path, "tiff");
+
+        // PNG has no orientation browsers would apply, the rotation has to be in the pixels
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal(1000, converted.Width);
+        Assert.Equal(2000, converted.Height);
+        Assert.Equal(425, TestImages.Identify(result.ThumbnailPath!).Width);
+    }
+
+    [Fact]
+    public void MultiPageTiff_IsConvertedToSinglePng()
+    {
+        string path = TestImages.CreateMultiPageTiff(_input.Combine("pages.tiff"), 640, 480, pages: 3);
+
+        var result = _generator.Generate(path, "tiff");
+
+        // PNG has no pages, ImageMagick would otherwise write one file per page
+        Assert.Equal(1, TestImages.Identify(result.ConvertedPath!).Frames);
+        Assert.Single(Directory.GetFiles(_output.Path));
+    }
+
+    [Fact]
+    public void RawFile_IsDevelopedToJpgWithThumbnail()
+    {
+        var result = _generator.Generate(TestImages.TestDataPath("landscape_900x300.dng"), "dng");
+
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal("JPEG", converted.Format);
+        Assert.Equal(900, converted.Width);
+        Assert.Equal(300, converted.Height);
+        var thumbnail = TestImages.Identify(result.ThumbnailPath!);
+        Assert.Equal(850, thumbnail.Width);
+        Assert.Equal(283, thumbnail.Height);
+    }
+
+    [Fact]
+    public void RawFileWithOrientation_IsConvertedUprightWithoutOrientationTag()
+    {
+        var result = _generator.Generate(TestImages.TestDataPath("portrait_300x900_orientation6.dng"), "dng");
+
+        // libraw applies the rotation, a tag left in the JPG would make browsers rotate it again
+        var converted = TestImages.Identify(result.ConvertedPath!);
+        Assert.Equal(300, converted.Width);
+        Assert.Equal(900, converted.Height);
+        Assert.True(converted.Orientation is null or 1, $"Unexpected EXIF orientation {converted.Orientation}");
+    }
+
+    [Theory]
+    [InlineData("broken.jpg", "jpg", 1)]
+    [InlineData("broken.heic", "heic", 1)]
+    // longer content gets further into the HEIC reader and fails differently
+    [InlineData("broken_long.heic", "heic", 50)]
+    [InlineData("broken.dng", "dng", 1)]
+    public void FileWithInvalidContent_ThrowsInvalidImageFileException(string fileName, string extension, int repeat)
+    {
+        string path = _input.CreateFile(fileName, string.Concat(Enumerable.Repeat("This is not an image.\n", repeat)));
 
         var exception = Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, extension));
-        Assert.Equal("unrecognized image format", exception.Message);
+        Assert.False(string.IsNullOrWhiteSpace(exception.Message));
+        // the message ends up in a log line next to the path already
+        Assert.DoesNotContain(path, exception.Message);
+    }
+
+    [Fact]
+    public void SvgDisguisedAsJpg_IsRejected()
+    {
+        // a library detecting the format from the content mustn't hand this to an SVG renderer
+        string path = _input.CreateFile("vector.jpg",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"2000\" height=\"1000\"><rect width=\"2000\" height=\"1000\"/></svg>");
+
+        Assert.Throws<InvalidImageFileException>(() => _generator.Generate(path, "jpg"));
     }
 
     [Fact]
